@@ -171,6 +171,10 @@ ListIter list_insert(List *ls, ListIter before, void *data) {
     return ndata;
 }
 
+ListIter list_push_front(List *ls, void *data) {
+    return list_insert(ls,list_start(ls),data);
+}
+
 /// add data in sorted order.
 ListIter list_add_sorted(List *ls, void *data) {
     FOR_LIST(item,ls) {

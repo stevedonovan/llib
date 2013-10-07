@@ -6,6 +6,6 @@ all: obj.o list.o file.o scan.o map.o str.o
 	ar rcu libllib.a obj.o list.o file.o scan.o map.o str.o && ranlib libllib.a
 
 clean:
-    rm *.o *.a
+	rm *.o *.a
 
 

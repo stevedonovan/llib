@@ -20,7 +20,11 @@ the refcounting semantics.
 
 A note on style: although C has been heavily influenced by C++ over the years,
 it remains C. So judicious use of statement macros like `FOR` is fine, if they
-are suitably hygenic.
+are suitably hygenic:
+
+```C
+#define FOR(i,n) for (int i = 0, n_ = (n); i < n_; i++)
+```
 
 ## Reference Counting
 
@@ -122,6 +126,7 @@ Arrays can be _reference containers_ which hold refcounted objects:
     dogs[2] = Bonzo_new(ages);
     ...
     // this un-references the Bonzo objects
+    // only then the array will die
     unref(dogs);
 ```
 
@@ -141,6 +146,9 @@ unref(s);
 FOR(i,array_len(arr)) printf("%f ",arr[i]);
 printf("\n");
 
+// alternative macro
+// FOR(float,pf,arr) printf("%f ",*pf);
+
 ```
 
 You treat seqs like a pointer to an array, and use `seq_add` to ensure that the
@@ -154,3 +162,104 @@ the seq. (resize to fit??)
 
 These can also explicitly be _reference containers_ which derereference their objects
 afterwards if you use `seq_new_ref`.
+
+## Linked Lists
+
+A doubly-linked list is a very useful data structure which offers fast insertion at
+arbitrary posiitions.  It is sufficiently simple that it is continuously
+reinvented, which is one of the endemic C diseases.
+
+```C
+    List *l = list_new_str();
+    list_add (l,"two");
+    list_add (l,"three");
+    list_push_front(l,"one");
+    printf("size %d 2nd is '%s'\n",list_size(l),list_get(l,1));
+    FOR_LIST(pli, l)
+        printf("'%s' ",pli->data);
+    printf("\n");
+    unref(l);
+    printf("remaining %d\n",obj_kount());
+    return 0;
+//    size 3 2nd is 'two'
+//    'one' 'two' 'three'
+//    remaining 0
+```
+
+A list of strings is a ref container, but with the added thing that if we try to add
+a string which is not _one of ours_ then a proper refcounted copy is made. So it is
+safe to add strings from any source, such as a local buffer on the heap. These are all
+properly disposed of with the list.
+
+Generally, containers in C are annoying, because of the need for typecasts. (Already
+with `-Wall` GCC is giving us some warnings about those `printf` flags.)  Integer
+types can fit into the pointer payload fine enough, but it isn't possible to
+directly insert floating-point numbers.  List wrappers do a certain amount of pointer
+aliasing magic for us:
+
+```C
+    float ** pw = (float**)listw_new();
+    listw_add(pw, 10);
+    listw_add(pw, 20);
+    listw_add(pw, 30);
+    listw_add(pw, 40);
+    listw_insert(pw, listw_first(pw), 5);
+    printf("first %f\n",listw_get(pw,0));
+    FOR_LISTW(p, pw)
+        printf("%f\n",**pw);
+
+```
+
+They are declared as if they were seqs (pointers to arrays) and there's then
+a way to iterate over typed values.
+
+## Maps
+
+Maps may have two kinds of keys; integer/pointer, and strings. Like string lists,
+the latter own their key strings and they will be safely disposed of later. They
+may contain integer/pointer values, or string values. The difference again is
+with the special semantics needed to own arbitrary strings.
+
+Typecasting is again irritating, so there are macros `map_puti` etc for the
+common integer-valued case:
+
+```C
+    Map *m = map_new_str_ptr();
+    map_puti(m,"hello",23);
+    map_puti(m,"alice",10);
+    map_puti(m,"frodo",2353);
+
+    printf("lookup %d\n",map_geti(m,"alice"));
+
+    map_remove(m,"alice");
+    FOR_MAP(mi,m)
+        printf("key %s value %d\n",mi->key,mi->value);
+    unref(m);
+```
+
+The implementation in llib is a binary tree - not in general the best, but it works
+reliably and has defined iteration order.
+
+Maps can be initialized from arrays of `Mapkeyvalue` structs. Afterwards, such an
+array can be generated using `map_to_array`:
+
+```C
+    MapKeyValue mk[] = {
+        {"alpha","A"},
+        {"beta","B"},
+        {"gamma","C"},
+        {NULL,NULL}
+    };
+    Map *m = map_new_str_str();
+    map_put_keyvalues(m,mk);
+
+    MapKeyValue *pkv = map_to_array(m);
+
+    for (MapKeyValue *p = pkv; p->key; ++p)
+        printf("%s='%s' ",p->key,p->value);
+    printf("\n");
+
+    unref(m);
+    unref(pkv);
+```
+

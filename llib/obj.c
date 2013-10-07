@@ -409,9 +409,17 @@ void seq_add_str(void *sp, const char *p) {
 // (This will transfer ownership )
 // @param sp the sequence
 void *seq_array_ref(void *sp) {
-    void *res = obj_ref( * ((void**)sp));
+    Seq *s = (Seq *)sp;
+    void *a = s->arr;
+    /*
+    int len = array_len(a);
+    if (len < s->cap) {
+        a = array_resize(a, len);
+    }
+    */
+    a = obj_ref(a);
     obj_unref(sp);
-    return res;
+    return a;
 }
 
 /// standard for-loop.

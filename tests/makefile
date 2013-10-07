@@ -5,6 +5,12 @@ EXT=.exe
 CFLAGS=-std=c99  -O2 -Wall -I..
 LFLAGS=-L../llib -lllib
 
+ifdef ComSpec
+	EXT=.exe
+else
+	EXT=
+endif
+
 OBJ=test-obj$(EXT)
 LIST=test-list$(EXT)
 MAP=test-map$(EXT)
