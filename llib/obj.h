@@ -26,17 +26,6 @@ typedef struct ObjHeader_ {
     unsigned int mlen:15;
 } ObjHeader;
 
-typedef enum {
-    ARRAY_INT = 0,
-    ARRAY_STRING = 1
-} ElemKind;
-
-// this may be safely cast to a pointer to the array
-typedef struct Seq_ {
-    void *arr;
-    int cap;
-} Seq;
-
 #if defined(_M_X64) || defined(__amd64__)
 typedef long long intptr;
 #else
@@ -88,8 +77,24 @@ char *str_new_size(int sz);
 char *str_ref(char *s);
 char *str_cpy(char *s);
 
-void array_sort(void *P, ElemKind kind) ;
+typedef enum {
+    ARRAY_INT = 0,
+    ARRAY_STRING = 1
+} ElemKind;
+
+void array_sort(void *P, ElemKind kind, int offs) ;
 void * array_bsearch(void *P, void *value, ElemKind kind) ;
+
+#define OBJ_STRUCT_OFFS(T,f) ( (intptr)(&((T*)0)->f) )
+
+#define array_sort_struct_ptr(P,T,fname) array_sort(P,ARRAY_INT,OBJ_STRUCT_OFFS(T,fname))
+#define array_sort_struct_str(P,T,fname) array_sort(P,ARRAY_STRING,OBJ_STRUCT_OFFS(T,fname))
+
+// this may be safely cast to a pointer to the array
+typedef struct Seq_ {
+    void *arr;
+    int cap;
+} Seq;
 
 #define seq_new(T) (T**)seq_new_(sizeof(T),0)
 #define seq_new_ref(T) (T**)seq_new_(sizeof(T),1)
@@ -103,5 +108,6 @@ void seq_add_ptr(void *sp, void *p);
 void seq_add_str(void *sp, const char*p);
 void seq_resize(Seq *s, int nsz);
 void *seq_array_ref(void *sp);
+
 #endif
 

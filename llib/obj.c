@@ -27,6 +27,8 @@ array can always be accessed with `*s`.
 
 #include "obj.h"
 #include <stdio.h>
+// this needed for qsort_r
+#define _USE_GNU
 #include <stdlib.h>
 #include <malloc.h>
 #include <string.h>
@@ -290,16 +292,21 @@ char *str_cpy(char *s) {
     }
 }
 
-//// sorting and searching arrays ////
+// sorting and searching arrays //////////
+// We use qsort_r for maximum flexibily, but unfortunately nobody can agree on the signatures involved
+// http://stackoverflow.com/questions/4300896/how-portable-is-the-re-entrant-qsort-r-function-compared-to-qsort
+// Fortunately, we only have to do this nonsense once.
 
-typedef int (*CMPFN)(const void *m1, const void *m2);
+typedef int (*CMPFN)(const void *m1, const void *m2, void *context);
 
-static int plain_cmp(const int *m1, const int *m2) {
-    return *m1 - *m2;
+#define DEREF(P,offs)  *((intptr*)(P+offs))
+
+static int plain_cmp(const char *m1, const char  *m2, intptr offs) {
+    return DEREF(m1,offs) - DEREF(m2,offs);
 }
 
-static int string_cmp(const char **m1, const char **m2) {
-    return strcmp(*m1,*m2);
+static int string_cmp(const char **m1, const char **m2, intptr offs) {
+    return strcmp(*(m1+offs),*(m2+offs));
 }
 
 static CMPFN cmpfn(ElemKind kind) {
@@ -309,9 +316,10 @@ static CMPFN cmpfn(ElemKind kind) {
 /// sort an array.
 // @param P the array
 // @param kind  either `ARRAY_INT` or `ARRAY_STR`
-void array_sort(void *P, ElemKind kind) {
+void array_sort(void *P, ElemKind kind, int ofs) {
     ObjHeader *pr = obj_header_(P);
-    qsort(P,pr->x.len,pr->mlen,cmpfn(kind));
+    int len = pr->x.len, nelem = pr->mlen;
+    qsort_r(P,len,nelem,cmpfn(kind), (void*)ofs);
 }
 
 /// search a sorted array.

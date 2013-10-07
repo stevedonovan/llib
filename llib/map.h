@@ -34,7 +34,7 @@ typedef struct {
 } MapKeyValue;
 
 
-#define map_geti(m,s) ((int)map_get(m,(void*)(s)))
+#define map_geti(m,s) ((intptr)map_get(m,(void*)(s)))
 #define map_puti(m,k,v) map_put(m,(void*)(k),(void*)(v))
 
 #define map_put_structs(m,...) obj_apply_varargs(m,(PFun)map_put_struct,__VA_ARGS__,NULL)
