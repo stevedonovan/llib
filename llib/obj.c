@@ -297,9 +297,28 @@ char *str_cpy(char *s) {
 // http://stackoverflow.com/questions/4300896/how-portable-is-the-re-entrant-qsort-r-function-compared-to-qsort
 // Fortunately, we only have to do this nonsense once.
 
-typedef int (*CMPFN)(const void *m1, const void *m2, void *context);
-
 #define DEREF(P,offs)  *((intptr*)(P+offs))
+
+#ifdef _WIN32
+typedef int (*CMPFN)( void *context, const void *m1, const void *m2);
+#define qsort_r qsort_s
+
+#ifndef _MSC_VER
+// mingw just doesn't have this...
+void qsort_s( void *base, size_t num, size_t width,
+   int (*compare)(void *, const void *, const void *), void * context);
+#endif
+
+static int plain_cmp(intptr offs, const char *m1, const char  *m2) {
+    return DEREF(m1,offs) - DEREF(m2,offs);
+}
+
+static int string_cmp(intptr offs, const char **m1, const char **m2) {
+    return strcmp(*(m1+offs),*(m2+offs));
+}
+
+#else
+typedef int (*CMPFN)(const void *m1, const void *m2, void *context);
 
 static int plain_cmp(const char *m1, const char  *m2, intptr offs) {
     return DEREF(m1,offs) - DEREF(m2,offs);
@@ -308,6 +327,8 @@ static int plain_cmp(const char *m1, const char  *m2, intptr offs) {
 static int string_cmp(const char **m1, const char **m2, intptr offs) {
     return strcmp(*(m1+offs),*(m2+offs));
 }
+
+#endif
 
 static CMPFN cmpfn(ElemKind kind) {
     return kind==ARRAY_INT ? (CMPFN)plain_cmp : (CMPFN)string_cmp;
