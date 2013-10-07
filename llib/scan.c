@@ -412,7 +412,8 @@ BOOL scan_next_number(ScanState *ts, double *val)
 char *scan_next_iden(ScanState *ts, char *buff, int len)
 {
     char *res;
-    scan_skip_until(ts,T_TOKEN);
+    if (! scan_skip_until(ts,T_TOKEN))
+        return NULL;
     res = scan_get_tok(ts,buff,len);
     if (res != NULL)
         scan_next(ts);
