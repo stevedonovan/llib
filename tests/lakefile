@@ -1,0 +1,13 @@
+local function test(f)
+    return c99.program{f,incdir='..',libdir='../llib',libs='llib'}:run()
+end
+default {
+    test('test-obj'),
+    test('test-list'),
+    test('test-file'),
+    test('test-scan'),
+    test('test-seq'),
+    test('test-map'),
+    test('test-str'),
+}
+
