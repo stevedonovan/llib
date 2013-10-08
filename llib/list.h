@@ -65,7 +65,7 @@ ListIter list_insert(List *ls, ListIter before, void *data);
 ListIter list_insert_front(List *ls, void *data);
 ListIter list_add_sorted(List *ls, void *data);
 ListIter list_remove(List *ls, ListIter item);
-ListIter list_remove_last(List *ls);
+void *list_delete(List *ls, ListIter item) ;
 void * list_pop(List *ls);
 ListIter list_find(List *ls, void *data);
 ListIter list_find_if (List *ls, ListSearchFn fn, void *data);

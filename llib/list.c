@@ -204,30 +204,23 @@ ListIter list_remove(List *ls, ListIter item) {
     return item;
 }
 
-/// remove last item.
-ListIter list_remove_last(List *ls) {
-    return list_remove(ls,ls->last);
+/// remove item from list, deleting node data if needed.
+void *list_delete(List *ls, ListIter item) {
+    if (item == NULL)
+        return NULL;
+    void *data = list_item_data(ls,item);
+    if (list_is_container(ls))
+        list_free_item(ls,item);
+    return data;    
 }
 
 /// remove the last item and return its value.
 // For container lists, this frees the item.
 void * list_pop(List *ls) {
-    ListIter le = list_remove_last(ls);
-    if (le) {
-        void *data = list_item_data(ls,le);
-        if (list_is_container(ls))
-            list_free_item(ls,le);
-        return data;
-    } else {
-        return NULL;
-    }
+    return list_delete(ls, list_remove(ls,ls->last));
 }
 
 /// return an iterator to a given data value.
-// (You must define the comparison operation @{list_item_equals} to use this
-// if the nodes are your custom data.)
-// Use @{list_item_data} generally to extract the data, unless you know that the
-// list entries are themselves your data.
 ListIter list_find(List *ls, void *data) {
     FOR_LIST(item,ls) {
         if (ls->equals(item->data,data)) {
@@ -388,7 +381,7 @@ void list_item_equals(List *ls, ListEqualsFun cmp) {
     ls->equals = cmp;
 }
 
-/// remove an item by data value.
+/// remove an item by data value, dispoing it.
 bool list_remove_value(List *ls, void *data) {
     ListIter node = list_find(ls,data);
     if (node) {
