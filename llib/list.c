@@ -171,7 +171,8 @@ ListIter list_insert(List *ls, ListIter before, void *data) {
     return ndata;
 }
 
-ListIter list_push_front(List *ls, void *data) {
+/// insert data at the start of the list.
+ListIter list_insert_front(List *ls, void *data) {
     return list_insert(ls,list_start(ls),data);
 }
 
@@ -221,12 +222,6 @@ void * list_pop(List *ls) {
         return NULL;
     }
 }
-
-/*
- The list equals operation is distinct from the list compare operation
- because if the nodes are the objects, then we typically want equality to
- mean matching on some field of the object.
-*/
 
 /// return an iterator to a given data value.
 // (You must define the comparison operation @{list_item_equals} to use this

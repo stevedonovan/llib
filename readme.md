@@ -173,7 +173,7 @@ reinvented, which is one of the endemic C diseases.
     List *l = list_new_str();
     list_add (l,"two");
     list_add (l,"three");
-    list_push_front(l,"one");
+    list_insert_front(l,"one");
     printf("size %d 2nd is '%s'\n",list_size(l),list_get(l,1));
     FOR_LIST(pli, l)
         printf("'%s' ",pli->data);

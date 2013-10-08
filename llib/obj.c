@@ -337,20 +337,24 @@ static CMPFN cmpfn(ElemKind kind) {
 /// sort an array.
 // @param P the array
 // @param kind  either `ARRAY_INT` or `ARRAY_STR`
+// @param ofs offset into each item
 void array_sort(void *P, ElemKind kind, int ofs) {
     ObjHeader *pr = obj_header_(P);
     int len = pr->x.len, nelem = pr->mlen;
     qsort_r(P,len,nelem,cmpfn(kind), (void*)ofs);
 }
 
-/// search a sorted array.
-// @param P the array
-// @param value
-// @param kind either `ARRAY_INT` or `ARRAY_STR`
-void * array_bsearch(void *P, void *value, ElemKind kind) {
-    ObjHeader *pr = obj_header_(P);
-    return bsearch(value,P,pr->x.len,pr->mlen,cmpfn(kind));
-}
+/// sort an array of structs by integer/pointer field
+// @tparam type* A the array
+// @tparam type T the struct type
+// @param fieldname the name of the struct field
+// @function array_sort_struct_ptr
+
+/// sort an array of structs by string field
+// @tparam type* A the array
+// @tparam type T the struct type
+// @param fieldname the name of the struct field
+// @function array_sort_struct_str
 
 /// get from a source and put to a destination.
 // @param dest destination object

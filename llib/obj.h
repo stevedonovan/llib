@@ -83,7 +83,6 @@ typedef enum {
 } ElemKind;
 
 void array_sort(void *P, ElemKind kind, int offs) ;
-void * array_bsearch(void *P, void *value, ElemKind kind) ;
 
 #define OBJ_STRUCT_OFFS(T,f) ( (intptr)(&((T*)0)->f) )
 
