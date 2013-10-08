@@ -411,14 +411,20 @@ static void map_iter_free(MapIter iter) {
 // @table MapIter
 
 /// create a new map iterator positioned on the mininum node.
-MapIter map_iter_new (Map *m) {
+MapIter map_iter_new (Map *m, void *pkey, void *pvalue) {
     MapIter iter = obj_new(MapIterStruct,map_iter_free);
     iter->map = m;
     iter->node = (PEntry)root(m);
     iter->vstack = list_new_node(false);
+    iter->pkey = (void**)pkey;
+    iter->pvalue = (void**)pvalue;
     go_down_left(iter);
     iter->key = iter->node->key;
     iter->value = map_value_data(m,iter->node);
+    if (iter->pkey) {
+        *iter->pkey = iter->key;
+        *iter->pvalue = iter->value;
+    }
     return iter;
 }
 
@@ -451,6 +457,10 @@ MapIter map_iter_next (MapIter iter) {
     }
     iter->key = node->key;
     iter->value = map_value_data(iter->map,node);
+    if (iter->pkey) {
+        *iter->pkey = iter->key;
+        *iter->pvalue = iter->value;
+    }    
     return iter;
 }
 
@@ -458,3 +468,10 @@ MapIter map_iter_next (MapIter iter) {
 // @tparam MapIter var the loop variable
 // @tparam m the map
 // @macro FOR_MAP
+
+/// for-statement for iterating over typed key/value pairs
+// @tparam K key the key variable
+// @tparam V value the value variable
+// @tparam m the map
+// @macro FOR_MAP_KEYVALUE
+

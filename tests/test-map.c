@@ -72,6 +72,23 @@ void struct_maps()
         printf("[%s]=%d,",iter->key,((Data*)(iter->value))->age );
     }
     printf("\n");
+    
+    // basic FOR_MAP has two problems:
+    // (1) key and value fields are plain void*
+    // (2) if you break out of the loop the iterator won't be cleared.
+    // Here is an explicit use of MapIter which sets typed variables
+    char *key;
+    Data *d;
+    MapIter iter = map_iter_new (map,&key,&d);
+    do {
+        if (d->age == 16) {
+            unref(iter);
+            break;
+        }        
+        printf("[%s]=%d,",key,d->age);
+    } while (map_iter_next(iter));
+     printf("\n");
+    
     dispose(map,rog);
 }
 

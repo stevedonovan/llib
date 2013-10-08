@@ -21,10 +21,12 @@ typedef List Map;
 #define map_size list_size
 
 typedef struct MapIter_{
+    void **pkey;
+    void **pvalue;
+    void *key;
+    void *value;    
     Map *map;
     PEntry node;
-    void *key;
-    void *value;
     List *vstack;
 } MapIterStruct, *MapIter;
 
@@ -62,10 +64,15 @@ typedef void (*MapCallback)(void *,PEntry);
 
 void map_visit(void *data, PEntry node, MapCallback fun, int order);
 
-MapIter map_iter_new (Map *m);
+MapIter map_iter_new (Map *m, void *pkey, void *pvalue);
 MapIter map_iter_next (MapIter iter);
 
-#define FOR_MAP(iter,map) for (MapIter iter = map_iter_new(map); iter; iter = map_iter_next(iter))
+#define FOR_MAP(iter,map) for (MapIter iter = map_iter_new(map,NULL,NULL);\
+iter; iter = map_iter_next(iter))
+
+#define FOR_MAP_KEYVALUE(k,v,map) for (MapIter iter_ = map_iter_new(map,&k,&v);\
+iter_; iter_ = map_iter_next(iter_))
+
 
 MapKeyValue *map_to_array(Map *m);
 
