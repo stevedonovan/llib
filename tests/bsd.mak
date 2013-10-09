@@ -14,6 +14,13 @@ SCAN=test-scan
 STR=test-str
 
 all: $(OBJ) $(LIST) $(MAP) $(SEQ) $(FILE) $(SCAN) $(STR)
+	test-obj > test-obj-output
+	test-list > test-list-output
+	test-seq > test-seq-output
+	test-file > test-file-output
+	test-scan > test-scan-output
+	test-str > test-str-output
+
 
 $(OBJ): test-obj.c $(LIB)
 	$(CC) $(CFLAGS) test-obj.c -o test-obj $(LFLAGS)

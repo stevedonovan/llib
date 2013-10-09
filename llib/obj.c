@@ -298,14 +298,15 @@ char *str_cpy(char *s) {
 
 #define DEREF(P,offs)  *((intptr*)(P+offs))
 
-#ifdef _WIN32
+#ifndef __linux__
 typedef int (*CMPFN)( void *context, const void *m1, const void *m2);
-#define qsort_r qsort_s
 
+#ifdef _WIN32
 #ifndef _MSC_VER
-// mingw just doesn't have this...
-void qsort_s( void *base, size_t num, size_t width,
-   int (*compare)(void *, const void *, const void *), void * context);
+// mingw just doesn't have this prototype...
+void qsort_s(void *base, size_t num, size_t width, CMPFN compar, void *context);
+#endif
+#define qsort_r(base,nel,width,thunk,compar) qsort_s(base,nel,width,compar,thunk)
 #endif
 
 static int plain_cmp(intptr offs, const char *m1, const char  *m2) {
@@ -315,9 +316,10 @@ static int plain_cmp(intptr offs, const char *m1, const char  *m2) {
 static int string_cmp(intptr offs, const char **m1, const char **m2) {
     return strcmp(*(m1+offs),*(m2+offs));
 }
-
 #else
+// GNU just gets it wrong here, seeing that BSD invented qsort_r
 typedef int (*CMPFN)(const void *m1, const void *m2, void *context);
+#define qsort_r(base,nel,width,thunk,compar) qsort_r(base,nel,width,compar,thunk)
 
 static int plain_cmp(const char *m1, const char  *m2, intptr offs) {
     return DEREF(m1,offs) - DEREF(m2,offs);
@@ -326,7 +328,6 @@ static int plain_cmp(const char *m1, const char  *m2, intptr offs) {
 static int string_cmp(const char **m1, const char **m2, intptr offs) {
     return strcmp(*(m1+offs),*(m2+offs));
 }
-
 #endif
 
 static CMPFN cmpfn(ElemKind kind) {
@@ -340,7 +341,7 @@ static CMPFN cmpfn(ElemKind kind) {
 void array_sort(void *P, ElemKind kind, int ofs) {
     ObjHeader *pr = obj_header_(P);
     int len = pr->x.len, nelem = pr->mlen;
-    qsort_r(P,len,nelem,cmpfn(kind), (void*)ofs);
+    qsort_r(P,len,nelem,(void*)ofs,cmpfn(kind));
 }
 
 /// sort an array of structs by integer/pointer field
