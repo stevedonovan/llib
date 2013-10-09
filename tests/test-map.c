@@ -5,7 +5,6 @@
 */
 
 #include <stdio.h>
-#include <malloc.h>
 #include <string.h>
 #include <llib/map.h>
 
@@ -72,7 +71,7 @@ void struct_maps()
         printf("[%s]=%d,",iter->key,((Data*)(iter->value))->age );
     }
     printf("\n");
-    
+
     // basic FOR_MAP has two problems:
     // (1) key and value fields are plain void*
     // (2) if you break out of the loop the iterator won't be cleared.
@@ -84,11 +83,11 @@ void struct_maps()
         if (d->age == 16) {
             unref(iter);
             break;
-        }        
+        }
         printf("[%s]=%d,",key,d->age);
     } while (map_iter_next(iter));
      printf("\n");
-    
+
     dispose(map,rog);
 }
 

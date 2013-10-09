@@ -22,7 +22,7 @@ This will work fine if simple equality defines a match, as with pointers and int
 */
 
 #include <stdio.h>
-#include <malloc.h>
+#include <stdlib.h>
 #include <string.h>
 
 #include "private_list.h"
@@ -460,7 +460,7 @@ MapIter map_iter_next (MapIter iter) {
     if (iter->pkey) {
         *iter->pkey = iter->key;
         *iter->pvalue = iter->value;
-    }    
+    }
     return iter;
 }
 

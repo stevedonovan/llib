@@ -30,7 +30,6 @@ array can always be accessed with `*s`.
 // this needed for qsort_r
 #define _USE_GNU
 #include <stdlib.h>
-#include <malloc.h>
 #include <string.h>
 #include <assert.h>
 #include <stdarg.h>
