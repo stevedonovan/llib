@@ -5,13 +5,13 @@ EXT=.exe
 CFLAGS=-std=c99  -O2 -Wall -I..
 LFLAGS=-L../llib -lllib
 
-OBJ=test-obj
-LIST=test-list
-MAP=test-map
-SEQ=test-seq
-FILE=test-file
-SCAN=test-scan
-STR=test-str
+OBJ=test-obj.exe
+LIST=test-list.exe
+MAP=test-map.exe
+SEQ=test-seq.exe
+FILE=test-file.exe
+SCAN=test-scan.exe
+STR=test-str.exe
 
 all: $(OBJ) $(LIST) $(MAP) $(SEQ) $(FILE) $(SCAN) $(STR)
 	test-obj > test-obj-output
@@ -20,7 +20,6 @@ all: $(OBJ) $(LIST) $(MAP) $(SEQ) $(FILE) $(SCAN) $(STR)
 	test-file > test-file-output
 	test-scan > test-scan-output
 	test-str > test-str-output
-
 
 $(OBJ): test-obj.c $(LIB)
 	$(CC) $(CFLAGS) test-obj.c -o test-obj $(LFLAGS)

@@ -1,33 +1,25 @@
 # building tests
 CC=gcc
 LIB=../llib/libllib.a
-EXT=.exe
 CFLAGS=-std=c99  -O2 -Wall -I..
 LFLAGS=-L../llib -lllib
 
-ifdef ComSpec
-	EXT=.exe
-    L=
-else
-	EXT=
-    L=./
-endif
-
-OBJ=test-obj$(EXT)
-LIST=test-list$(EXT)
-MAP=test-map$(EXT)
-SEQ=test-seq$(EXT)
-FILE=test-file$(EXT)
-SCAN=test-scan$(EXT)
-STR=test-str$(EXT)
+OBJ=test-obj
+LIST=test-list
+MAP=test-map
+SEQ=test-seq
+FILE=test-file
+SCAN=test-scan
+STR=test-str
 
 all: $(OBJ) $(LIST) $(MAP) $(SEQ) $(FILE) $(SCAN) $(STR)
-	$(L)test-obj > test-obj-output
-	$(L)test-list > test-list-output
-	$(L)test-seq > test-seq-output
-	$(L)test-file > test-file-output
-	$(L)test-scan > test-scan-output
-	$(L)test-str > test-str-output
+	./test-obj > test-obj-output
+	./test-list > test-list-output
+	./test-seq > test-seq-output
+	./test-file > test-file-output
+	./test-scan > test-scan-output
+	./test-str > test-str-output
+
 
 $(OBJ): test-obj.c $(LIB)
 	$(CC) $(CFLAGS) test-obj.c -o test-obj $(LFLAGS)
