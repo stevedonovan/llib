@@ -27,6 +27,7 @@ typedef struct ObjHeader_ {
 } ObjHeader;
 
 #if defined(_M_X64) || defined(__amd64__)
+#define LLIB_64_BITS
 typedef long long intptr;
 #else
 typedef int intptr;
