@@ -16,7 +16,7 @@ Unless `OBJ_REF_ABBREV` is defined, these are also defined as `ref` and `unref`;
 a bulk `dispose` for multiple objects.
 
 _Arrays_ are refcounted _containers_;  if created with `array_new_ref`, they will unref
-their elements when disposed.  They carry their own size, accessible with `array_size`.
+their elements when disposed.  They carry their own size, accessible with `array_len`.
 
 _Sequences_ are a wrapper around arrays, and are resizeable. `seq_add` appends new values
 to a sequence. A sequence `s` has the type `T**`; it is a pointer to an array of T.  The underlying
@@ -212,6 +212,24 @@ void *array_new_(int mlen, int len, int isref) {
     return P;
 }
 
+/// new array from type.
+// @tparam T type name of type
+// @int sz size of array
+// @treturn T*
+// @function array_new
+
+/// new array of refcounted objects.
+// @tparam T type name of type
+// @int sz size of array
+// @treturn T*
+// @function array_new_ref
+
+/// new array from buffer.
+// @tparam T type name of type
+// @tparam T* buff
+// @int sz size of array
+// @function array_new_copy
+
 /// length of an array.
 // tparam type* array
 // @function array_len
@@ -222,6 +240,11 @@ void *array_new_copy_ (int mlen, int len, int isref, void *P) {
     return arr;
 }
 
+
+/// get a slice of an array.
+// @param P the array
+// @param i1 lower bound
+// @param i2 upper bound (can be -1 for the rest)
 void * array_copy(void *P, int i1, int i2) {
     ObjHeader *pr = obj_header_(P);
     int mlem = pr->mlen;
@@ -289,16 +312,22 @@ char *str_cpy(char *s) {
     }
 }
 
+/// sort an array.
+// @tparam T* P the array
+// @int kind  either `ARRAY_INT` or `ARRAY_STR`
+// @int ofs offset into each item
+// @function array_sort
+
 /// sort an array of structs by integer/pointer field
-// @tparam type* A the array
-// @tparam type T the struct type
-// @param fieldname the name of the struct field
+// @tparam T* A the array
+// @tparam T type the struct
+// @param field the name of the struct field
 // @function array_sort_struct_ptr
 
 /// sort an array of structs by string field
-// @tparam type* A the array
-// @tparam type T the struct type
-// @param fieldname the name of the struct field
+// @tparam T* A the array
+// @tparam T type the struct
+// @param field the name of the struct field
 // @function array_sort_struct_str
 
 /// get from a source and put to a destination.

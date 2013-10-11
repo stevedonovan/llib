@@ -27,7 +27,7 @@ typedef void (*ScanNumberFun) (void *data, double x);
 typedef void (*ScanStringFun) (void *data, char *buff);
 
 // this should go in obj.h (check if not already defined?)
-typedef int BOOL;
+typedef int bool;
 enum {FALSE,TRUE};
 
 // public fields of ScanState are `line`, `type` and `int_type`
@@ -61,10 +61,10 @@ const char *scan_next_line(ScanState *ts);
 char *scan_get_tok(ScanState* ts, char *tok, int len);
 char *scan_get_str(ScanState* ts);
 double scan_get_number(ScanState* ts);
-BOOL scan_skip_until(ScanState *ts, ScanTokenType type);
-BOOL scan_next_number(ScanState *ts, double *val);
+bool scan_skip_until(ScanState *ts, ScanTokenType type);
+bool scan_next_number(ScanState *ts, double *val);
 char *scan_next_iden(ScanState *ts, char *buff, int len);
-BOOL scan_next_item(ScanState *ts, ScanTokenType type, char *buff, int sz);
+bool scan_next_item(ScanState *ts, ScanTokenType type, char *buff, int sz);
 int scan_numbers(ScanState *ts, double *values, int sz);
 void scan_numbers_fun(ScanState *ts, ScanNumberFun fn, void *data);
 void scan_iden_fun(ScanState *ts, ScanStringFun fn, void *data);

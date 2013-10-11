@@ -6,6 +6,7 @@
 
 /****
 Extended file handling.
+
 */
 
 #ifdef _WIN32
@@ -39,7 +40,7 @@ static void strip_eol(char *buff) {
         buff[last] = '\0';
 }
 
-/// like fgets, except trims \n.
+/// like fgets, except trims (\r)\n.
 char *file_gets(FILE *f, char *buff, int bufsize) {
     if (! fgets(buff,bufsize,f))
         return NULL;
@@ -73,6 +74,7 @@ static int size_of_file(FILE *fp) {
 }
 
 /// size of a file.
+// Will return -1 if the file cannot be opened for reading.
 int file_size(const char *file)
 {
     int sz;
@@ -85,6 +87,7 @@ int file_size(const char *file)
 }
 
 /// read the contents of a file.
+// If `text` is true, will also strip any \r\n at the end.
 char *file_read_all(const char *file, bool text) {
     FILE *fp = fopen(file,text ? "r" : "rb");
     if (! fp)

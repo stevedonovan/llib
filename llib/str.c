@@ -167,7 +167,7 @@ char ** str_split(const char *s, const char *delim) {
         t = strtok_r(NULL,delim,&saveptr);
     }
     char **res = (char**)seq_array_ref(ss);
-//    obj_unref(sc);
+    obj_unref(sc);
     return res;
 }
 
@@ -226,8 +226,8 @@ char **str_strings(char *first,...) {
     return res;
 }
 
-/// template substtitutions
-// @type template
+/// template substitution
+// @section template
 
 struct StrTempl_ {
     char *str;

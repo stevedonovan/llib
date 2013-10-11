@@ -210,7 +210,7 @@ PEntry map_put_struct(Map *m, void *data) {
 
 /// insert a number of map structs, ending in NULL.
 // @tparam Map*
-// @param ...  the struct pointers
+// param ...  the struct pointers
 // @function map_put_structs
 
 /// insert pointer data using a pointer key.
@@ -329,7 +329,7 @@ bool map_delete(Map *m, void *key) {
 // @param data arbitrary data for callback
 // @param node where to start (use `map_first` for all)
 // @param fun callback which will receive data and current node
-// @param order: -1 for pre-order, 0 for in-order, +1 for post-order
+// @param order -1 for pre-order, 0 for in-order, +1 for post-order
 void map_visit(void *data, PEntry node, MapCallback fun, int order) {
     if (order < 0)
         fun(data,node);

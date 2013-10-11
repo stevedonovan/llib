@@ -57,10 +57,6 @@ static CMPFN cmpfn(ElemKind kind) {
     return kind==ARRAY_INT ? (CMPFN)plain_cmp : (CMPFN)string_cmp;
 }
 
-/// sort an array.
-// @param P the array
-// @param kind  either `ARRAY_INT` or `ARRAY_STR`
-// @param ofs offset into each item
 void array_sort(void *P, ElemKind kind, int ofs) {
     ObjHeader *pr = obj_header_(P);
     int len = pr->x.len, nelem = pr->mlen;

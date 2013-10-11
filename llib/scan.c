@@ -62,6 +62,26 @@ static void reset(ScanState* ts)
     scan_set_str(ts,ts->buff);
 }
 
+/// Scanner type.
+// @int line current line in file, if not just parsing a string.
+// @int type One of the following:
+//
+//   T_END, T_EOF=0,
+//   T_TOKEN, T_IDEN=1,
+//   T_NUMBER,
+//   T_STRING,
+//   T_CHAR,
+//   T_NADA
+//
+// @int int_type One of
+//
+//   T_DOUBLE,
+//   T_INT,
+//   T_HEX,
+//   T_OCT,
+//
+// @table @ScanState
+
 ScanState* scan_create(ScanState *ts)
 {
     ts->inf = NULL;
@@ -98,7 +118,7 @@ void scan_set_line_comment(ScanState *ts, const char *cc) {
     ts->comment2 = cc[1];
 }
 
-static BOOL scan_init(ScanState* ts, FILE* inf)
+static bool scan_init(ScanState* ts, FILE* inf)
 {
     ts->inf = inf;
     *ts->buff = 0;
@@ -115,7 +135,6 @@ typedef enum {
     SCAN_STRING
 } ScanArgType;
 
-/// perform any cleanup.
 // Will close the stream if the scanner owned it.
 static void scan_free(ScanState *ts) {
     if (ts->inner_flags & OWNS_STREAM)
@@ -167,7 +186,7 @@ ScanState *scan_new_from_stream(FILE *stream) {
 /// fetch a new line from the stream, if defined.
 // Advances the line count - not used if the scanner has
 // been given a string directly.
-BOOL scan_fetch_line(ScanState* ts, int skipws)
+bool scan_fetch_line(ScanState* ts, int skipws)
 {
     do {
         if (! ts->inf) return FALSE;
@@ -195,7 +214,7 @@ void scan_force_line_mode(ScanState* ts)
 }
 
 /// skip white space, reading new lines if necessary.
-BOOL scan_skip_whitespace(ScanState* ts)
+bool scan_skip_whitespace(ScanState* ts)
 {
 top:
     if (! (ts->flags & C_WSPACE)) scan_skip_space(ts);
@@ -306,7 +325,7 @@ ScanTokenType scan_next(ScanState* ts)
              case '0': case 'x': { //..collecting OCTAL or HEX constant
                 char obuff[10];
                 const char *start = ts->P;
-                BOOL hex = *start == 'x';
+                bool hex = *start == 'x';
                 if (hex) {
                     ++start; // off 'x'
                     while (isxdigit(*ts->P)) ts->P++;
@@ -390,7 +409,7 @@ double scan_get_number(ScanState* ts)
 
 /// skip until a token is found with `type`.
 // May return `FALSE` if the scanner ran out.
-BOOL scan_skip_until(ScanState *ts, ScanTokenType type)
+bool scan_skip_until(ScanState *ts, ScanTokenType type)
 {
     while (ts->type != type && ts->type != T_END) {
         scan_next(ts);
@@ -400,7 +419,7 @@ BOOL scan_skip_until(ScanState *ts, ScanTokenType type)
 }
 
 /// fetch the next number, skipping any other tokens.
-BOOL scan_next_number(ScanState *ts, double *val)
+bool scan_next_number(ScanState *ts, double *val)
 {
     if (! scan_skip_until(ts,T_NUMBER)) return FALSE;
     *val = scan_get_number(ts);
@@ -421,7 +440,7 @@ char *scan_next_iden(ScanState *ts, char *buff, int len)
 }
 
 /// fetch the next item, skipping other tokens.
-BOOL scan_next_item(ScanState *ts, ScanTokenType type, char *buff, int sz)
+bool scan_next_item(ScanState *ts, ScanTokenType type, char *buff, int sz)
 {
    if (! scan_skip_until(ts,type)) return FALSE;
     scan_get_tok(ts, buff, sz);

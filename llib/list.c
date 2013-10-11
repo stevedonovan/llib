@@ -31,6 +31,20 @@ is used, which is also fine for integer values (up to intptr_t or uintptr_t in
 #include "private_list.h"
 #include "list.h"
 
+/// List type
+// @tfield ListIter first
+// @tfield ListIter last
+// @int size
+// @table List
+// @within Structs
+
+/// List iterator type
+// @tfield ListIter _next
+// @tfield ListIter _prev
+// @tfield void* data
+// @table ListIter
+// @within Types
+
 void list_free_item(List *ls, ListIter item) {
     if (list_is_container(ls)) {
         if (ls->flags & LIST_REF) {
@@ -211,7 +225,7 @@ void *list_delete(List *ls, ListIter item) {
     void *data = list_item_data(ls,item);
     if (list_is_container(ls))
         list_free_item(ls,item);
-    return data;    
+    return data;
 }
 
 /// remove the last item and return its value.
@@ -420,7 +434,7 @@ List *list_new_from_array(int type, void **arr, int sz) {
     return ls;
 }
 
-///////// List Wrappers //////
+// List Wrappers //////
 
 typedef struct LWrap_{
     void *data;
