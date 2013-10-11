@@ -26,10 +26,6 @@ typedef enum {
 typedef void (*ScanNumberFun) (void *data, double x);
 typedef void (*ScanStringFun) (void *data, char *buff);
 
-// this should go in obj.h (check if not already defined?)
-typedef int bool;
-enum {FALSE,TRUE};
-
 // public fields of ScanState are `line`, `type` and `int_type`
 typedef struct {
     int line;
@@ -48,11 +44,11 @@ void scan_set_str(ScanState* ts, const char *str);
 void scan_set_flags(ScanState* ts, int flags);
 void scan_set_line_comment(ScanState *ts, const char *cc);
 
-int scan_fetch_line(ScanState* ts, int skipws);
+bool scan_fetch_line(ScanState* ts, int skipws);
 void scan_force_line_mode(ScanState* ts);
 void scan_push_back(ScanState* ts);
 char scan_getch(ScanState* ts);
-int scan_skip_whitespace(ScanState* ts);
+bool scan_skip_whitespace(ScanState* ts);
 void scan_skip_space(ScanState* ts);
 void scan_skip_digits(ScanState* ts);
 ScanTokenType scan_next(ScanState* ts);

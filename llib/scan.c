@@ -123,7 +123,7 @@ static bool scan_init(ScanState* ts, FILE* inf)
     ts->inf = inf;
     *ts->buff = 0;
     reset(ts);
-    return TRUE;
+    return true;
 }
 
 // private inner flag values.
@@ -189,21 +189,21 @@ ScanState *scan_new_from_stream(FILE *stream) {
 bool scan_fetch_line(ScanState* ts, int skipws)
 {
     do {
-        if (! ts->inf) return FALSE;
+        if (! ts->inf) return false;
         if (fgets(ts->buff,LINESIZE,(FILE*)ts->inf) == NULL)
-            return FALSE;
-        if (feof((FILE*)ts->inf)) return FALSE;
+            return false;
+        if (feof((FILE*)ts->inf)) return false;
         ++ts->line;
         scan_set_str(ts,ts->buff);
         if (skipws) scan_skip_space(ts);
     } while (*ts->P == 0);
-    return TRUE;
+    return true;
 }
 
 /// get the next character.
 char scan_getch(ScanState* ts)
 {
-    if (*ts->P == '\0') scan_fetch_line(ts,FALSE);
+    if (*ts->P == '\0') scan_fetch_line(ts,false);
     return *ts->P++;
 }
 
@@ -221,12 +221,12 @@ top:
     if (*ts->P == 0) {
         if (ts->inner_flags & FORCE_LINE_MODE) {
             ts->inner_flags ^= FORCE_LINE_MODE;
-            return FALSE;
+            return false;
         }
-        if (! scan_fetch_line(ts,TRUE)) return FALSE; // EOF will pass through as T_END
+        if (! scan_fetch_line(ts,true)) return false; // EOF will pass through as T_END
         goto top;
     }
-return TRUE;
+return true;
 }
 
 /// skip white space and single-line comments.
@@ -390,7 +390,7 @@ char *scan_get_line(ScanState *ts, char *buff, int len)
 // After this, the scanner will regard end-of-line as end of input.
 const char *scan_next_line(ScanState *ts)
 {
-    if (! scan_fetch_line(ts,TRUE)) return NULL;
+    if (! scan_fetch_line(ts,true)) return NULL;
     scan_force_line_mode(ts);
     return ts->buff;
 }
@@ -408,23 +408,23 @@ double scan_get_number(ScanState* ts)
 }
 
 /// skip until a token is found with `type`.
-// May return `FALSE` if the scanner ran out.
+// May return `false` if the scanner ran out.
 bool scan_skip_until(ScanState *ts, ScanTokenType type)
 {
     while (ts->type != type && ts->type != T_END) {
         scan_next(ts);
     }
-    if (ts->type == T_END) return FALSE;  // ran out of stream
-    return TRUE;
+    if (ts->type == T_END) return false;  // ran out of stream
+    return true;
 }
 
 /// fetch the next number, skipping any other tokens.
 bool scan_next_number(ScanState *ts, double *val)
 {
-    if (! scan_skip_until(ts,T_NUMBER)) return FALSE;
+    if (! scan_skip_until(ts,T_NUMBER)) return false;
     *val = scan_get_number(ts);
     scan_next(ts);
-    return TRUE;
+    return true;
 }
 
 /// fetch the next word, skipping other tokens.
@@ -442,10 +442,10 @@ char *scan_next_iden(ScanState *ts, char *buff, int len)
 /// fetch the next item, skipping other tokens.
 bool scan_next_item(ScanState *ts, ScanTokenType type, char *buff, int sz)
 {
-   if (! scan_skip_until(ts,type)) return FALSE;
+   if (! scan_skip_until(ts,type)) return false;
     scan_get_tok(ts, buff, sz);
     scan_next(ts);
-    return TRUE;
+    return true;
 }
 
 /// grab up to `sz` numbers from the stream.
