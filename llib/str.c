@@ -161,6 +161,7 @@ static char* strtok_r(char *str,const char *delim,char **nextp) {
 // Returns a ref array of ref strings.
 char ** str_split(const char *s, const char *delim) {
     char ***ss = seq_new_ref(char*);
+    // make our own copy of the string...
     char *sc = str_new(s), *saveptr;
     char *t = strtok_r(sc,delim,&saveptr);
     while (t != NULL) {

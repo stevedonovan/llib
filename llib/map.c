@@ -28,7 +28,7 @@ This will work fine if simple equality defines a match, as with pointers and int
 #include "private_list.h"
 #include "map.h"
 
-#define out(x) fprintf(stderr,"%s = %x\n",#x,(intptr)x);
+#define out(p) fprintf(stderr,"%s=%p (%d)\n",#p,p,obj_refcount(p))
 
 // first becomes the tree root
 #define root(m) ((m)->first)
@@ -151,8 +151,9 @@ static PEntry put_item(Map *m, void *key, void *data, int pointer_type) {
     // for a pointer/string keyed map, this returns a MapEntryDefault struct,
     // and the data must also be a pointer or a string, which is put into the 'mdata' field
     if (pointer_type) {
-        if (pointer_type == MAP_STRING)  // strings _may_ need copying..
+        if (pointer_type == MAP_STRING) { // strings _may_ need copying..
             data = str_cpy((char*)data);
+        }
         item->data = data;
         //printf("key %d data %d\n",key,data);
     } else { // otherwise the data contains its own key
@@ -240,7 +241,9 @@ static PEntry map_find(Map *m, void *key, PEntry** parent_edge) {
         int order = compare(node->key,key);
         if (order == 0) { // gotcha!
             if (parent_edge) {
-                if (left)
+                if (! last)
+                    *parent_edge = (PEntry*)&root(m);
+                else if (left)
                     *parent_edge = &last->_left;
                 else
                     *parent_edge = &last->_right;
@@ -300,12 +303,13 @@ static PEntry left_most_edge (PEntry node) {
 PEntry map_remove(Map *m, void *key) {
     PEntry *parent_edge;
     PEntry node = map_find(m,key,&parent_edge);
-    if (! node) return NULL;
+    if (! node) return NULL; // not one of ours...
     -- m->size;
-    if (! parent_edge) { // last chap in map
-        root(m) = NULL;
-        return node;
+    if (m->size == 0) {// last chap in map
+         root(m) = NULL;
+         return node;
     }
+    
     if (! node->_right) {
         *parent_edge = node->_left;
     } else {

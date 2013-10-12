@@ -33,8 +33,11 @@ typedef long long intptr;
 typedef int intptr;
 #endif
 
-#define obj_header_(P) ((ObjHeader*)P-1)
+#define obj_header_(P) ((ObjHeader*)(P)-1)
 #define array_len(P) ( obj_header_(P)->x.len )
+#define obj_is_array(P) ( obj_header_(P)->is_array )
+#define obj_elem_size(P) ( obj_header_(P)->mlen )
+#define obj_ref_array(P) ( obj_header_(P)->is_ref_container )
 
 #define obj_new(T,dtor) (T*)obj_new_(sizeof(T),(DisposeFn)dtor)
 #define obj_ref(P) (obj_incr_(P), P)

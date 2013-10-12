@@ -263,8 +263,7 @@ void * array_resize(void *P, int newsz) {
     void *newp = array_new_(pr->mlen,newsz,pr->is_ref_container);
     memcpy(newp,P,pr->mlen*pr->x.len);
     // if old ref array is going to die, make sure it doesn't dispose our elements
-    if (pr->_ref == 1)
-        pr->is_ref_container = 0;
+    pr->is_ref_container = 0;
     obj_unref(P);
     return newp;
 }
