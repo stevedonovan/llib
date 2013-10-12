@@ -220,9 +220,11 @@ ListIter list_remove(List *ls, ListIter item) {
 
 /// remove item from list, deleting node data if needed.
 void *list_delete(List *ls, ListIter item) {
+    void *data;
     if (item == NULL)
         return NULL;
-    void *data = list_item_data(ls,item);
+    list_remove(ls, item);
+    data = list_item_data(ls,item);
     if (list_is_container(ls))
         list_free_item(ls,item);
     return data;
