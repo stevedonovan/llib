@@ -158,12 +158,13 @@ static char* strtok_r(char *str,const char *delim,char **nextp) {
 #endif
 
 /// split a string using a set of delimiters.
+// Returns a ref array of ref strings.
 char ** str_split(const char *s, const char *delim) {
-    char ***ss = seq_new(char*);
+    char ***ss = seq_new_ref(char*);
     char *sc = str_new(s), *saveptr;
     char *t = strtok_r(sc,delim,&saveptr);
     while (t != NULL) {
-        seq_add(ss,t);
+        seq_add(ss,str_new(t));
         t = strtok_r(NULL,delim,&saveptr);
     }
     char **res = (char**)seq_array_ref(ss);

@@ -64,8 +64,10 @@ static void dispose_map_entries(Map *m, PEntry node) {
 }
 
 void map_clear(Map *m) {
-    map_visit(m,map_first(m),(MapCallback)dispose_map_entries,1);
-    root(m) = NULL;
+    if (root(m) != NULL) {
+        map_visit(m,map_first(m),(MapCallback)dispose_map_entries,1);
+        root(m) = NULL;
+    }
 }
 
 Map *map_new(int ktype, enum MapValue vtype) {
@@ -302,6 +304,7 @@ PEntry map_remove(Map *m, void *key) {
     -- m->size;
     if (! parent_edge) { // last chap in map
         root(m) = NULL;
+        return node;
     }
     if (! node->_right) {
         *parent_edge = node->_left;
@@ -412,6 +415,8 @@ static void map_iter_free(MapIter iter) {
 
 /// create a new map iterator positioned on the mininum node.
 MapIter map_iter_new (Map *m, void *pkey, void *pvalue) {
+    if (root(m) == NULL) // empty map
+        return NULL;
     MapIter iter = obj_new(MapIterStruct,map_iter_free);
     iter->map = m;
     iter->node = (PEntry)root(m);
