@@ -125,7 +125,7 @@ bool str_starts_with(const char *s, const char *prefix) {
 
 /// does the string end with this postfix?
 bool str_ends_with(const char *s, const char *postfix) {
-    char *P = strstr(s,postfix);
+    const char *P = strstr(s,postfix);
     if (! P)
         return false;
     return str_eq(P,postfix);

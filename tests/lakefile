@@ -1,5 +1,6 @@
+libs = choose(MSVC,'llib_static','llib')
 local function test(f)
-    return c99.program{f,incdir='..',libdir='../llib',libs='llib'}:run()
+    return c99.program{f,incdir='..',libdir='../llib',libs=libs}:run()
 end
 default {
     test('test-obj'),
