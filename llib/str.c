@@ -118,6 +118,19 @@ int str_findch(const char *s, char ch) {
     return offset_str(P,s);
 }
 
+/// does the string start with this prefix?
+bool str_starts_with(const char *s, const char *prefix) {
+    return strncmp(s,prefix,strlen(prefix)) == 0;
+}
+
+/// does the string end with this postfix?
+bool str_ends_with(const char *s, const char *postfix) {
+    char *P = strstr(s,postfix);
+    if (! P)
+        return false;
+    return str_eq(P,postfix);
+}
+
 /// find first character that is in the string `ps`
 int str_find_first_of(const char *s, const char *ps) {
     return offset_str(strpbrk(s,ps),s);
@@ -247,15 +260,18 @@ static void StrTempl_dispose (StrTempl stl) {
 typedef char *Str;
 
 /// new template from string with `$(var)` variables
-StrTempl str_templ_new(const char *templ) {
+StrTempl str_templ_new(const char *templ, const char *markers) {
     StrTempl stl = obj_new(struct StrTempl_,StrTempl_dispose);
+    if (! markers)
+        markers = "$()";
+    char esc = markers[0], openp = markers[1], closep = markers[2];
     // we make our own copy of the string
     // and will break it up into this sequence
     Str **ss = seq_new(Str);
     stl->str = str_new(templ);
     char *T = stl->str;
     while (true) {
-        int endp, dollar = str_findch(T,'$');
+        int endp, dollar = str_findch(T,esc);
         if (dollar > -1)
             T[dollar] = '\0';
         //  plain string chunk
@@ -264,9 +280,9 @@ StrTempl str_templ_new(const char *templ) {
         if (dollar == -1)
             break;
         T += dollar + 1;
-        assert(*T == '(');
+        assert(*T == openp);
         *T = MARKER;
-        endp = str_findch(T,')');
+        endp = str_findch(T,closep);
         T[endp] = '\0';
         seq_add(ss,T);
         T += endp + 1;

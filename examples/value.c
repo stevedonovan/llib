@@ -12,33 +12,28 @@ typedef enum ValueContainer_ {
     ValueScalar,
     ValueArray,
     ValueList,
-    ValueMap
+    ValueMap,
+    ValueSimpleMap,
 } ValueContainer;
 
-#define VALUE_REF 0x100
-
 typedef enum ValueType_ {
-    ValueNone = 0,
-    ValueString = VALUE_REF + 1,
-    ValueError= VALUE_REF + 2,
+    ValueNull = 0,
+    ValueRef = 0x100,
+    ValueString = ValueRef + 1,
+    ValueError= ValueRef + 2,
     ValueFloat = 1,
     ValueInt = 2,
-    ValueValue = VALUE_REF + 3
+    ValueValue = ValueRef + 3,
+    ValuePointer = 3
 } ValueType;
-
-#ifdef LLIB_64_BITS
-typedef double floatptr;
-#else
-typedef float floatptr;
-#endif
 
 typedef struct Value_ {
     ValueContainer vc;
     ValueType type;
     union {
         const char *str;
-        intptr i;
-        floatptr f;
+        long long i;
+        double f;
         List *ls;
         Map *map;
         struct Value_ *v;
@@ -47,7 +42,7 @@ typedef struct Value_ {
 } Value, *PValue;
 
 void Value_dispose(PValue v) {
-    if (v->vc != ValueScalar || (v->type & VALUE_REF)) {
+    if (v->vc != ValueScalar || (v->type & ValueRef)) {
         //printf("disposing %d %d\n",v->type,v->vc);
         obj_unref(v->v.ptr);
     }
@@ -77,6 +72,7 @@ PValue value_error (const char *msg) {
 #define value_is_float(v) ((v)->type==ValueFloat)
 #define value_is_int(v) ((v)->type==ValueInt)
 #define value_is_value(v) ((v)->type==ValueValue)
+#define value_is_ref() ((v)->type & ValueRef != 0)
 #define value_is_list(v) ((v)->vc==ValueList)
 #define value_is_array(v) ((v)->vc==ValueArray)
 #define value_is_map(v) ((v)->vc==ValueMap)
@@ -126,6 +122,61 @@ PValue value_map (Map *m, ValueType type) {
     return v;
 }
 
+#include <stdarg.h>
+
+void dump(void *p, void *q) { printf("[%p] %p\n",p,q); }
+
+void count(int *pi, void *p) { *pi = *pi + 1; }
+
+void obj_apply_v_varargs(void *o, PFun fn,va_list ap);
+
+int count_varargs(va_list ap) {
+    int n = 0;   
+    obj_apply_v_varargs(&n,(PFun)count,ap);
+    return n;
+}
+
+void put(void ***pv, void *p) { **pv = p; *pv = *pv + 1; }
+
+PValue value_simple_map_(void *P,...) {
+    int n;
+    va_list ap;
+    va_start(ap,P);
+    n = count_varargs(ap);
+    va_end(ap);
+
+    void **ms = array_new(void*,n);
+    void **pms = ms;
+    va_start(ap,P);
+    obj_apply_v_varargs(&pms,(PFun)put,ap);
+    va_end(ap);
+    
+    PValue v = value_new(ValueValue,ValueSimpleMap);
+    v->v.ptr = ms;
+    return v;
+}
+
+PValue value_array_values_ (void *P,...) {
+    int n;
+    va_list ap;
+    va_start(ap,P);
+    n = count_varargs(ap);
+    va_end(ap);
+
+    void **ms = array_new_ref(void*,n);
+    void **pms = ms;
+    va_start(ap,P);
+    obj_apply_v_varargs(&pms,(PFun)put,ap);
+    va_end(ap);
+    
+    PValue v = value_new(ValueValue,ValueArray);
+    v->v.ptr = ms;
+    return v;
+}
+
+#define value_simple_map(...) value_simple_map_(NULL,__VA_ARGS__,NULL)
+#define value_simple_array(...) value_array_values_(NULL,__VA_ARGS__,NULL)
+
 #include <assert.h>
 
 typedef char *Str, **SStr;
@@ -133,6 +184,7 @@ typedef char *Str, **SStr;
 void dump_array(SStr s, PValue vl);
 void dump_list(SStr s, PValue vl);
 void dump_map(SStr s, PValue vl);
+void dump_simple_map (SStr p, PValue vi);
 
 void dump_value(SStr s, PValue v)
 {
@@ -145,18 +197,26 @@ void dump_value(SStr s, PValue v)
             break;
         case ValueString:
         case ValueError:
-            addf("'%s'",str);
+            addf("\"%s\"",str);
             break;
         case ValueFloat:
             addf("%f",f);
             break;
-        case ValueNone:
-            addf("?%p?",ptr);
+        case ValueNull:
+            addf("null",ptr);
             break;
         case ValueValue:
             dump_value(s,v->v.v);
             break;
-        }    
+        case ValuePointer:
+        case ValueRef:
+            if (v->v.ptr == NULL) {
+                strbuf_adds(s,"null");
+            } else {
+                addf("%p",ptr);
+            }
+            break;
+        }
         #undef addf
         break;
     case ValueList:
@@ -168,6 +228,9 @@ void dump_value(SStr s, PValue v)
     case ValueMap:
         dump_map(s,v);
         break;
+    case ValueSimpleMap:
+        dump_simple_map(s,v);
+        break;
     }
 }
 
@@ -178,14 +241,14 @@ void dump_list(SStr s, PValue vl)
     Value vs;
     vs.vc = ValueScalar;
     vs.type = vl->type;
-    strbuf_adds(s,"[");
+    strbuf_add(s,'[');
     FOR_LIST(item,li) {        
         vs.v.ptr = item->data;
         dump_value(s,&vs);
         if (i++ < ni)
-            strbuf_adds(s,",");
+            strbuf_add(s,',');
     }
-    strbuf_adds(s,"]");    
+    strbuf_add(s,']');    
 }
 
 void dump_map(SStr s, PValue vl)
@@ -195,37 +258,85 @@ void dump_map(SStr s, PValue vl)
     Value vs;
     vs.vc = ValueScalar;
     vs.type = vl->type;
-    strbuf_adds(s,"{");
+    strbuf_add(s,'{');
     FOR_MAP(iter,m) {        
         vs.v.ptr = iter->value;
         strbuf_addf(s,"\"%s\":",(char*)iter->key);
         dump_value(s,&vs);
         if (i++ < ni)
-            strbuf_adds(s,",");
+            strbuf_add(s,',');
     }
-    strbuf_adds(s,"}");    
+    strbuf_add(s,'}');    
+}
+
+void dump_simple_map (SStr s, PValue vi)
+{
+    char **ms = (char**)vi->v.ptr;
+    int n = array_len(ms)/2, i = 0;
+    int ni = n - 1;
+    Value vs;
+    vs.vc = ValueScalar;
+    vs.type = ValueValue;
+    strbuf_add(s,'{');
+    for (char **P = ms; *P; P += 2) {        
+        vs.v.ptr = *(P+1);
+        strbuf_addf(s,"\"%s\":",*P);
+        dump_value(s,&vs);
+        if (i++ < ni)
+            strbuf_add(s,',');
+    }
+    strbuf_add(s,'}');    
 }
 
 void dump_array(SStr s, PValue vl)
 {
-    void **aa = (void**)value_as_array(vl);
+    char *aa = (char*)value_as_array(vl);
     Value vs;
     vs.vc = ValueScalar;
     vs.type = vl->type;
-    strbuf_adds(s,"{");
+    strbuf_add(s,'[');
     int n = array_len(aa), ni = n - 1;
+    int nelem = obj_elem_size(aa);
+    char *P = aa;
     FOR(i,n) {
-        vs.v.ptr = aa[i];
+        if (vs.type == ValueFloat) {
+            double val;
+            if (nelem == sizeof(float)) {
+                val = *(float*)P;
+            } else {
+                val = *(double*)P;
+            }
+            vs.v.f = val;
+        } else
+        if (vs.type == ValueInt) {
+            long long ival;
+            switch (nelem) {
+            case 1:  ival = *(unsigned char*)P; break;
+            case 2: ival = *(short*)P; break;
+            case 4: ival = *(int*)P; break;
+            case 8: ival = *(long long *)P; break;
+            }
+            vs.v.i = ival;
+        } else {
+            vs.v.ptr = *(void**)P;
+        }
         dump_value(s,&vs);
+        P += nelem;
         if (i < ni)
-            strbuf_adds(s,",");
+            strbuf_add(s,',');
     }
-   strbuf_adds(s,"}");   
+    strbuf_add(s,']');   
+}
+
+char *value_as_json(PValue v) {
+    SStr s = strbuf_new();
+    dump_value(s,v);
+    return (char*)seq_array_ref(s);
 }
 
 int main()
 {
-    PValue *va = array_new_ref(PValue,6);
+    PValue *va = array_new_ref(PValue,7);
     va[0] = value_str("hello dolly");
     va[1] = value_float(4.2);
     
@@ -244,21 +355,42 @@ int main()
     map_puti(m,"bilbo",112);
     va[4] = value_map(m,ValueInt);
     
-    floatptr *ai = array_new(floatptr,2);
+    double *ai = array_new(double,2);
     ai[0] = 10.0;
     ai[1] = 20;
     va[5] = value_array(ai,ValueFloat);
+    
+    short *si = array_new(short,3);
+    si[0] = 10;
+    si[1] = 100;
+    si[2] = 1000;
+    va[6] = value_array(si,ValueInt);
 
     PValue v = value_array(va,ValueValue);    
-    SStr s = strbuf_new();
-    dump_value(s,v);
-    printf("got '%s'\n",*s);
+    
+    char *s = value_as_json(v);
+    
+    printf("got '%s'\n",s);
     
     PValue e = value_error("completely borked");
     if (value_is_error(e)) {
         printf("here is an error: %s\n",value_as_string(e));
     }
-    dispose(v, s, e);
+    dispose(v,s, e);
+    
+    #define VM   value_simple_map
+    #define VI value_int
+    #define VS value_string
+    #define VF value_float
+    #define VA value_simple_array
+    
+    v = VM("one",VI(10),"two",VI(20),"three",VA(VI(1),VI(2),VI(3)));
+    s = value_as_json(v);
+    
+    printf("got '%s'\n",s);
+    
+    dispose(v, s);
+    
     printf("count = %d\n",obj_kount());
     return 0;
 }

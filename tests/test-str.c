@@ -14,7 +14,7 @@ const char *templ = "Hello $(P)$(name), how is $(home)?";
 
 void test_template()
 {
-    StrTempl st = str_templ_new(templ);
+    StrTempl st = str_templ_new(templ,NULL);
     char *tbl1[] = {"name","Dolly","home","here","P","X",NULL};
     char *S = str_templ_subst(st,tbl1);
     printf("T1 '%s'\n",S);
@@ -82,7 +82,11 @@ int main()
     printf("pos %d\n",p);
     p = str_find_first_of("hello dolly"," ");
     printf("pos %d\n",p);
-
+    
+    printf("yes %d\n", str_starts_with("hello dolly","hell"));
+    printf("yes %d\n", str_ends_with("hello dolly","dolly"));
+    printf("no %d\n", str_starts_with("hello dolly","llo"));
+    
     test_split();
 
     dispose(s, ss);

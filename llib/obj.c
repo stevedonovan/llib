@@ -162,6 +162,16 @@ void obj_unref(const void *P) {
         obj_free_(P);
 }
 
+void obj_apply_v_varargs(void *o, PFun fn,va_list ap) {
+    void *P;
+    while ((P = va_arg(ap,void*)) != NULL)  {
+        if (o == NULL)
+            fn(P);
+        else
+            fn(o,P);
+    }
+}
+
 /// decrease ref count for multiple values (`dispose`).
 // @param ... objects
 // @function obj_unref_v
@@ -174,14 +184,8 @@ void obj_unref(const void *P) {
 // @param ... extra arguments, ending with `NULL`.
 void obj_apply_varargs(void *o, PFun fn,...) {
     va_list ap;
-    void *P;
     va_start(ap,fn);
-    while ((P = va_arg(ap,void*)) != NULL)  {
-        if (o == NULL)
-            fn(P);
-        else
-            fn(o,P);
-    }
+    obj_apply_v_varargs(o,fn,ap);
     va_end(ap);
 }
 
