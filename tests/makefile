@@ -2,7 +2,7 @@
 CC=gcc
 LIB=../llib/libllib.a
 CFLAGS=-std=c99  -O2 -Wall -I..
-LFLAGS=-L../llib -lllib
+LFLAGS=-Wl,-s -L../llib -lllib
 
 EXES=test-obj test-list test-map test-seq test-file test-scan test-str
 
@@ -13,6 +13,7 @@ all: $(EXES)
 	./test-file > test-file-output
 	./test-scan > test-scan-output
 	./test-str > test-str-output
+	ls -l $(EXES)
 
 
 test-obj: test-obj.c $(LIB)

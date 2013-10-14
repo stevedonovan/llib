@@ -3,124 +3,10 @@
 */
 #include <stdio.h>
 #include <stdlib.h>
-#include <llib/obj.h>
 #include <llib/list.h>
 #include <llib/str.h>
 #include <llib/map.h>
-
-typedef enum ValueContainer_ {
-    ValueScalar,
-    ValueArray,
-    ValueList,
-    ValueMap,
-    ValueSimpleMap,
-} ValueContainer;
-
-typedef enum ValueType_ {
-    ValueNull = 0,
-    ValueRef = 0x100,
-    ValueString = ValueRef + 1,
-    ValueError= ValueRef + 2,
-    ValueFloat = 1,
-    ValueInt = 2,
-    ValueValue = ValueRef + 3,
-    ValuePointer = 3
-} ValueType;
-
-typedef struct Value_ {
-    ValueContainer vc;
-    ValueType type;
-    union {
-        const char *str;
-        long long i;
-        double f;
-        List *ls;
-        Map *map;
-        struct Value_ *v;
-        void *ptr;
-    } v;
-} Value, *PValue;
-
-void Value_dispose(PValue v) {
-    if (v->vc != ValueScalar || (v->type & ValueRef)) {
-        //printf("disposing %d %d\n",v->type,v->vc);
-        obj_unref(v->v.ptr);
-    }
-}
-
-PValue value_new(ValueType type, ValueContainer vc) {
-    PValue v = obj_new(Value,Value_dispose);
-    v->type = type;
-    v->vc = vc;
-    return v;
-}
-
-PValue value_str (const char *str) {
-    PValue v = value_new(ValueString,ValueScalar);
-    v->v.str = str_cpy((char*)str);
-    return v;
-}
-
-PValue value_error (const char *msg) {
-    PValue v = value_str(msg);
-    v->type = ValueError;
-    return v;
-}
-
-#define value_is_error(v) ((v)->type==ValueError)
-#define value_is_string(v) ((v)->type==ValueString)
-#define value_is_float(v) ((v)->type==ValueFloat)
-#define value_is_int(v) ((v)->type==ValueInt)
-#define value_is_value(v) ((v)->type==ValueValue)
-#define value_is_ref() ((v)->type & ValueRef != 0)
-#define value_is_list(v) ((v)->vc==ValueList)
-#define value_is_array(v) ((v)->vc==ValueArray)
-#define value_is_map(v) ((v)->vc==ValueMap)
-
-#define value_as_string(vv) ((vv)->v.str)
-#define value_as_int(vv) ((vv)->v.i)
-#define value_as_float(vv) ((vv)->v.f)
-#define value_as_value(vv) ((vv)->v.v)
-#define value_as_array(vv) ((vv)->v.ptr)
-#define value_as_list(vv) ((vv)->v.ls)
-#define value_as_map(vv) ((vv)->v.map)
-#define value_as_pointer(vv) ((vv)->v.ptr)
-
-PValue value_float (double x) {
-    PValue v = value_new(ValueFloat,ValueScalar);
-    v->v.f = x;
-    return v;
-}
-
-PValue value_int (long long i) {
-    PValue v = value_new(ValueInt,ValueScalar);
-    v->v.i = i;
-    return v;
-}
-
-PValue value_value (PValue V) {
-    PValue v = value_new(ValueValue,ValueScalar);
-    v->v.v = V;
-    return v;
-}
-
-PValue value_list (List *ls, ValueType type) {
-    PValue v = value_new(type,ValueList);
-    v->v.ls = ls;
-    return v;
-}
-
-PValue value_array (void *p, ValueType type) {
-    PValue v = value_new(type,ValueArray);
-    v->v.ptr = p;
-    return v;
-}
-
-PValue value_map (Map *m, ValueType type) {
-    PValue v = value_new(type,ValueMap);
-    v->v.map = m;
-    return v;
-}
+#include <llib/value.h>
 
 #include <stdarg.h>
 
@@ -200,10 +86,13 @@ void dump_value(SStr s, PValue v)
             addf("\"%s\"",str);
             break;
         case ValueFloat:
-            addf("%f",f);
+            addf("%0.16g",f);
             break;
         case ValueNull:
             addf("null",ptr);
+            break;
+        case ValueBool:
+            strbuf_adds(s, v->v.i ? "true" : "false");
             break;
         case ValueValue:
             dump_value(s,v->v.v);
@@ -315,6 +204,7 @@ void dump_array(SStr s, PValue vl)
             case 2: ival = *(short*)P; break;
             case 4: ival = *(int*)P; break;
             case 8: ival = *(long long *)P; break;
+            default: ival = 0; break;  //??
             }
             vs.v.i = ival;
         } else {
@@ -382,9 +272,15 @@ int main()
     #define VI value_int
     #define VS value_string
     #define VF value_float
+    #define VB value_bool
     #define VA value_simple_array
     
-    v = VM("one",VI(10),"two",VI(20),"three",VA(VI(1),VI(2),VI(3)));
+    v = VM(
+        "one",VI(10),
+        "two",VM("float",VF(1.2)),
+        "three",VA(VI(1),VI(2),VI(3)),
+        "four",VB(true)
+    );
     s = value_as_json(v);
     
     printf("got '%s'\n",s);

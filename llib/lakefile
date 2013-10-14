@@ -1,1 +1,1 @@
-c99.library{'llib',src='obj sort list file scan map str'}
+c99.library{'llib',src='obj sort list file scan map str value template'}
