@@ -79,6 +79,30 @@ void select_add_read(Select *s, int fd) {
         s->nfds = fd + 1;
 }
 
+int select_open(Select *s, const char *str, int flags) {
+    int oflags = 0;
+    if (flags & SelectReadWrite)
+        oflags = O_RDWR;
+    else if (flags & SelectRead)
+        oflags = O_RDONLY;
+    else if (flags & SelectWrite)
+        oflags = O_WRONLY;
+    if (flags & SelectNonBlock)
+         oflags |= O_NONBLOCK;
+
+    int fd = open(str,oflags);
+    if (fd == -1) {
+        perror("open");
+        return -1;
+    }
+    select_add_read(s, fd);
+    return fd;        
+}
+
+List *select_read_fds(Select *s) {
+    return s->fds;
+}
+
 bool select_remove_read(Select *s, int fd) {
     ListIter iter = list_find(s->fds,(void*)fd);
     if (! iter) 

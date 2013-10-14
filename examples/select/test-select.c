@@ -134,9 +134,7 @@ int main()
     list = list_new_ptr();
     map = map_new_str_str();
     
-    int fd = open("/tmp/mypipe",O_RDONLY | O_NONBLOCK  );    
-    select_add_read(s,fd);
-    printf("added %d\n",fd);
+    int fd = select_open(s,"/tmp/mypipe",SelectRead | SelectNonBlock);    
     
     select_add_reader(s, commands);
     
@@ -149,17 +147,16 @@ int main()
                 perror("select");
             break;
         } else 
-        if (fd > -1 && select_can_read(s,fd)) {
+        if (select_can_read(s,fd)) {
             char buff[LINE_SIZE];
             int len = read(fd,buff,LINE_SIZE);     
             if (len == 0) {
                 // end of file?
                 printf("finished with that\n");
-                bool res = select_remove_read(s,fd);
-                printf("and returned %d\n",res);
+                select_remove_read(s,fd);
                 close(fd);
-                fd = -1;
-                //printf("ids: "); dump_list(s->fds,"%d ");
+                fd = select_open(s,"/tmp/mypipe",SelectRead | SelectNonBlock);    
+                //printf("ids: "); dump_list(select_read_fds(s),"%d ");
             } else {
                 buff[len-1] = '\0'; // strip \n
                 fprintf(stderr,"Got '%s'\n",buff);
@@ -168,7 +165,7 @@ int main()
     }
     
     dispose(s, list);
-    if (fd != -1) close(fd);
+    close(fd);
     dispose(map);
     count();
 }

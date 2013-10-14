@@ -182,6 +182,7 @@ char ** str_split(const char *s, const char *delim) {
         t = strtok_r(NULL,delim,&saveptr);
     }
     char **res = (char**)seq_array_ref(ss);
+    res[array_len(res)] = NULL;
     obj_unref(sc);
     return res;
 }
