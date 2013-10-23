@@ -23,15 +23,14 @@ int main()
     int sz = array_len(pkv);
     printf("unique words %d  out of %d\n",sz,k);
 
-    // sort by value, ascending, and pick last 10 values
-    array_sort_struct_ptr (pkv,MapKeyValue,value);    
-    MapKeyValue *last = array_copy(pkv,sz-10,sz);
+    // sort by value, descending, and pick first 10 values
+    array_sort_struct_ptr (pkv,true,MapKeyValue,value);    
     
-    for (MapKeyValue *p = last; p->key; ++p)
-        printf("%s=%d ",(char*)p->key,(int)p->value);
-    printf("\n");
+    FOR(i,10) {
+        printf("%s\t%d\n",(char*)pkv[i].key,(int)pkv[i].value);
+    }
 
-    dispose(m,ts,pkv,last);
+    dispose(m,ts,pkv);
     printf("remaining %d\n",obj_kount());
     return 0;
 }

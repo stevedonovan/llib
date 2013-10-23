@@ -86,12 +86,12 @@ typedef enum {
     ARRAY_STRING = 1
 } ElemKind;
 
-void array_sort(void *P, ElemKind kind, int offs) ;
+void array_sort(void *P, ElemKind kind, bool desc, int offs) ;
 
 #define OBJ_STRUCT_OFFS(T,f) ( (intptr)(&((T*)0)->f) )
 
-#define array_sort_struct_ptr(P,T,fname) array_sort(P,ARRAY_INT,OBJ_STRUCT_OFFS(T,fname))
-#define array_sort_struct_str(P,T,fname) array_sort(P,ARRAY_STRING,OBJ_STRUCT_OFFS(T,fname))
+#define array_sort_struct_ptr(P,desc,T,fname) array_sort(P,ARRAY_INT,desc,OBJ_STRUCT_OFFS(T,fname))
+#define array_sort_struct_str(P,desc,T,fname) array_sort(P,ARRAY_STRING,desc,OBJ_STRUCT_OFFS(T,fname))
 
 // this may be safely cast to a pointer to the array
 typedef struct Seq_ {

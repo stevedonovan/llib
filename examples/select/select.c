@@ -4,12 +4,14 @@
 #include <sys/select.h>
 #include <signal.h>
 #include <sys/stat.h>
+#include <sys/time.h>
 #include <fcntl.h>
 
 #include <llib/list.h>
 
 #include "select.h"
 
+struct SelectTimer_;
 
 struct Select_ {
     fd_set fdset;
@@ -19,9 +21,12 @@ struct Select_ {
     // timer stuff
     int tfdw;
     int tfdr;
-    List *timers;
+    List *timers; // SelectTimer *
     // reading from stdin
     SelectReadProc stdin_commands;
+    // once-off millisecond timer
+    struct SelectTimer_ *milli_timer;
+    struct timeval *p_timeval;
 };
 
 typedef unsigned char byte;
@@ -52,6 +57,8 @@ static pid_t start_timer_thread(int secs, int twfd, byte id)
 
 static void Select_dispose(Select *s) {
     obj_unref(s->fds);
+    if (s->p_timeval)  //??
+        obj_unref(s->p_timeval);
     if (s->timers) {
         // this stops the timers from removing themselves from the list!
         List *timers = s->timers;
@@ -68,6 +75,7 @@ Select *select_new() {
     me->tfdw = -1;
     me->fds = list_new_ptr();
     me->timers = NULL;
+    me->p_timeval = NULL;
     return me;
 }
 
@@ -172,6 +180,28 @@ SelectTimer *select_add_timer(Select *s, int secs, SelectTimerProc callback, voi
     return st;
 }
 
+bool select_do_later(Select *s, int msecs, SelectTimerProc callback, void *data) {
+    if (s->milli_timer != NULL) // we're already waiting...
+        return false;
+    SelectTimer *st = obj_new(SelectTimer,NULL);
+    st->s = s;
+    s->milli_timer = st;
+    st->callback = callback;
+    st->data = data;
+    s->p_timeval = obj_new(struct timeval,NULL);
+    s->p_timeval->tv_sec = 0; // no seconds
+    s->p_timeval->tv_usec =  1000*msecs;  // microseconds    
+    return true;
+}
+
+static void handle_timeout(Select *s) {
+    s->milli_timer->callback(s->milli_timer->data);
+    obj_unref(s->milli_timer);
+    obj_unref(s->p_timeval);
+    s->p_timeval = NULL;
+    s->milli_timer = NULL;
+}
+
 #define LINE_SIZE 256
 
 int select_select(Select *s) {
@@ -185,10 +215,15 @@ top:
         FD_SET((int)item->data,fds);
     }
     
-    int res = select(s->nfds,fds,NULL,NULL,NULL);
-    if (res < 1) {
+    int res = select(s->nfds,fds,NULL,NULL,s->p_timeval);
+    if (res < 0) {
         s->error = true;
         return -1;
+    }
+    
+    if (res == 0) { // timeout
+        handle_timeout(s);
+        goto top;
     }
     
     if (s->stdin_commands && select_can_read(s,STDIN_FILENO)) {

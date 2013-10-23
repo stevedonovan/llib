@@ -39,6 +39,14 @@ static int plain_cmp(intptr offs, const char *m1, const char  *m2) {
 static int string_cmp(intptr offs, const char **m1, const char **m2) {
     return strcmp(*(m1+offs),*(m2+offs));
 }
+
+static int plain_cmp_desc(intptr offs, const char *m1, const char  *m2) {
+    return DEREF(m2,offs) - DEREF(m1,offs);
+}
+
+static int string_cmp_desc(intptr offs, const char **m1, const char **m2) {
+    return strcmp(*(m2+offs),*(m1+offs));
+}
 #else
 // GNU just gets it wrong here, seeing that BSD invented qsort_r
 typedef int (*CMPFN)(const void *m1, const void *m2, void *context);
@@ -51,15 +59,27 @@ static int plain_cmp(const char *m1, const char  *m2, intptr offs) {
 static int string_cmp(const char **m1, const char **m2, intptr offs) {
     return strcmp(*(m1+offs),*(m2+offs));
 }
-#endif
 
-static CMPFN cmpfn(ElemKind kind) {
-    return kind==ARRAY_INT ? (CMPFN)plain_cmp : (CMPFN)string_cmp;
+static int plain_cmp_desc(const char *m1, const char  *m2, intptr offs) {
+    return DEREF(m2,offs) - DEREF(m1,offs);
 }
 
-void array_sort(void *P, ElemKind kind, int ofs) {
+static int string_cmp_desc(const char **m1, const char **m2, intptr offs) {
+    return strcmp(*(m2+offs),*(m1+offs));
+}
+
+#endif
+
+static CMPFN cmpfn(ElemKind kind, bool desc) {
+    if (desc) 
+        return kind==ARRAY_INT ? (CMPFN)plain_cmp_desc : (CMPFN)string_cmp_desc;
+    else
+        return kind==ARRAY_INT ? (CMPFN)plain_cmp : (CMPFN)string_cmp;
+}
+
+void array_sort(void *P, ElemKind kind, bool desc, int ofs) {
     ObjHeader *pr = obj_header_(P);
     int len = pr->x.len, nelem = pr->mlen;
-    qsort_x(P,len,nelem,(void*)ofs,cmpfn(kind));
+    qsort_x(P,len,nelem,(void*)ofs,cmpfn(kind,desc));
 }
 
