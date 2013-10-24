@@ -1,7 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
-#include <fcntl.h>
 #include <llib/str.h>
 #include <llib/map.h>
 #include "select.h"
@@ -125,6 +124,12 @@ end:
     return res;
 }
 
+int pipe_stuff(const char *str,...)
+{
+    fprintf(stderr,"Got '%s'\n",str);
+    return 0;
+}
+
 #define LINE_SIZE 256
 
 int main()
@@ -134,33 +139,19 @@ int main()
     list = list_new_ptr();
     map = map_new_str_str();
     
-    int fd = select_open(s,"/tmp/mypipe",SelectRead | SelectNonBlock);    
+    int fd = select_open(s,"/tmp/mypipe",SelectRead | SelectNonBlock | SelectReOpen);    
     
-    select_add_reader(s, commands);
+    select_add_reader(s, 0, true, commands, NULL);
+    select_add_reader(s, fd, false, pipe_stuff, NULL);
     
     prompt();
     
     while(1) {
         int res = select_select(s);
         if (res == -1) {
-          //  if (! s->error)
+           //if (s->error)
                 perror("select");
             break;
-        } else 
-        if (select_can_read(s,fd)) {
-            char buff[LINE_SIZE];
-            int len = read(fd,buff,LINE_SIZE);     
-            if (len == 0) {
-                // end of file?
-                printf("finished with that\n");
-                select_remove_read(s,fd);
-                close(fd);
-                fd = select_open(s,"/tmp/mypipe",SelectRead | SelectNonBlock);    
-                //printf("ids: "); dump_list(select_read_fds(s),"%d ");
-            } else {
-                buff[len-1] = '\0'; // strip \n
-                fprintf(stderr,"Got '%s'\n",buff);
-            }
         }
     }
     
