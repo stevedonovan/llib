@@ -254,7 +254,7 @@ top:
         if (! scan_fetch_line(ts,true)) return false; // EOF will pass through as T_END
         goto top;
     }
-return true;
+    return true;
 }
 
 /// skip white space and single-line comments.
@@ -438,6 +438,11 @@ bool scan_scanf(ScanState* ts, const char *fmt,...)
                     return false;
                 *((double*)P) = scan_get_number(ts);
                 break;
+            case 'c': // 'character'
+                if (t < T_NADA)
+                    return false;
+                *((char*)P) = (char)ts->type;
+                break;
             case '%': // literal %
                 if (scan_getch(ts) != '%')
                     return false;
@@ -457,16 +462,20 @@ bool scan_scanf(ScanState* ts, const char *fmt,...)
 }
 
 /// get the rest of the current line.
-// This trims any leading and following whitespace.
+// This trims any leading whitespace.
 char *scan_get_line(ScanState *ts, char *buff, int len)
 {
     scan_skip_space(ts);
-    ts->start_P = ts->P;
-    while (*ts->P)
-      ++ts->P;
-    while (isspace(*(ts->P-1)))
-      --ts->P;
-    ts->end_P = ts->P;
+    char *P = ts->P;
+    ts->start_P = P;
+    while (*P && *P != '\n')
+        ++P;
+    ts->end_P = P;
+    if (*P == '\n') {
+        printf("hm '%s'\n",ts->start_P);
+        ++P;
+    }
+    ts->P = P;
     return scan_get_tok(ts,buff,len);
 }
 

@@ -50,7 +50,10 @@ int main() {
     // words, strings and numbers
     set(ts,scan_new_from_string("here 'we go' again 10 "));
     while (scan_next(ts)) {
-        printf("%d '%s'\n",ts->type,scan_get_str(ts));
+        // this gives us a properly ref-counted string...
+        char *str = scan_get_str(ts);
+        printf("%d '%s'\n",ts->type,str);
+        unref(str);
     }
 
     // extracting C strings from this file
@@ -76,14 +79,17 @@ int main() {
         printf("value '%s'\n",buff);
     }
 
-    const char *xml = "<boo a='woo' b='doll'>bonzo<(10,20,30),(1,2,3)";
+    // /*
+    const char *xml = "<boo a='woo' b='doll'>bonzo dog <(10,20,30),(1,2,3);";
 
     set(ts, scan_new_from_string(xml));
     //scan_set_flags(ts,C_NUMBER) is currently not consistent with scan_scanf
     char *tag, *attrib, *value;
     scan_scanf(ts,"<%s",&tag);
-    while (scan_scanf(ts,"%s=%q",&attrib,&value))
+    while (scan_scanf(ts,"%s=%q",&attrib,&value)) {
         printf("tag '%s' attrib '%s' value '%s'\n",tag,attrib,value);
+        dispose(tag,attrib,value);
+    }
     assert(ts->type == '>');
 
     int n = scan_get_upto(ts,"<",buff,BUFSZ);
@@ -91,10 +97,22 @@ int main() {
     printf("got '%s' (%c)\n",buff,scan_getch(ts));
 
     int i,j,k;
-    while (scan_scanf(ts,"(%d,%d,%d)%.",&i,&j,&k))
+    char ch;
+    while (scan_scanf(ts,"(%d,%d,%d)%c",&i,&j,&k,&ch) && (ch == ',' || ch == ';'))
         printf("values %d %d %d\n",i,j,k);
 
-    printf("last wuz '%c'\n",ts->type);
+    assert(ts->type == ';');
+    // */
+
+    const char *config_data = "A=cool stuff\nB=necessary nonsense\nC=10,20\n";
+    set(ts,scan_new_from_string(config_data));
+    //set(ts,scan_new_from_file("test.cfg"));
+    scan_set_line_comment(ts,"#");
+    char *key, *v;
+    while (scan_scanf(ts,"%s=%l",&key,&v)) {
+        printf("%s='%s'\n",key,v);
+        dispose(key,v);
+    }
     unref(ts);
     printf("kount = %d\n",obj_kount());
 
