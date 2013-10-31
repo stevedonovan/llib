@@ -64,7 +64,7 @@ int main() {
     double *p = array_new(double,40);
     long vals[] = {10,2,5,11,6};
     long *sl = array_new_copy(long,vals,5);
-    array_sort(sl,ARRAY_INT,0);
+    array_sort(sl,ARRAY_INT,false, 0);
     FOR(i,array_len(sl)) {
         printf("%d ",sl[i]);
     }

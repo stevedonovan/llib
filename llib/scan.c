@@ -16,6 +16,7 @@ Each time you call `scan_next`, the scanner finds the next _token_,
 #include <ctype.h>
 #include <string.h>
 #include <stdlib.h>
+#include <stdarg.h>
 
 #define LINESIZE 256
 #define STRSIZE 256
@@ -207,6 +208,33 @@ char scan_getch(ScanState* ts)
     return *ts->P++;
 }
 
+/// Move the scan reader position directly with an offset.
+void scan_advance(ScanState* ts, int offs)
+{
+    ts->P += offs;
+}
+
+/// grab a string upto (but not including) a final target string.
+// Advances the scanner (use `scan_advance` with negative offset to back off)
+int scan_get_upto(ScanState* ts, const char *target, char *buff, int bufsz)
+{
+    int i = 0;
+    const char *T = target;
+    while (true) {
+        char ec = *T++, ch;
+        if (ec == '\0')
+            break;
+        while ((ch=scan_getch(ts)) != ec) {
+            buff[i++] = ch;
+            if (i == bufsz) return -1;
+        }
+        buff[i++] = ec;
+    }
+    i -= strlen(target);
+    buff[i] = '\0';
+    return i;
+}
+
 /// tell the scanner not to grab the next line automatically.
 void scan_force_line_mode(ScanState* ts)
 {
@@ -254,107 +282,107 @@ void scan_push_back(ScanState* ts)
 // Usually this skips whitespace, and single-line comments if defined.
 ScanTokenType scan_next(ScanState* ts)
 {
-  if (ts->inner_flags & RETURN_OLD_VALUE) {
+    if (ts->inner_flags & RETURN_OLD_VALUE) {
         ts->inner_flags ^= RETURN_OLD_VALUE;
         return ts->type;
-  }
-  if (! scan_skip_whitespace(ts)) return ts->type=T_END;  // means: finis, end of file, bail out.
-  char ch = *ts->P;
-  int c_iden = ts->flags & C_IDEN;
-  if (isalpha(ch) || (ch == '_' && c_iden)) { //--------------------- TOKENS --------------
-     ts->start_P = ts->P;
-     while (isalnum(*ts->P) || (*ts->P == '_' && c_iden)) ts->P++;
-     ts->end_P = ts->P;
-     return (ts->type = T_TOKEN);
-  } else
-  if (isdigit(ch)  || ((ch == '.' || ch == '-') && isdigit(*(ts->P+1)))) { //------- NUMBERS ------------------
-    int c_num = ts->flags & C_NUMBER;
-    ts->type = T_NUMBER;
-    ts->int_type = T_INT;
-    ScanTokenType ntype = ts->int_type;
-    ts->start_P = ts->P;
-     if (*ts->P != '.') {
-      if (*ts->P == '0' && c_num) {
-        // actual verification of hex or octal constants must happen in lexer
-        if (*(ts->P+1) == 'x') {       // hex constant
-          while (isxdigit(*ts->P)) ts->P++; // a preliminary check!
-          ntype = T_HEX;
-        } else
-     if (isdigit(*(ts->P+1))) {      // octal constant
-         scan_skip_digits(ts);
-         ntype = T_OCT;
-     }
-     else scan_skip_digits(ts);         // plain zero!
-    } else {
-     ts->P++;                        // skip first - might be '-'
-     scan_skip_digits(ts);
     }
-     }
-     if (*ts->P == '.') {               // (opt) fractional part
-        ts->P++;
-        scan_skip_digits(ts);
-        ntype = T_DOUBLE;
-     }
-     if (*ts->P == 'e' || *ts->P == 'E') { // (opt) exponent part
-        ts->P++;
-        if (*ts->P == '+' || *ts->P == '-') ts->P++;  // (opt) exp sign
-        scan_skip_digits(ts);
-        ntype = T_DOUBLE;
-     }
-     ts->end_P = ts->P;
-     ts->int_type = ntype;
-     return ts->type = (c_num ? ntype : T_NUMBER);
-  } else
-  if (ch == '\"' || ch == '\'') { //------------CHAR OR STRING CONSTANT-------
-     char *p = ts->sbuff;
-     char ch, endch = *ts->P++;
-     int c_str = ts->flags & C_STRING;
-     ts->start_P = ts->sbuff;
-
-     while (*ts->P && *ts->P != endch) {
-         if (*ts->P == '\\' && c_str) {
-             ts->P++;
-             switch(*ts->P) {
-             case '\\': ch = '\\'; break;
-             case 'n':  ch = '\n'; break;
-             case 'r':  ch = '\r'; break;
-             case 't':  ch = '\t'; break;
-             case 'b':  ch = '\b'; break;
-             case '\"': ch = '\"'; break;
-             case '\'': ch = '\''; break;
-             case '0': case 'x': { //..collecting OCTAL or HEX constant
-                char obuff[10];
-                const char *start = ts->P;
-                bool hex = *start == 'x';
-                if (hex) {
-                    ++start; // off 'x'
+    if (! scan_skip_whitespace(ts)) return ts->type=T_END;  // means: finis, end of file, bail out.
+    char ch = *ts->P;
+    int c_iden = ts->flags & C_IDEN;
+    if (isalpha(ch) || (ch == '_' && c_iden)) { //--------------------- TOKENS --------------
+        ts->start_P = ts->P;
+        while (isalnum(*ts->P) || (*ts->P == '_' && c_iden)) ts->P++;
+        ts->end_P = ts->P;
+        return (ts->type = T_TOKEN);
+    } else //------- NUMBERS ------------------
+    if (isdigit(ch)  || ((ch == '.' || ch == '-') && isdigit(*(ts->P+1)))) {
+        int c_num = ts->flags & C_NUMBER;
+        ts->type = T_NUMBER;
+        ts->int_type = T_INT;
+        ScanTokenType ntype = ts->int_type;
+        ts->start_P = ts->P;
+        if (*ts->P != '.') {
+            if (*ts->P == '0' && c_num) {
+                if (*(ts->P+1) == 'x') {       // hex constant
                     while (isxdigit(*ts->P)) ts->P++;
-                } else {
+                    ntype = T_HEX;
+                } else
+                if (isdigit(*(ts->P+1))) {      // octal constant
                     scan_skip_digits(ts);
+                    ntype = T_OCT;
+                } else {
+                    scan_skip_digits(ts);         // plain zero!
                 }
-                copy_str(obuff,sizeof(obuff),start,ts->P);
-                ch = (char)convert_int(obuff,hex ? 16 : 8);
-                ts->P--;  // leave us on last digit
-            } break;
-            default: *p++ = '\\'; ch = *ts->P; break;
-            } // switch
-            *p++ = ch;
+            } else {
+                ts->P++;                        // skip first - might be '-'
+                scan_skip_digits(ts);
+            }
+        }
+        if (*ts->P == '.') {               // (opt) fractional part
             ts->P++;
-         } else {
-            *p++ = *ts->P++;
-         }
-     }
-     if (! *ts->P) return ts->type=T_END; //fatal_error(*this,"Unterminated string constant");
-     ts->P++;  // skip the endch
-     *p = '\0';
-     ts->end_P = p;
-     return ts->type = (endch == '\"' || ! c_str) ? T_STRING : T_CHAR;
-  } else { // this is to allow us to use get_str() for ALL token types
-    ts->start_P = ts->P;
-    ts->P++;
-    ts->end_P = ts->P;
-    return ts->type = (ScanTokenType)ch;
-  }
+            scan_skip_digits(ts);
+            ntype = T_DOUBLE;
+        }
+        if (*ts->P == 'e' || *ts->P == 'E') { // (opt) exponent part
+            ts->P++;
+            if (*ts->P == '+' || *ts->P == '-') ts->P++;  // (opt) exp sign
+            scan_skip_digits(ts);
+            ntype = T_DOUBLE;
+        }
+        ts->end_P = ts->P;
+        ts->int_type = ntype;
+        return ts->type = (c_num ? ntype : T_NUMBER);
+    } else
+    if (ch == '\"' || ch == '\'') { //------------CHAR OR STRING CONSTANT-------
+        char *p = ts->sbuff;
+        char ch, endch = *ts->P++;
+        int c_str = ts->flags & C_STRING;
+        ts->start_P = ts->sbuff;
+
+        while (*ts->P && *ts->P != endch) {
+            if (*ts->P == '\\' && c_str) {
+                ts->P++;
+                switch(*ts->P) {
+                case '\\': ch = '\\'; break;
+                case 'n':  ch = '\n'; break;
+                case 'r':  ch = '\r'; break;
+                case 't':  ch = '\t'; break;
+                case 'b':  ch = '\b'; break;
+                case '\"': ch = '\"'; break;
+                case '\'': ch = '\''; break;
+                case '0': case 'x': { //..collecting OCTAL or HEX constant
+                    char obuff[10];
+                    const char *start = ts->P;
+                    bool hex = *start == 'x';
+                    if (hex) {
+                        ++start; // off 'x'
+                        while (isxdigit(*ts->P)) ts->P++;
+                    } else {
+                        scan_skip_digits(ts);
+                    }
+                    copy_str(obuff,sizeof(obuff),start,ts->P);
+                    ch = (char)convert_int(obuff,hex ? 16 : 8);
+                    ts->P--;  // leave us on last digit
+                } break;
+                default: *p++ = '\\'; ch = *ts->P; break;
+                } // switch
+                *p++ = ch;
+                ts->P++;
+            } else {
+                *p++ = *ts->P++;
+            }
+        }
+        if (! *ts->P) return ts->type=T_END;
+        ts->P++;  // skip the endch
+        *p = '\0';
+        ts->end_P = p;
+        return ts->type = (endch == '\"' || ! c_str) ? T_STRING : T_CHAR;
+    } else { // this is to allow us to use get_str() for ALL token types
+        ts->start_P = ts->P;
+        ts->P++;
+        ts->end_P = ts->P;
+        return ts->type = (ScanTokenType)ch;
+    }
 }
 
 /// copy the current token to a buff.
@@ -372,18 +400,74 @@ char *scan_get_str(ScanState* ts)
     return str_new(buff);
 }
 
+bool scan_scanf(ScanState* ts, const char *fmt,...)
+{
+    va_list ap;
+    va_start(ap,fmt);
+    void *P;
+    while (true) {
+        char f = *fmt++;
+        if (f == '\0')
+            return true;
+        if (f == '%') {
+            P = va_arg(ap,void*);
+            ScanTokenType t = scan_next(ts);
+            switch(*fmt++) {
+            case 'v':
+            case 's': // identifier
+                if (t != T_IDEN)
+                    return false;
+                *((char**)P) = scan_get_str(ts);
+                break;
+            case 'l': // rest of line
+                scan_get_line(ts,ts->sbuff,STRSIZE);
+                *((char**)P) = str_cpy(ts->sbuff);
+                break;
+            case 'q': // quoted string
+                if (t != T_STRING)
+                    return false;
+                *((char**)P) = scan_get_str(ts);
+                break;
+            case 'd':  // integer
+                if (t != T_NUMBER)
+                    return false;
+                *((int*)P) = (int)scan_get_number(ts);
+                break;
+            case 'f':  // float
+                if (t != T_NUMBER)
+                    return false;
+                *((double*)P) = scan_get_number(ts);
+                break;
+            case '%': // literal %
+                if (scan_getch(ts) != '%')
+                    return false;
+                break;
+            case '.':  // I don't care!
+                break;
+            }
+        } else
+        if (isspace(f)) {
+            // do nothing
+        } else {
+            if (scan_getch(ts) != f)
+                return false;
+        }
+    }
+    return true;
+}
+
 /// get the rest of the current line.
 // This trims any leading and following whitespace.
 char *scan_get_line(ScanState *ts, char *buff, int len)
 {
-   scan_skip_space(ts);
-   ts->start_P = ts->P;
-   while (*ts->P)
+    scan_skip_space(ts);
+    ts->start_P = ts->P;
+    while (*ts->P)
       ++ts->P;
-   while (isspace(*(ts->P-1)))
+    while (isspace(*(ts->P-1)))
       --ts->P;
-   ts->end_P = ts->P;
-   return scan_get_tok(ts,buff,len);
+    ts->end_P = ts->P;
+    return scan_get_tok(ts,buff,len);
 }
 
 /// fetch the next line and force line mode.

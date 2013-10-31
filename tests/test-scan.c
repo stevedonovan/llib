@@ -6,6 +6,7 @@
 
 #include <stdio.h>
 #include <string.h>
+#include <assert.h>
 #include <llib/scan.h>
 
 void dump(void *d, double x) { printf("%f\n",x); }
@@ -68,13 +69,33 @@ int main() {
     set(ts,scan_new_from_file("test.cfg"));
     scan_set_line_comment(ts,"#");
     while (scan_next(ts)) {
-      scan_get_tok(ts,buff,BUFSZ);
-      printf("key %s ",buff);
-      scan_next(ts);
-      scan_get_line(ts,buff,BUFSZ);
-      printf("value '%s'\n",buff);
-   }
-   unref(ts);
-   printf("kount = %d\n",obj_kount());
+        scan_get_tok(ts,buff,BUFSZ);
+        printf("key %s ",buff);
+        scan_next(ts);
+        scan_get_line(ts,buff,BUFSZ);
+        printf("value '%s'\n",buff);
+    }
+
+    const char *xml = "<boo a='woo' b='doll'>bonzo<(10,20,30),(1,2,3)";
+
+    set(ts, scan_new_from_string(xml));
+    //scan_set_flags(ts,C_NUMBER) is currently not consistent with scan_scanf
+    char *tag, *attrib, *value;
+    scan_scanf(ts,"<%s",&tag);
+    while (scan_scanf(ts,"%s=%q",&attrib,&value))
+        printf("tag '%s' attrib '%s' value '%s'\n",tag,attrib,value);
+    assert(ts->type == '>');
+
+    int n = scan_get_upto(ts,"<",buff,BUFSZ);
+    scan_advance(ts,-1);
+    printf("got '%s' (%c)\n",buff,scan_getch(ts));
+
+    int i,j,k;
+    while (scan_scanf(ts,"(%d,%d,%d)%.",&i,&j,&k))
+        printf("values %d %d %d\n",i,j,k);
+
+    printf("last wuz '%c'\n",ts->type);
+    unref(ts);
+    printf("kount = %d\n",obj_kount());
 
 }
