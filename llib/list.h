@@ -41,11 +41,16 @@ enum {
 #define FOR_LIST_FROM(type,var,item,list) for (type *var = (type*)item; var != NULL; var = (type*)var->_next)
 #define FOR_LIST_REV_FROM(type,var,item,list) for (type *var = (type*)item; var != NULL; var = (type*)var->_prev)
 
+#define LLIB_NEXTVAR_(T,var) next_=(p_?(var=(T)p_->data,p_->_next):NULL)
+
+#define FOR_LIST_T(T,var,ls) \
+  for (ListIter p_=(ls)->first,LLIB_NEXTVAR_(T,var); \
+  p_ != NULL; \
+  (p_=next_,LLIB_NEXTVAR_(T,var)))
 
 #define FOR_LISTW(var,lw)\
 for (ListIter var = (ListIter)listw_first(lw);\
 (var!=NULL) && (*((void**)lw)=&var->data); var = (ListIter)var->_next)
-
 
 List *list_new (int flags);
 ListIter private_new_item(List *ls, void *data, int size);

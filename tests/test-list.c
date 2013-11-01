@@ -53,22 +53,17 @@ void test_person_list() {
     obj_unref(pl);
 }
 
-#define LISTIC(T,p) (T)((ListIter)p)->data
-#define FOR_LIST_T(T,var,ls) \
-  for (ListIter p = (var = LISTIC(T,ls->first),(ListIter)ls->first); \
-  p != NULL; \
-  (var = LISTIC(T,p),p = (ListIter)p->_next))
-
-void dump_int_list(Str msg, List *ls) {
-    printf("%s: {",msg);
-    FOR_LIST(pli,ls)
-        printf("%d,", (int)pli->data);
-    printf("}\n");
+void compare_int_list(List *ls, int *arr) {
+    int n;
+    FOR_LIST_T(int,n,ls)
+        assert(n == *arr++);
 }
 
-void compare_int_list(List *ls, int *arr) {
-    FOR_LIST(pli,ls)
-        assert((int)pli->data == *arr++);
+void dump_int_list(List *ls) {
+    int n;
+    FOR_LIST_T(int,n,ls)
+        printf("%d ",n);
+    printf("\n");
 }
 
 void test_int_list() {
@@ -127,6 +122,14 @@ void test_int_list() {
     int o4[] = {1,2,3,5,6,10};
     compare_int_list(s,o4);
 
+    // it's safe to remove items with this statement,
+    // but you do need to know the magic 'p_' name of the iterator
+    int n;
+    FOR_LIST_T(int,n,s)
+        if (n == 3 || n == 6)
+            list_delete(s,p_);
+    dump_int_list(s);
+
     dispose(li,l2,s,sub);
 }
 
@@ -166,6 +169,8 @@ void test_ref_list()
     assert(fook == 0);
 }
 
+// list wrappers allow floating-point numbers to be safely put in lists.
+// (Otherwise, conversions to void* mess them up)
 void test_wrapper()
 {
     float ** pw = (float**)listw_new();

@@ -64,8 +64,9 @@ static void add_our_ptr(void *p) {
 }
 
 static void remove_our_ptr(void *p) {
-    int idx = our_ptr_idx(p);
-    our_ptrs[idx] = NULL;
+    int ptr_idx = our_ptr_idx(p);
+    assert(ptr_idx != -1); // might not be one of ours!
+    our_ptrs[ptr_idx] = NULL;
     --kount;
 }
 
@@ -416,20 +417,19 @@ void seq_add_str(void *sp, const char *p) {
 }
 
 /// get the array from a sequence.
-// (This will transfer ownership )
+// (This will transfer ownership and unref the sequence.)
 // @param sp the sequence
 void *seq_array_ref(void *sp) {
     Seq *s = (Seq *)sp;
-    void *a = s->arr;
-    /*
-    int len = array_len(a);
+//    /*
+    int len = array_len(s->arr);
     if (len < s->cap) {
-        a = array_resize(a, len);
+        s->arr = array_resize(s->arr, len);
     }
-    */
-    a = obj_ref(a);
+  //  */
+    obj_incr_(s->arr);
     obj_unref(sp);
-    return a;
+    return s->arr;
 }
 
 /// standard for-loop.
