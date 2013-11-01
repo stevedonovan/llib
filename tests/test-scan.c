@@ -88,8 +88,9 @@ int main() {
     scan_scanf(ts,"<%s",&tag);
     while (scan_scanf(ts,"%s=%q",&attrib,&value)) {
         printf("tag '%s' attrib '%s' value '%s'\n",tag,attrib,value);
-        dispose(tag,attrib,value);
+        dispose(attrib,value);
     }
+    dispose(tag);
     assert(ts->type == '>');
 
     int n = scan_get_upto(ts,"<",buff,BUFSZ);
