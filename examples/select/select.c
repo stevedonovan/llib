@@ -101,7 +101,13 @@ void SelectFile_dispose(SelectFile *sf) {
 #define SFILE(item) ((SelectFile*)((item)->data))
 
 SelectFile *select_add_read(Select *s, int fd) {
-    SelectFile *sf = obj_new(SelectFile,SelectFile_dispose);
+    SelectFile *sf;
+    FOR_LIST_T(SelectFile*,sf,s->fds) {
+        if (sf->fd == fd)
+            return sf;
+    }
+
+    sf = obj_new(SelectFile,SelectFile_dispose);
     sf->fd = fd;
     sf->name = NULL;
     sf->handler = NULL;
