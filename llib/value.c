@@ -4,7 +4,8 @@
 * Copyright Steve Donovan, 2013
 */
 #include "value.h"
-
+#include <stdlib.h>
+#include <string.h>
 
 static void Value_dispose(PValue v) {
     if (v->vc != ValueScalar || (v->type & ValueRef)) {
@@ -73,3 +74,26 @@ PValue value_map (Map *m, ValueType type) {
     return v;
 }
 
+PValue value_parse(const char *str, ValueType type) {
+    v_int_t ival;
+    v_float_t fval;
+    char *endptr;
+    switch(type) {
+    case ValueString:
+        return value_str(str);
+    case ValueInt:
+        ival = strtoll(str, &endptr,10);
+        if (*endptr)
+            return value_error(endptr);
+        return value_int(ival);
+    case ValueFloat:
+        fval = strtod(str, &endptr);
+        if (*endptr)
+            return value_error(endptr);
+        return value_float(fval);
+    case ValueBool:
+        return value_bool(strcmp(str,"true")==0);
+    default:
+        return value_error("cannot parse this type");
+    }
+}

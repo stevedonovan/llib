@@ -60,6 +60,13 @@ int select_thread(SelectTimerProc callback, void *data) {
     return pid;
 }
 
+void select_sleep(int msec) {
+    struct timeval tv;
+    tv.tv_sec = 0;
+    tv.tv_usec = 1000*msec;
+    select(0,NULL,NULL,NULL,&tv);
+}
+
 static void timer_thread(SelectTimer *st) {
     while (1) {
         sleep(st->secs);

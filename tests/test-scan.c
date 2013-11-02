@@ -8,6 +8,7 @@
 #include <string.h>
 #include <assert.h>
 #include <llib/scan.h>
+#include <llib/value.h>
 
 void dump(void *d, double x) { printf("%f\n",x); }
 
@@ -78,14 +79,16 @@ int main() {
         scan_get_line(ts,buff,BUFSZ);
         printf("value '%s'\n",buff);
     }
+    
+    ////// scan_scanf //////
 
-    // /*
     const char *xml = "<boo a='woo' b='doll'>bonzo dog <(10,20,30),(1,2,3);";
 
     set(ts, scan_new_from_string(xml));
-    //scan_set_flags(ts,C_NUMBER) is currently not consistent with scan_scanf
+    //scan_set_flags(ts,C_NUMBER) is currently not consistent with scan_scanf!
     char *tag, *attrib, *value;
     scan_scanf(ts,"<%s",&tag);
+    // %s is any iden, and %q is a _quoted_ string
     while (scan_scanf(ts,"%s=%q",&attrib,&value)) {
         printf("tag '%s' attrib '%s' value '%s'\n",tag,attrib,value);
         dispose(attrib,value);
@@ -99,20 +102,32 @@ int main() {
 
     int i,j,k;
     char ch;
+    // %d, %f and %c are what you expect...
     while (scan_scanf(ts,"(%d,%d,%d)%c",&i,&j,&k,&ch) && (ch == ',' || ch == ';'))
         printf("values %d %d %d\n",i,j,k);
 
     assert(ts->type == ';');
-    // */
 
+    // %l means rest of current line...
     const char *config_data = "A=cool stuff\nB=necessary nonsense\nC=10,20\n";
     set(ts,scan_new_from_string(config_data));
-    //set(ts,scan_new_from_file("test.cfg"));
-    scan_set_line_comment(ts,"#");
     char *key, *v;
     while (scan_scanf(ts,"%s=%l",&key,&v)) {
         printf("%s='%s'\n",key,v);
         dispose(key,v);
+    }
+    
+    // %v means read next token as a Value
+    config_data = "alpha=1 beta=2 gamma=hello delta='frodo'";
+    PValue val;
+    set(ts,scan_new_from_string(config_data));
+    while (scan_scanf(ts,"%s=%v",&key,&val)) {
+        printf("%s=",key);
+        if (value_is_string(val))
+            printf("'%s'\n",value_as_string(val));
+        else if (value_is_int(val))
+            printf("%d\n",value_as_int(val));
+        dispose(key,val);
     }
     unref(ts);
     printf("kount = %d\n",obj_kount());

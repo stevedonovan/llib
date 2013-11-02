@@ -19,6 +19,7 @@ enum {
 
 Select *select_new();
 int select_thread(SelectTimerProc callback, void *data);
+void select_sleep(int msec);
 SelectFile *select_add_read(Select *s, int fd);
 int select_open(Select *s, const char *str, int flags);
 bool select_remove_read(Select *s, int fd);

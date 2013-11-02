@@ -35,6 +35,7 @@ Each time you call `scan_next`, the scanner finds the next _token_,
     const char *end_P;
 
 #include "scan.h"
+#include "value.h"
 
 // maximum size of an 'identifier'
 #define IDENSZ 128
@@ -412,7 +413,15 @@ bool scan_scanf(ScanState* ts, const char *fmt,...)
         if (f == '%') {
             P = va_arg(ap,void*);
             switch(*fmt++) {
-            case 'v':
+            case 'v':  {// value
+                ValueType vt;
+                if (scan_next(ts)== T_NUMBER) {
+                    vt = (ts->int_type == T_INT) ? ValueInt : ValueFloat;
+                } else {                
+                    vt = ValueString;
+                } 
+                *((Value**)P) = value_parse(scan_get_str(ts),vt);
+            } break;
             case 's': // identifier
                 if (scan_next(ts) != T_IDEN)
                     return false;
@@ -446,6 +455,11 @@ bool scan_scanf(ScanState* ts, const char *fmt,...)
                 if (scan_getch(ts) != '%')
                     return false;
                 break;
+            case '!': { // parse function + value
+                ScanfFun fn = (ScanfFun)P;
+                P = va_arg(ap,void*);
+                *((void**)P) = fn(ts);
+            } break;
             case '.':  // I don't care!
                 scan_next(ts);
                 break;
@@ -460,6 +474,7 @@ bool scan_scanf(ScanState* ts, const char *fmt,...)
     }
     return true;
 }
+
 
 /// get the rest of the current line.
 // This trims any leading whitespace.

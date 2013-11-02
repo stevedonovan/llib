@@ -36,6 +36,8 @@ _INSIDE_SCAN_C
 #endif
 }  ScanState;
 
+typedef void *(*ScanfFun)(ScanState *ts);
+
 ScanState *scan_new_from_string(const char *str);
 ScanState *scan_new_from_file(const char *fname);
 ScanState *scan_new_from_stream(FILE *stream);

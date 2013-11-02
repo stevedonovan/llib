@@ -38,13 +38,16 @@ typedef struct List_ List;
 typedef struct List_ Map;
 #endif
 
+typedef long long v_int_t;
+typedef double v_float_t;
+
 typedef struct Value_ {
     ValueContainer vc;
     ValueType type;
     union {
         const char *str;
-        long long i;
-        double f;
+        v_int_t i;
+        v_float_t f;
         List *ls;
         Map *map;
         struct Value_ *v;
@@ -83,5 +86,7 @@ PValue value_value (PValue V);
 PValue value_list (List *ls, ValueType type);
 PValue value_array (void *p, ValueType type);
 PValue value_map (Map *m, ValueType type);
+
+PValue value_parse(const char *str, ValueType type);
 
 #endif
