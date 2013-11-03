@@ -113,8 +113,16 @@ void *obj_new_(int size, DisposeFn dtor) {
 DisposeFn obj_set_dispose_fun(const void *P,DisposeFn dtor) {
     ObjHeader *h = obj_header_(P);
     DisposeFn old = h->x.dtor;
-    h->x.dtor = dtor;
+    if (dtor) h->x.dtor = dtor;
     return old;
+}
+
+DisposeFn obj_dtor(const void *P) {
+    if (obj_refcount(P)==-1)
+        return NULL;
+    if (obj_header_(P)->is_array)
+        return NULL;
+    return obj_set_dispose_fun(P,NULL);
 }
 
 // Ref counted objects are either arrays or structs.

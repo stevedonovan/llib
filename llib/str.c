@@ -94,6 +94,7 @@ char *str_fmt(const char *fmt,...) {
     int size;
     char *str;
 
+    // needed size of buffer...
     va_start(ap, fmt);
     size = vsnprintf(NULL, 0, fmt, ap);
     va_end(ap);
@@ -101,7 +102,7 @@ char *str_fmt(const char *fmt,...) {
     str = str_new_size(size);
 
     va_start(ap, fmt);
-    size = vsnprintf(str, size, fmt, ap);
+    size = vsnprintf(str, size+1, fmt, ap);
     va_end(ap);
     return str;
 }
@@ -217,7 +218,7 @@ char *str_concat(char **ss, const char *delim) {
         }
     }
     *q = '\0';
-    obj_unref(sizes);
+    obj_unref(ssizes);
     return res;
 }
 

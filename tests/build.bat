@@ -19,3 +19,6 @@ test-map.exe >test-map-output
 cl /nologo -c /O2 /WX /TP /I..  /D_CRT_SECURE_NO_DEPRECATE /DNDEBUG   test-str.c /Fotest-str.obj
 link /nologo test-str.obj  /LIBPATH:../llib  llib_static.lib  /OUT:test-str.exe
 test-str.exe >test-str-output
+cl /nologo -c /O2 /WX /TP /I..  /D_CRT_SECURE_NO_DEPRECATE /DNDEBUG   test-template.c /Fotest-template.obj
+link /nologo test-template.obj  /LIBPATH:../llib  llib_static.lib  /OUT:test-template.exe
+test-template.exe >test-template-output

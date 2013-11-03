@@ -14,5 +14,6 @@ default {
     test('test-seq'),
     test('test-map'),
     test('test-str'),
+    test('test-template'),
 }
 

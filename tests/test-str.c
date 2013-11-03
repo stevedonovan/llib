@@ -11,28 +11,6 @@
 
 typedef char *Str;
 
-const char *templ = "Hello $(P)$(name), how is $(home)?";
-
-void test_template()
-{
-    StrTempl st = str_templ_new(templ,NULL);
-    char *tbl1[] = {"name","Dolly","home","here","P","X",NULL};
-    char *S = str_templ_subst(st,tbl1);
-    assert(str_eq(S,"Hello XDolly, how is here?"));
-    unref(S);
-    char **tbl2 = str_strings("name","Jim","home","joburg","P","Y",NULL);
-    S = str_templ_subst(st,tbl2);
-    assert(str_eq(S,"Hello YJim, how is joburg?"));
-    dispose(S,tbl2);
-    Map *m = map_new_str_str();
-    map_put(m,"name","Monique");
-    map_put(m,"home","Paris");
-    map_put(m,"P","!");
-    S = str_templ_subst_using(st,(StrLookup)map_get,m);
-    assert(str_eq(S,"Hello !Monique, how is Paris?"));
-    dispose(S,m,st);
-}
-
 void test_concat()
 {
     Str** sseq = seq_new_str();
@@ -56,8 +34,6 @@ void test_split()
 
 int main()
 {
-    test_template();
-
     // building up strings
     Str* ss = strbuf_new();
     strbuf_adds(ss,"hello");

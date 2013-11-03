@@ -49,6 +49,8 @@ Map *map_new_ptr_ptr();
 Map *map_new_ptr_ref();
 Map *map_new_ptr_str();
 
+bool map_object (void *obj);
+
 PEntry map_first(Map *m);
 void *map_value_data (Map *m, PEntry item);
 void map_free_item(Map *m, PEntry item);

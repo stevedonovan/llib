@@ -4,7 +4,7 @@ LIB=../llib/libllib.a
 CFLAGS=-std=c99  -O2 -Wall -I..
 LFLAGS=-Wl,-s -L../llib -lllib
 
-EXES=test-obj test-list test-map test-seq test-file test-scan test-str
+EXES=test-obj test-list test-map test-seq test-file test-scan test-str test-template
 
 all: $(EXES)
 	./test-obj > test-obj-output
@@ -13,6 +13,7 @@ all: $(EXES)
 	./test-file > test-file-output
 	./test-scan > test-scan-output
 	./test-str > test-str-output
+	./test-template > test-template-output
 	ls -l $(EXES)
 
 
@@ -36,6 +37,9 @@ test-scan: test-scan.c $(LIB)
 
 test-str: test-str.c $(LIB)
 	$(CC) $(CFLAGS) test-str.c -o test-str $(LFLAGS)
+
+test-template: test-template.c $(LIB)
+	$(CC) $(CFLAGS) test-template.c -o test-template $(LFLAGS)
 
 clean:
 	rm $(EXES)		

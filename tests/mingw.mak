@@ -12,14 +12,16 @@ SEQ=test-seq.exe
 FILE=test-file.exe
 SCAN=test-scan.exe
 STR=test-str.exe
+TPL=test-template.exe
 
-all: $(OBJ) $(LIST) $(MAP) $(SEQ) $(FILE) $(SCAN) $(STR)
+all: $(OBJ) $(LIST) $(MAP) $(SEQ) $(FILE) $(SCAN) $(STR) $(TPL)
 	test-obj > test-obj-output
 	test-list > test-list-output
 	test-seq > test-seq-output
 	test-file > test-file-output
 	test-scan > test-scan-output
 	test-str > test-str-output
+	test-template > test-template-output
 
 $(OBJ): test-obj.c $(LIB)
 	$(CC) $(CFLAGS) test-obj.c -o test-obj $(LFLAGS)
@@ -42,6 +44,8 @@ $(SCAN): test-scan.c $(LIB)
 $(STR): test-str.c $(LIB)
 	$(CC) $(CFLAGS) test-str.c -o test-str $(LFLAGS)
 
+$(TPL): test-template.c $(LIB)
+	$(CC) $(CFLAGS) test-template.c -o test-template $(LFLAGS)
 
 
 

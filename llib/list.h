@@ -54,7 +54,7 @@ for (ListIter var = (ListIter)listw_first(lw);\
 
 List *list_new (int flags);
 ListIter private_new_item(List *ls, void *data, int size);
-
+bool list_object (void *obj);
 List *list_new_ptr();
 List *list_new_str();
 List *list_new_ref();

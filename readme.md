@@ -314,4 +314,52 @@ They're simple wrappers over the old `strchr`, `strstr` etc functions that retur
 rather than pointers. This is a more appropriate style for refcounted strings where you
 want to only use the allocated 'root' pointer.
 
+## String Templates
+
+These are strings where occurences of a `$(var)` pattern are expanded.  Sometimes called
+'string interpolation', it's a good way to generate large documents like HTML output and does not
+suffer from the size limitations of the `printf` family.  You make a template object from a template string,
+and expand a template using that object plus a function to map string keys to values, and a 'map' object.
+The default form assumes that the object is just a NULL-terminated array of strings listing the keys 
+and values, and plain linear lookup. 
+
+```
+    const char *tpl = "Hello $(name), how is $(home)?";
+    char *tbl1[] = {"name","Dolly","home","here",NULL};
+    StrTempl st = str_templ_new(tpl,NULL);    
+    char *S = str_templ_subst(st,tbl1);
+    assert(str_eq(S,"Hello Dolly, how is here?"));
+```
+You don't have to use `$()` as the magic characters, which is the default indicated by `NULL` in `str_templ_new`.
+For instance, if expanding templates containing JavaScript it's better to use `@()` which will not conflict with
+use of JQuery.  
+
+We can easily use a llib map with the more general form:
+
+```
+    Map *m = map_new_str_str();
+    map_put(m,"name","Monique");
+    map_put(m,"home","Paris");
+    S = str_templ_subst_using(st, (StrLookup)map_get, m);
+    assert(str_eq(S,"Hello Monique, how is Paris?"));
+```
+
+String interpolation is more common in dynamic languages, but perfectly possible to do in less
+flexible static languages like C, as long as there is some mechanism available for string lookup.  
+You can even use `getenv` to expand environment variables, but it does not quite have the
+right signature.  If lookup fails, the replacement is empty.
+
+```
+static char *l_getenv (void *data, char *key) {
+    return getenv(key);
+}
+
+void using_environment()
+{
+    StrTempl st = str_templ_new("hello @{USER}, here is @{HOME}","@{}");
+    char *S = str_templ_subst_using(st, (StrLookup)l_getenv, NULL);
+    printf("got '%s'\n",S);
+    dispose(st,S);
+}
+```
 

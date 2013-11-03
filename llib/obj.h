@@ -64,7 +64,7 @@ void *obj_new_(int size, DisposeFn dtor);
 void obj_incr_(const void *P);
 void obj_unref(const void *P);
 DisposeFn obj_set_dispose_fun(const void *P,DisposeFn dtor);
-
+DisposeFn obj_dtor(const void *P);
 void obj_apply_varargs(void *o, PFun fn,...);
 
 #define obj_apply(dest,s,src,g) obj_apply_(dest,(PFun)s,src,(PFun)g)

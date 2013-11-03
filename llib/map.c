@@ -70,6 +70,10 @@ void map_clear(Map *m) {
     }
 }
 
+bool map_object (void *obj) {
+    return obj_dtor(obj) == (DisposeFn)map_clear;
+}
+
 Map *map_new(int ktype, enum MapValue vtype) {
     Map *m = list_new (ktype);
     (void)obj_set_dispose_fun(m, (DisposeFn)map_clear);

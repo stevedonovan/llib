@@ -30,11 +30,4 @@ char *strbuf_insert_at(char **sp, int pos, const char *src, int sz);
 char *strbuf_erase(char **sp, int pos, int len);
 char *strbuf_replace(char **sp, int pos, int len, const char *s);
 
-struct StrTempl_;
-typedef struct StrTempl_ *StrTempl;
-typedef char *(*StrLookup) (void *obj, char *key);
-
-StrTempl str_templ_new(const char *templ, const char *markers);
-char *str_templ_subst_using(StrTempl stl, StrLookup lookup, void *data);
-char *str_templ_subst(StrTempl stl, char **substs) ;
 #endif

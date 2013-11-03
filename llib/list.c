@@ -76,6 +76,10 @@ static int string_equals(const char *s1, const char *s2) {
     return strcmp(s1,s2) == 0;
 }
 
+bool list_object (void *obj) {
+    return obj_dtor(obj) == List_dispose;
+}
+
 List *list_new (int flags) {
     List *self = obj_new(List,List_dispose);
     self->flags = flags;
