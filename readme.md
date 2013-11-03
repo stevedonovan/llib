@@ -158,7 +158,7 @@ array is resized when needed.  `*s` is _always_ a valid llib array, and in parti
 A seq keeps a reference to this array, and to get a reference to the array you
 can just say `ref(*s)` and then it's fine to dispose of the seq itself. The function
 `seq_array_ref` combines these two operations of sharing the array and disposing
-the seq. (resize to fit??)
+the seq, plus resizing to fit.
 
 These can also explicitly be _reference containers_ which derereference their objects
 afterwards if you use `seq_new_ref`.
@@ -262,4 +262,56 @@ array can be generated using `map_to_array`:
     unref(m);
     unref(pkv);
 ```
+
+## Strings
+
+Strings are the usual nul-terminated char arrays, but llib refcounted strings are arrays and so
+already know their size through `array_len` (which will be faster than `strlen` for long strings.)
+It's generally hard to know portably if an arbitrary pointer is heap-allocated, so there's
+`str_ref` which does the 'one of mine?' check and makes a refcounted copy if not, otherwise acts
+just like `obj_ref`.
+
+`str_fmt` is a convenient and safe way to do `sprintf`, and will return a refcounted string.
+
+String support in C is famously minimalistic, so llib adds some extensions. `str_split` uses a
+delimiter to split a string into an array using delimiter chars. The array is a ref container so the
+strings will be disposed with it:
+
+```
+    Str* words = str_split("alpha, beta, gamma",", ");
+    assert(array_len(words) == 3);
+    assert(str_eq(words[0],"alpha"));
+    assert(str_eq(words[1],"beta"));
+    assert(str_eq(words[2],"gamma"));
+    unref(words);
+```
+
+Building up strings is a common need, and llib provides two ways to do it.  If you already have
+an array of strings then feed it to `str_concat` with a delimiter - it is the inverse operation
+to `str_split`. If the string is built up in an ad-hoc fashion then use the `strbuf_*` functions.
+A `string buffer` is basically a sequence, so that `strbuf_add` is exactly the same as `seq_add`
+for character arrays.  `strbuf_adds` adds a string, and `strbuf_addf` is equivalent to
+`strbuf_adds(ss,str_fmt(fmt,...))`.
+
+They are used for operations which modify strings, like inserting, removing and replacing, and
+resemble the [similar methods](?) of C++'s `std::string`.
+
+Then there are operations on strings which don't modify them:
+
+```
+    const char *S = "hello dolly";
+    int p = str_findstr(S,"doll");
+    assert(p == 6);
+    p = str_findch(S,'d');
+    assert(p == 6);
+    p = str_find_first_of("hello dolly"," ");
+    assert(p == 5);
+    assert(str_starts_with(S,"hell"));
+    assert(str_ends_with(S,"dolly"));
+```
+
+They're simple wrappers over the old `strchr`, `strstr` etc functions that return offsets
+rather than pointers. This is a more appropriate style for refcounted strings where you
+want to only use the allocated 'root' pointer.
+
 

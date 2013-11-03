@@ -6,6 +6,9 @@
 #include "value.h"
 #include <stdlib.h>
 #include <string.h>
+#ifdef _MSC_VER
+#define strtoll _strtoi64
+#endif
 
 static void Value_dispose(PValue v) {
     if (v->vc != ValueScalar || (v->type & ValueRef)) {
