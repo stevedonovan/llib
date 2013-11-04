@@ -225,11 +225,10 @@ char *value_as_json(PValue v) {
     return (char*)seq_array_ref(s);
 }
 
-typedef char *Str;
-
 //const char *js = "{'one':[10,100], 'two':2, 'three':'hello'}";
-const char *js = "{'one':1, 'two':2, 'three':'hello'}";
-//const char *js = "[1,2,3]";
+//const char *js = "{'one':1, 'two':2, 'three':'hello'}";
+//const char *js = "[[10,11],{'zwei:2},'hello']";
+const char *js = "[{'zwei':2,'twee':2},10,{'A':10,'B':[1,2]}]";
 
 PValue value(void*** ss, ValueContainer vc) {
     PValue v = value_new(ValueValue,vc);
@@ -250,6 +249,8 @@ PValue parse_json(ScanState *ts) {
         while (scan_scanf(ts,"%q:%!%c",&key,parse_json,&val,&ch)){
             seq_add(ss,key);
             seq_add(ss,val);
+            if (ch == '}')
+                break; 
         }
         printf("{ (%c) %d (%c) %d\n",ts->type, ts->type,ch,ch);
         if (ch != '}')
@@ -260,6 +261,8 @@ PValue parse_json(ScanState *ts) {
         void*** ss = seq_new(void*);
         while (scan_scanf(ts,"%!%c",parse_json,&val,&ch)){
             seq_add(ss,val);
+            if (ch == ']')
+                break;
         }
         printf("[ (%c) %d (%c) %d\n",ts->type, ts->type,ch,ch);
         if (ch != ']')
@@ -269,7 +272,7 @@ PValue parse_json(ScanState *ts) {
     if (ts->type == 0) {
         return value_error("unexpected end of stream");
     } else {
-        scan_scanf(ts,"%v",&val);
+        scan_scanf(ts,"%V",&val);
         return val;
     }
     return value_error("expecting '{' or '['");
@@ -343,7 +346,10 @@ int main()
     ScanState *st = scan_new_from_string(js);
     scan_next(st);
     v = parse_json(st);
-    printf("'%s'\n",value_as_json(v));
+    s = value_as_json(v);
+    puts(s);
+    dispose(v,s);    
+    
 
     printf("count = %d\n",obj_kount());
     return 0;

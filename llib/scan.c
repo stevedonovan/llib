@@ -415,16 +415,18 @@ bool scan_scanf(ScanState* ts, const char *fmt,...)
         #define CAST(T,P) *((T*)P)
         if (f == '%') {
             P = va_arg(ap,void*);
-            switch(*fmt++) {
-            case 'v':  {// value
+            char F = *fmt++;
+            switch(F) {
+            case 'v':  
+            case 'V':   {// value
                 ValueType vt;
-                ScanTokenType t = scan_next(ts);
+                if (F == 'v') scan_next(ts);
                 char *str = scan_get_str(ts);
-                if (t == T_NUMBER) {
+                if (ts->type == T_NUMBER) {
                     vt = (ts->int_type == T_INT) ? ValueInt : ValueFloat;
                 } else {
                     vt = ValueString;
-                    if (t == T_IDEN) {
+                    if (ts->type == T_IDEN) {
                         if (str_eq(str,"null"))
                             vt = ValueNull;
                         else if (str_eq(str,"true") || str_eq(str,"false"))
@@ -470,7 +472,7 @@ bool scan_scanf(ScanState* ts, const char *fmt,...)
             case '!': { // parse function + value
                 ScanfFun fn = (ScanfFun)P;
                 P = va_arg(ap,void*);
-                //scan_next(ts);
+                scan_next(ts);
                 CAST(void*,P) = fn(ts);
             } break;
             case '.':  // I don't care!
