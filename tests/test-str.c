@@ -7,7 +7,6 @@
 #include <stdio.h>
 #include <assert.h>
 #include <llib/str.h>
-#include <llib/map.h>
 
 typedef char *Str;
 

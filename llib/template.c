@@ -150,7 +150,7 @@ static char *for_impl (void *arg, StrTempl stl) {
     void *item;
     int i = 0;
     while (a->next(a,&item)) {
-        if (i == 0) {
+        if (i == 0) { // assume list/array contains 'maps' of same kind
             if (map_object(item)) 
                 mlookup = (StrLookup)map_get;
         }
@@ -267,5 +267,5 @@ static Iter iterator (void *obj) {
     }
     ai->n = n;
     ai->P = (void**)obj;
-    return (Iter)ai;    
+    return ai;    
 }

@@ -18,6 +18,9 @@ doubly-linked lists and maps using binary trees. The aim of this first release i
 not to produce the most efficient code possible but to explore the API and validate
 the refcounting semantics.
 
+Using this basic mechanism will cost your program less than 10Kb; a Linux executable
+using features from the whole library is less than 40Kb.
+
 A note on style: although C has been heavily influenced by C++ over the years,
 it remains C. So judicious use of statement macros like `FOR` is fine, if they
 are suitably hygenic:
@@ -113,8 +116,6 @@ There is nothing special about such structures; when creating them with the macr
 reference the array of ages, and they un-reference this array when they are finally
 disposed.  The test function releases the array `ages`, and thereafter the only
 reference to `ages` is kept within the struct.
-
-This scheme will only add a few Kb code to an application. ??
 
 Arrays can be _reference containers_ which hold refcounted objects:
 
@@ -277,7 +278,7 @@ String support in C is famously minimalistic, so llib adds some extensions. `str
 delimiter to split a string into an array using delimiter chars. The array is a ref container so the
 strings will be disposed with it:
 
-```
+```C
     Str* words = str_split("alpha, beta, gamma",", ");
     assert(array_len(words) == 3);
     assert(str_eq(words[0],"alpha"));
@@ -298,7 +299,7 @@ resemble the [similar methods](?) of C++'s `std::string`.
 
 Then there are operations on strings which don't modify them:
 
-```
+```C
     const char *S = "hello dolly";
     int p = str_findstr(S,"doll");
     assert(p == 6);
@@ -323,7 +324,7 @@ and expand a template using that object plus a function to map string keys to va
 The default form assumes that the object is just a NULL-terminated array of strings listing the keys 
 and values, and plain linear lookup. 
 
-```
+```C
     const char *tpl = "Hello $(name), how is $(home)?";
     char *tbl1[] = {"name","Dolly","home","here",NULL};
     StrTempl st = str_templ_new(tpl,NULL);    
@@ -336,7 +337,7 @@ use of JQuery.
 
 We can easily use a llib map with the more general form:
 
-```
+```C
     Map *m = map_new_str_str();
     map_put(m,"name","Monique");
     map_put(m,"home","Paris");
@@ -347,9 +348,9 @@ We can easily use a llib map with the more general form:
 String interpolation is more common in dynamic languages, but perfectly possible to do in less
 flexible static languages like C, as long as there is some mechanism available for string lookup.  
 You can even use `getenv` to expand environment variables, but it does not quite have the
-right signature.  If lookup fails, the replacement is empty.
+right signature.  Generally if any lookup fails, the replacement is the empty string.
 
-```
+```C
 static char *l_getenv (void *data, char *key) {
     return getenv(key);
 }
@@ -362,4 +363,46 @@ void using_environment()
     dispose(st,S);
 }
 ```
+An interesting experimental feature is the ability to define _subtemplates_. Say we have the
+following template:
+
+```html
+<h2>$(title)</h2>
+<ul> 
+$(for items |
+<li><a src="$(url)">$(title)</a></li>
+|)
+</ul>
+```
+
+Then `items` must be something _iteratable_ returning something _indexable_. The text
+inside "|...|" is the subtemplate and any variable expansion inside it will look up names
+in the objects returned by the iteration.
+
+```C
+char ***smap = array_new_ref(char**,2);
+smap[0] = str_strings("title","Index","url","catalog.html",NULL);
+smap[1] = str_strings("title","home","url","index.html",NULL);
+
+char *tbl = {
+    "title", "Pages",
+    "items",(char*)smap,
+    NULL
+};
+```
+
+Currently _iteratable` means either an array or list of objects; _indexable_ means either
+a 'simple map' or a llib `Map`.  This kind of dynamic behaviour is not C's greatest
+strength, due to the lack of runtime information, but llib objects do have hidden RTTI.
+
+Here we exploit several known facts:
+
+  * `obj_refcount() will return a count greater than zero if it is one of our objects
+  *  refcounted arrays know their size; otherwise we assume NULL-terminated
+  *  `list_object` and `map_object` can identify their respective types
+  
+The rest is poor man's OOP - see the last page of `template.c`.  In C this is often considered
+to be C++ envy, but OOP  predates C++ and is a good general strategy in this case;
+it just happens to be a bit more clumsy without built-in support.
+
 
