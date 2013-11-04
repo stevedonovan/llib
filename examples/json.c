@@ -198,40 +198,44 @@ char *value_as_json(PValue v) {
 
 //const char *js = "{'one':[10,100], 'two':2, 'three':'hello'}";
 //const char *js = "{'one':1, 'two':2, 'three':'hello'}";
-//const char *js = "[[10,11],{'zwei:2},'hello']";
-const char *js = "[{'zwei':2,'twee':2},10,{'A':10,'B':[1,2]}]";
+//const char *js = "[10,20,30]";
+const char *js = "[{'zwei':2.'twee':2},10,{'A':10,'B':[1,2]}]";
 
 PValue parse_json(ScanState *ts) {
     char ch, *key;
     PValue val;
     ScanTokenType t = ts->type;
-    //printf("type (%c) %d '%s'\n",ts->type, ts->type,scan_get_str(ts));
     if (t == '{' || t == '[') {
         void*** ss = seq_new_ref(void*);
         if (t == '{') {
-            while (scan_scanf(ts,"%q:%!%c",&key,parse_json,&val,&ch) && (ch==','||ch=='}')){
+            t = '}';
+            while (scan_scanf(ts,"%q:%!%c",&key,parse_json,&val,&ch)){
                 seq_add(ss,key);
                 if (value_is_error(val))
                     break;
                 seq_add(ss,val);
+                if (ch == t)
+                    break;
             }
         } else {
-            while (scan_scanf(ts,"%!%c",parse_json,&val,&ch) && (ch==','||ch=='}')){
+            t = ']';
+            while (scan_scanf(ts,"%!%c",parse_json,&val,&ch)){
                 if (value_is_error(val))
                     break;
                 seq_add(ss,val);
+                if (ch == t)
+                    break;
             }
-            printf(" '%c' \n",ch);
         }
         if (ch != t || value_is_error(val)) {
-            if (ch != t) {
-                printf("type %c (%c) %d '%s'\n",t,ts->type, ts->type,scan_get_str(ts));
-                return value_error(str_fmt("expecting '%c' as well\n",ch));
-            } else {
+            obj_unref(ss);
+            if (value_is_error(val)) {
                 return val;
+            } else {
+                return value_error(str_fmt("expecting '%c', got '%c'",t,ch));
             }
         }
-        PValue v = value_new(ValueValue,t=='{' ? ValueSimpleMap : ValueArray);
+        PValue v = value_new(ValueValue,t=='}' ? ValueSimpleMap : ValueArray);
         v->v.ptr = seq_array_ref(ss);
         return v;
     } else
@@ -305,17 +309,19 @@ int main()
 
     printf("got '%s'\n",s);
 
-    dispose(v, s);
+    dispose(s);
+    obj_unref(v);
     printf("count = %d\n",obj_kount());
 
-/// /*
     ScanState *st = scan_new_from_string(js);
     scan_next(st);
     v = parse_json(st);
     s = value_as_json(v);
     puts(s);
-    dispose(v,s);
-// */
+    unref(s);
+    printf("count = %d\n",obj_kount());
+    unref(v);
+    unref(st);
 
     printf("count = %d\n",obj_kount());
     return 0;

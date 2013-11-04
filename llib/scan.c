@@ -421,7 +421,8 @@ bool scan_scanf(ScanState* ts, const char *fmt,...)
             case 'V':   {// value
                 ValueType vt;
                 if (F == 'v') scan_next(ts);
-                char *str = scan_get_str(ts);
+                scan_get_tok(ts,ts->sbuff,STRSIZE);
+                char *str = ts->sbuff;
                 if (ts->type == T_NUMBER) {
                     vt = (ts->int_type == T_INT) ? ValueInt : ValueFloat;
                 } else {
