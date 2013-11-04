@@ -77,6 +77,8 @@ PValue value_map (Map *m, ValueType type) {
     return v;
 }
 
+#define str_eq(s1,s2) (strcmp((s1),(s2))==0)
+
 PValue value_parse(const char *str, ValueType type) {
     v_int_t ival;
     v_float_t fval;
@@ -96,7 +98,12 @@ PValue value_parse(const char *str, ValueType type) {
         return value_float(fval);
     case ValueBool:
         return value_bool(strcmp(str,"true")==0);
+    case ValueNull:
+        if (! str_eq(str,"null"))
+            return value_error("only 'null' allowed");
+        return value_new(ValueNull,ValueScalar);
     default:
         return value_error("cannot parse this type");
     }
 }
+

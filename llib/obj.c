@@ -80,7 +80,7 @@ static ObjHeader *new_obj(int size) {
 
 /// refcount of an object.
 // Will return -1 if it isn't one of ours!
-int obj_refcount (void *p)
+int obj_refcount (const void *p)
 {
     if (p == NULL) return -1;
     ObjHeader *pr = obj_header_(p);
@@ -278,13 +278,6 @@ void * array_resize(void *P, int newsz) {
     // if old ref array is going to die, make sure it doesn't dispose our elements
     pr->is_ref_container = 0;
     obj_unref(P);
-    return newp;
-}
-
-void * obj_copy(void *P) {
-    ObjHeader *pr = obj_header_(P);
-    void *newp = obj_new_(pr->mlen,pr->x.dtor);
-    memcpy(newp,P,pr->mlen);
     return newp;
 }
 

@@ -69,13 +69,12 @@ void obj_apply_varargs(void *o, PFun fn,...);
 
 #define obj_apply(dest,s,src,g) obj_apply_(dest,(PFun)s,src,(PFun)g)
 void obj_apply_ (void *dest, PFun setter, void *src, PFun getter);
-int obj_refcount (void *P);
+int obj_refcount (const void *P);
 
 void *array_new_(int mlen, int len, int ref);
 void *array_new_copy_ (int mlen, int len, int ref, void *P);
 void *array_copy(void *P, int i1, int i2);
 void *array_resize(void *P, int newsz);
-void *obj_copy(void *P);
 char *str_new(const char *s);
 char *str_new_size(int sz);
 char *str_ref(char *s);

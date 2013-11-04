@@ -7,6 +7,7 @@
 #include <llib/str.h>
 #include <llib/map.h>
 #include <llib/value.h>
+#include <llib/scan.h>
 
 #include <stdarg.h>
 
@@ -17,7 +18,7 @@ void count(int *pi, void *p) { *pi = *pi + 1; }
 void obj_apply_v_varargs(void *o, PFun fn,va_list ap);
 
 int count_varargs(va_list ap) {
-    int n = 0;   
+    int n = 0;
     obj_apply_v_varargs(&n,(PFun)count,ap);
     return n;
 }
@@ -36,7 +37,7 @@ PValue value_simple_map_(void *P,...) {
     va_start(ap,P);
     obj_apply_v_varargs(&pms,(PFun)put,ap);
     va_end(ap);
-    
+
     PValue v = value_new(ValueValue,ValueSimpleMap);
     v->v.ptr = ms;
     return v;
@@ -54,7 +55,7 @@ PValue value_array_values_ (void *P,...) {
     va_start(ap,P);
     obj_apply_v_varargs(&pms,(PFun)put,ap);
     va_end(ap);
-    
+
     PValue v = value_new(ValueValue,ValueArray);
     v->v.ptr = ms;
     return v;
@@ -131,13 +132,13 @@ void dump_list(SStr s, PValue vl)
     vs.vc = ValueScalar;
     vs.type = vl->type;
     strbuf_add(s,'[');
-    FOR_LIST(item,li) {        
+    FOR_LIST(item,li) {
         vs.v.ptr = item->data;
         dump_value(s,&vs);
         if (i++ < ni)
             strbuf_add(s,',');
     }
-    strbuf_add(s,']');    
+    strbuf_add(s,']');
 }
 
 void dump_map(SStr s, PValue vl)
@@ -148,14 +149,14 @@ void dump_map(SStr s, PValue vl)
     vs.vc = ValueScalar;
     vs.type = vl->type;
     strbuf_add(s,'{');
-    FOR_MAP(iter,m) {        
+    FOR_MAP(iter,m) {
         vs.v.ptr = iter->value;
         strbuf_addf(s,"\"%s\":",(char*)iter->key);
         dump_value(s,&vs);
         if (i++ < ni)
             strbuf_add(s,',');
     }
-    strbuf_add(s,'}');    
+    strbuf_add(s,'}');
 }
 
 void dump_simple_map (SStr s, PValue vi)
@@ -167,14 +168,14 @@ void dump_simple_map (SStr s, PValue vi)
     vs.vc = ValueScalar;
     vs.type = ValueValue;
     strbuf_add(s,'{');
-    for (char **P = ms; *P; P += 2) {        
+    for (char **P = ms; *P; P += 2) {
         vs.v.ptr = *(P+1);
         strbuf_addf(s,"\"%s\":",*P);
         dump_value(s,&vs);
         if (i++ < ni)
             strbuf_add(s,',');
     }
-    strbuf_add(s,'}');    
+    strbuf_add(s,'}');
 }
 
 void dump_array(SStr s, PValue vl)
@@ -215,7 +216,7 @@ void dump_array(SStr s, PValue vl)
         if (i < ni)
             strbuf_add(s,',');
     }
-    strbuf_add(s,']');   
+    strbuf_add(s,']');
 }
 
 char *value_as_json(PValue v) {
@@ -224,57 +225,107 @@ char *value_as_json(PValue v) {
     return (char*)seq_array_ref(s);
 }
 
+typedef char *Str;
+
+//const char *js = "{'one':[10,100], 'two':2, 'three':'hello'}";
+const char *js = "{'one':1, 'two':2, 'three':'hello'}";
+//const char *js = "[1,2,3]";
+
+PValue value(void*** ss, ValueContainer vc) {
+    PValue v = value_new(ValueValue,vc);
+    v->v.ptr = seq_array_ref(ss);
+    return v;
+}
+
+PValue parse_json(ScanState *ts) {
+    char ch;
+    char *key;
+    PValue val;
+    printf("type (%c) %d '%s'\n",ts->type, ts->type,scan_get_str(ts));
+    if (ts->type == 0) {
+        exit(1);
+    }
+    if (ts->type == '{') {
+        void*** ss = seq_new(void*);
+        while (scan_scanf(ts,"%q:%!%c",&key,parse_json,&val,&ch)){
+            seq_add(ss,key);
+            seq_add(ss,val);
+        }
+        printf("{ (%c) %d (%c) %d\n",ts->type, ts->type,ch,ch);
+        if (ch != '}')
+            return value_error("expecting '}'");
+        return value(ss,ValueSimpleMap);
+    } else
+    if (ts->type == '[') {
+        void*** ss = seq_new(void*);
+        while (scan_scanf(ts,"%!%c",parse_json,&val,&ch)){
+            seq_add(ss,val);
+        }
+        printf("[ (%c) %d (%c) %d\n",ts->type, ts->type,ch,ch);
+        if (ch != ']')
+            return value_error("expecting ']'");
+        return value(ss,ValueArray);
+    } else
+    if (ts->type == 0) {
+        return value_error("unexpected end of stream");
+    } else {
+        scan_scanf(ts,"%v",&val);
+        return val;
+    }
+    return value_error("expecting '{' or '['");
+}
+
 int main()
 {
     PValue *va = array_new_ref(PValue,7);
     va[0] = value_str("hello dolly");
     va[1] = value_float(4.2);
-    
+
     List *ls = list_new_str();
     list_add_items(ls, "bonzo","dog");
-    
+
     va[2] = value_list(ls,ValueString);
-    
+
     List *li = list_new_ptr();
     list_add(li,(void*)103);
     list_add(li,(void*)20);
     va[3] = value_list(li ,ValueInt);
-    
+
     Map *m = map_new_str_ptr();
     map_puti(m,"frodo",54);
     map_puti(m,"bilbo",112);
     va[4] = value_map(m,ValueInt);
-    
+
     double *ai = array_new(double,2);
     ai[0] = 10.0;
     ai[1] = 20;
     va[5] = value_array(ai,ValueFloat);
-    
+
     short *si = array_new(short,3);
     si[0] = 10;
     si[1] = 100;
     si[2] = 1000;
     va[6] = value_array(si,ValueInt);
 
-    PValue v = value_array(va,ValueValue);    
-    
+    PValue v = value_array(va,ValueValue);
+
     char *s = value_as_json(v);
-    
+
     printf("got '%s'\n",s);
-    
+
     PValue e = value_error("completely borked");
     if (value_is_error(e)) {
         printf("here is an error: %s\n",value_as_string(e));
     }
     dispose(v,s, e);
-    
-    #define VM   value_simple_map
+
+    #define VM value_simple_map
     #define VI value_int
     #define VS value_string
     #define VF value_float
     #define VB value_bool
     #define VA value_simple_array
-    
+
     v = VM(
         "one",VI(10),
         "two",VM("float",VF(1.2)),
@@ -282,11 +333,18 @@ int main()
         "four",VB(true)
     );
     s = value_as_json(v);
-    
+
     printf("got '%s'\n",s);
-    
+
     dispose(v, s);
-    
+
+// {'eins':1,'een':1}
+
+    ScanState *st = scan_new_from_string(js);
+    scan_next(st);
+    v = parse_json(st);
+    printf("'%s'\n",value_as_json(v));
+
     printf("count = %d\n",obj_kount());
     return 0;
 }

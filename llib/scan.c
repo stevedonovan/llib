@@ -401,6 +401,8 @@ char *scan_get_str(ScanState* ts)
     return str_new(buff);
 }
 
+#define str_eq(s1,s2) (strcmp((s1),(s2))==0)
+
 bool scan_scanf(ScanState* ts, const char *fmt,...)
 {
     va_list ap;
@@ -410,46 +412,56 @@ bool scan_scanf(ScanState* ts, const char *fmt,...)
         char f = *fmt++;
         if (f == '\0')
             return true;
+        #define CAST(T,P) *((T*)P)
         if (f == '%') {
             P = va_arg(ap,void*);
             switch(*fmt++) {
             case 'v':  {// value
                 ValueType vt;
-                if (scan_next(ts)== T_NUMBER) {
+                ScanTokenType t = scan_next(ts);
+                char *str = scan_get_str(ts);
+                if (t == T_NUMBER) {
                     vt = (ts->int_type == T_INT) ? ValueInt : ValueFloat;
-                } else {                
+                } else {
                     vt = ValueString;
-                } 
-                *((Value**)P) = value_parse(scan_get_str(ts),vt);
+                    if (t == T_IDEN) {
+                        if (str_eq(str,"null"))
+                            vt = ValueNull;
+                        else if (str_eq(str,"true") || str_eq(str,"false"))
+                            vt = ValueBool;
+                    }
+                }
+                CAST(PValue,P) = value_parse(str,vt);
             } break;
+
             case 's': // identifier
                 if (scan_next(ts) != T_IDEN)
                     return false;
-                *((char**)P) = scan_get_str(ts);
+                CAST(char*,P) = scan_get_str(ts);
                 break;
             case 'l': // rest of line
                 scan_get_line(ts,ts->sbuff,STRSIZE);
-                *((char**)P) = str_cpy(ts->sbuff);
+                CAST(char*,P) = str_cpy(ts->sbuff);
                 break;
             case 'q': // quoted string
                 if (scan_next(ts) != T_STRING)
                     return false;
-                *((char**)P) = scan_get_str(ts);
+                CAST(char*,P) = scan_get_str(ts);
                 break;
             case 'd':  // integer
                 if (scan_next(ts) != T_NUMBER)
                     return false;
-                *((int*)P) = (int)scan_get_number(ts);
+                CAST(int,P) = (int)scan_get_number(ts);
                 break;
             case 'f':  // float
                 if (scan_next(ts) != T_NUMBER)
                     return false;
-                *((double*)P) = scan_get_number(ts);
+                CAST(double,P) = scan_get_number(ts);
                 break;
             case 'c': // 'character'
                 if (scan_next(ts) < T_NADA)
                     return false;
-                *((char*)P) = (char)ts->type;
+                CAST(char,P) = (char)ts->type;
                 break;
             case '%': // literal %
                 if (scan_getch(ts) != '%')
@@ -458,12 +470,14 @@ bool scan_scanf(ScanState* ts, const char *fmt,...)
             case '!': { // parse function + value
                 ScanfFun fn = (ScanfFun)P;
                 P = va_arg(ap,void*);
-                *((void**)P) = fn(ts);
+                //scan_next(ts);
+                CAST(void*,P) = fn(ts);
             } break;
             case '.':  // I don't care!
                 scan_next(ts);
                 break;
             }
+            #undef CAST
         } else
         if (isspace(f)) {
             // do nothing
