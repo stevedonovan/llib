@@ -8,63 +8,34 @@
 #include <llib/map.h>
 #include <llib/value.h>
 #include <llib/scan.h>
-
+#include <assert.h>
 #include <stdarg.h>
 
-void dump(void *p, void *q) { printf("[%p] %p\n",p,q); }
-
-void count(int *pi, void *p) { *pi = *pi + 1; }
-
-void obj_apply_v_varargs(void *o, PFun fn,va_list ap);
-
-int count_varargs(va_list ap) {
-    int n = 0;
-    obj_apply_v_varargs(&n,(PFun)count,ap);
-    return n;
-}
-
-void put(void ***pv, void *p) { **pv = p; *pv = *pv + 1; }
-
-PValue value_simple_map_(void *P,...) {
-    int n;
+PValue value_array_values_ (intptr sm,...) {
+    int n = 0, i = 0;
+    void *P;
     va_list ap;
-    va_start(ap,P);
-    n = count_varargs(ap);
+    va_start(ap,sm);
+    while ((P = va_arg(ap,void*)) != NULL)
+        ++n;
     va_end(ap);
 
-    void **ms = array_new(void*,n);
-    void **pms = ms;
-    va_start(ap,P);
-    obj_apply_v_varargs(&pms,(PFun)put,ap);
+    char** ms = array_new_ref(char*,n);
+    va_start(ap,sm);
+    while ((P = va_arg(ap,char*)) != NULL)  {
+        if (sm && i % 2 == 0)
+            P = str_cpy(P);
+        ms[i++] = P;
+    }
     va_end(ap);
 
-    PValue v = value_new(ValueValue,ValueSimpleMap);
+    PValue v = value_new(ValueValue,sm ? ValueSimpleMap : ValueArray);
     v->v.ptr = ms;
     return v;
 }
 
-PValue value_array_values_ (void *P,...) {
-    int n;
-    va_list ap;
-    va_start(ap,P);
-    n = count_varargs(ap);
-    va_end(ap);
-
-    void **ms = array_new_ref(void*,n);
-    void **pms = ms;
-    va_start(ap,P);
-    obj_apply_v_varargs(&pms,(PFun)put,ap);
-    va_end(ap);
-
-    PValue v = value_new(ValueValue,ValueArray);
-    v->v.ptr = ms;
-    return v;
-}
-
-#define value_simple_map(...) value_simple_map_(NULL,__VA_ARGS__,NULL)
-#define value_simple_array(...) value_array_values_(NULL,__VA_ARGS__,NULL)
-
-#include <assert.h>
+#define value_simple_map(...) value_array_values_(1,__VA_ARGS__,NULL)
+#define value_simple_array(...) value_array_values_(0,__VA_ARGS__,NULL)
 
 typedef char *Str, **SStr;
 
@@ -230,44 +201,39 @@ char *value_as_json(PValue v) {
 //const char *js = "[[10,11],{'zwei:2},'hello']";
 const char *js = "[{'zwei':2,'twee':2},10,{'A':10,'B':[1,2]}]";
 
-PValue value(void*** ss, ValueContainer vc) {
-    PValue v = value_new(ValueValue,vc);
-    v->v.ptr = seq_array_ref(ss);
-    return v;
-}
-
 PValue parse_json(ScanState *ts) {
-    char ch;
-    char *key;
+    char ch, *key;
     PValue val;
-    printf("type (%c) %d '%s'\n",ts->type, ts->type,scan_get_str(ts));
-    if (ts->type == 0) {
-        exit(1);
-    }
-    if (ts->type == '{') {
-        void*** ss = seq_new(void*);
-        while (scan_scanf(ts,"%q:%!%c",&key,parse_json,&val,&ch)){
-            seq_add(ss,key);
-            seq_add(ss,val);
-            if (ch == '}')
-                break; 
+    ScanTokenType t = ts->type;
+    //printf("type (%c) %d '%s'\n",ts->type, ts->type,scan_get_str(ts));
+    if (t == '{' || t == '[') {
+        void*** ss = seq_new_ref(void*);
+        if (t == '{') {
+            while (scan_scanf(ts,"%q:%!%c",&key,parse_json,&val,&ch) && (ch==','||ch=='}')){
+                seq_add(ss,key);
+                if (value_is_error(val))
+                    break;
+                seq_add(ss,val);
+            }
+        } else {
+            while (scan_scanf(ts,"%!%c",parse_json,&val,&ch) && (ch==','||ch=='}')){
+                if (value_is_error(val))
+                    break;
+                seq_add(ss,val);
+            }
+            printf(" '%c' \n",ch);
         }
-        printf("{ (%c) %d (%c) %d\n",ts->type, ts->type,ch,ch);
-        if (ch != '}')
-            return value_error("expecting '}'");
-        return value(ss,ValueSimpleMap);
-    } else
-    if (ts->type == '[') {
-        void*** ss = seq_new(void*);
-        while (scan_scanf(ts,"%!%c",parse_json,&val,&ch)){
-            seq_add(ss,val);
-            if (ch == ']')
-                break;
+        if (ch != t || value_is_error(val)) {
+            if (ch != t) {
+                printf("type %c (%c) %d '%s'\n",t,ts->type, ts->type,scan_get_str(ts));
+                return value_error(str_fmt("expecting '%c' as well\n",ch));
+            } else {
+                return val;
+            }
         }
-        printf("[ (%c) %d (%c) %d\n",ts->type, ts->type,ch,ch);
-        if (ch != ']')
-            return value_error("expecting ']'");
-        return value(ss,ValueArray);
+        PValue v = value_new(ValueValue,t=='{' ? ValueSimpleMap : ValueArray);
+        v->v.ptr = seq_array_ref(ss);
+        return v;
     } else
     if (ts->type == 0) {
         return value_error("unexpected end of stream");
@@ -340,16 +306,16 @@ int main()
     printf("got '%s'\n",s);
 
     dispose(v, s);
+    printf("count = %d\n",obj_kount());
 
-// {'eins':1,'een':1}
-
+/// /*
     ScanState *st = scan_new_from_string(js);
     scan_next(st);
     v = parse_json(st);
     s = value_as_json(v);
     puts(s);
-    dispose(v,s);    
-    
+    dispose(v,s);
+// */
 
     printf("count = %d\n",obj_kount());
     return 0;
