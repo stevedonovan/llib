@@ -18,14 +18,18 @@ typedef int (*ListCmpFun)(const void *p1, const void *p2);
 typedef ListCmpFun ListEqualsFun;
 #define LIST_CMP (ListCmpFun)
 
-typedef struct List_ {
+struct List_ {
     ListEntry *first;
     ListEntry *last;
     int size;
 #ifdef _INSIDE_LIST_C
 _INSIDE_LIST_C
 #endif
-} List;
+};
+
+#ifndef LLIB_LIST_TYPEDEF
+typedef struct List_ List;
+#endif
 
 enum {
     LIST_PTR = 0,

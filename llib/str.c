@@ -222,6 +222,8 @@ char *str_concat(char **ss, const char *delim) {
     return res;
 }
 
+// useful function for making quick arrays of strings.
+// Note that this is _not_ a refcounted array.
 char **str_strings(char *first,...) {
     va_list ap;
     char *S;
@@ -243,3 +245,13 @@ char **str_strings(char *first,...) {
     return res;
 }
 
+// Look up a value in a 'simple map'.
+// These are arrays of strings where the odd entries are keys
+// and the even entries are values.
+char *str_lookup(char **substs, char *name) {
+    for (char **S = substs;  *S; S += 2) {
+        if (strcmp(*S,name)==0)
+            return *(S+1);
+    }
+    return NULL;
+}

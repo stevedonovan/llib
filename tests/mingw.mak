@@ -13,8 +13,9 @@ FILE=test-file.exe
 SCAN=test-scan.exe
 STR=test-str.exe
 TPL=test-template.exe
+JSN=test-json.exe
 
-all: $(OBJ) $(LIST) $(MAP) $(SEQ) $(FILE) $(SCAN) $(STR) $(TPL)
+all: $(OBJ) $(LIST) $(MAP) $(SEQ) $(FILE) $(SCAN) $(STR) $(TPL) $(JSN)
 	test-obj > test-obj-output
 	test-list > test-list-output
 	test-seq > test-seq-output
@@ -22,6 +23,7 @@ all: $(OBJ) $(LIST) $(MAP) $(SEQ) $(FILE) $(SCAN) $(STR) $(TPL)
 	test-scan > test-scan-output
 	test-str > test-str-output
 	test-template > test-template-output
+	test-json > test-json-output
 
 $(OBJ): test-obj.c $(LIB)
 	$(CC) $(CFLAGS) test-obj.c -o test-obj $(LFLAGS)
@@ -46,6 +48,9 @@ $(STR): test-str.c $(LIB)
 
 $(TPL): test-template.c $(LIB)
 	$(CC) $(CFLAGS) test-template.c -o test-template $(LFLAGS)
+
+$(TPL): test-json.c $(LIB)
+	$(CC) $(CFLAGS) test-json.c -o test-json $(LFLAGS)
 
 
 

@@ -32,10 +32,12 @@ typedef enum ValueType_ {
 #ifndef _LLIB_LIST_H
 struct List_;
 typedef struct List_ List;
+#define LLIB_LIST_TYPEDEF
 #endif
 
 #ifndef _LLIB_MAP_H
 typedef struct List_ Map;
+#define LLIB_MAP_TYPEDEF
 #endif
 
 typedef long long v_int_t;
@@ -76,7 +78,10 @@ typedef struct Value_ {
 #define value_as_map(vv) ((vv)->v.map)
 #define value_as_pointer(vv) ((vv)->v.ptr)
 
+#define value_errorf(fmt,...) value_error(str_fmt(fmt,__VA_ARGS__))
+
 PValue value_new(ValueType type, ValueContainer vc);
+bool value_object(void *obj);
 PValue value_str (const char *str);
 PValue value_error (const char *msg);
 PValue value_float (double x);
@@ -88,5 +93,6 @@ PValue value_array (void *p, ValueType type);
 PValue value_map (Map *m, ValueType type);
 
 PValue value_parse(const char *str, ValueType type);
+const char *value_tostring(PValue v);
 
 #endif

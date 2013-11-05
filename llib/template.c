@@ -12,6 +12,7 @@
 #include "template.h"
 #include "list.h"
 #include "map.h"
+#include "value.h"
 
 char *str_lookup(char **substs, char *name) ;
 
@@ -92,7 +93,7 @@ StrTempl str_templ_new(const char *templ, const char *markers) {
             s = spaces_right(s -1) + 1;
             *s = '\0';
             st = s + 2;
-        }  else { 
+        }  else {
             st = NULL;
             mark = TVAR;
         }
@@ -141,20 +142,20 @@ typedef struct Iter_ {
     int n;
 } *Iter;
 
-static Iter iterator (void *obj);
+static Iter get_iterator (void *obj);
+static void get_lookup(void *item, StrLookup *plookup, PFun *pitem);
 
 static char *for_impl (void *arg, StrTempl stl) {
-    StrLookup mlookup = (StrLookup)str_lookup;
-    Iter a = iterator(arg);
+    StrLookup mlookup = NULL;
+    PFun mitem = NULL;
+    Iter a = get_iterator(arg);
     Str *out = array_new_ref(Str,a->n);
     void *item;
     int i = 0;
     while (a->next(a,&item)) {
-        if (i == 0) { // assume list/array contains 'maps' of same kind
-            if (map_object(item)) 
-                mlookup = (StrLookup)map_get;
-        }
-        out[i++] = str_templ_subst_using(stl,mlookup,item);
+        if (i == 0) // assume all items have same type
+            get_lookup(item,&mlookup,&mitem);
+        out[i++] = str_templ_subst_using(stl,mlookup,mitem(item));
     }
     Str res = str_concat(out,"");
     obj_unref(out);
@@ -175,7 +176,8 @@ char *builtin_funs[] = {
 char *str_templ_subst_using(StrTempl stl, StrLookup lookup, void *data) {
     int n = array_len(stl->parts);
     Str *out = array_new(Str,n);
-    char *part, mark = 0;
+    char *part;
+    char mark = 0;
     List *strs = NULL;
 
     FOR (i, n) { // over all the parts of the template
@@ -204,10 +206,12 @@ char *str_templ_subst_using(StrTempl stl, StrLookup lookup, void *data) {
             }
             if (! part)
                 part = "";
+            else if (value_object(part))
+                part = (char*)value_tostring((PValue)part);
         }
         out[i] = part;
     }
-    
+
     Str res = str_concat(out,NULL);
     obj_unref(out);
     obj_unref(strs);
@@ -215,17 +219,21 @@ char *str_templ_subst_using(StrTempl stl, StrLookup lookup, void *data) {
     return res;
 }
 
-char *str_lookup(char **substs, char *name) {
-    for (char **S = substs;  *S; S += 2) {
-        if (strcmp(*S,name)==0)
-            return *(S+1);
-    }
-    return NULL;
-}
-
 /// substitute the variables using an array of keys and pairs.
 char *str_templ_subst(StrTempl stl, char **substs) {
     return str_templ_subst_using(stl,(StrLookup)str_lookup,substs);
+}
+
+// substitute using boxed values.
+char *str_templ_subst_values(StrTempl st, PValue v) {
+    StrLookup lookup;
+    void *obj = value_as_pointer(v);
+    if (map_object(obj))
+        lookup = (StrLookup)map_get;
+    else
+        lookup = (StrLookup)str_lookup;
+
+    return str_templ_subst_using(st,lookup,obj);
 }
 
 static bool iter_arr_next(Iter it, void **pv) {
@@ -246,7 +254,7 @@ static bool iter_list_next(Iter it, void **pv) {
     return true;
 }
 
-static Iter iterator (void *obj) {
+static Iter get_iterator (void *obj) {
     int n;
     Iter ai = obj_new(struct Iter_,NULL);
     if (obj_refcount(obj) == -1) {
@@ -255,17 +263,35 @@ static Iter iterator (void *obj) {
         for (char** a = *A; *a; ++a)
             ++n;
         ai->next = iter_arr_next;
-    } else 
-    if (list_object(obj)) {
-        List *L = (List*)obj;
-        n = list_size(L);
-        ai->next = iter_list_next;
-        obj = list_start(L);
     } else {
-        n = array_len(obj);
-        ai->next = iter_arr_next;
+        if (value_object(obj)) {
+            obj = value_as_pointer((PValue)obj);
+        }
+        if (list_object(obj)) {
+            List *L = (List*)obj;
+            n = list_size(L);
+            ai->next = iter_list_next;
+            obj = list_start(L);
+        } else { // must be an array
+            n = array_len(obj);
+            ai->next = iter_arr_next;
+        }
     }
     ai->n = n;
     ai->P = (void**)obj;
-    return ai;    
+    return ai;
+}
+
+static void *pass_thru(void *obj) { return obj; }
+static void *our_value_as_pointer(void *obj) { return value_as_pointer((PValue)obj); }
+
+static void get_lookup(void *item, StrLookup *plookup, PFun *pitem) {
+    *plookup = (StrLookup)str_lookup; // default 'simple map'
+    *pitem = (PFun)pass_thru;
+    if (value_object(item)) {  // then we'll need to unbox!
+        item = value_as_pointer((PValue)item);
+        *pitem = (PFun)our_value_as_pointer;
+    }
+    if (map_object(item))
+        *plookup = (StrLookup)map_get;
 }

@@ -21,6 +21,7 @@ int str_find_first_not_of(const char *s, const char *ps);
 char ** str_split(const char *s, const char *delim);
 char *str_concat(char **ss, const char *delim);
 char **str_strings(char *p,...);
+char *str_lookup(char **substs, char *name);
 
 char **strbuf_new(void);
 #define strbuf_add seq_add

@@ -199,13 +199,18 @@ char *value_as_json(PValue v) {
 //const char *js = "{'one':[10,100], 'two':2, 'three':'hello'}";
 //const char *js = "{'one':1, 'two':2, 'three':'hello'}";
 //const char *js = "[10,20,30]";
-const char *js = "[{'zwei':2.'twee':2},10,{'A':10,'B':[1,2]}]";
+//const char *js = "[{'zwei':2.'twee':2},10,{'A':10,'B':[1,2]}]";
+const char *js = "[{'zwei':2,'twee':2},10,{'A':10,'B':[2,20]}]";
+
+#define value_errorf(fmt,...) value_error(str_fmt(fmt,__VA_ARGS__))
 
 PValue parse_json(ScanState *ts) {
     char ch, *key;
     PValue val;
     ScanTokenType t = ts->type;
-    if (t == '{' || t == '[') {
+    switch(t) {
+    case '{':
+    case'[': {
         void*** ss = seq_new_ref(void*);
         if (t == '{') {
             t = '}';
@@ -232,20 +237,33 @@ PValue parse_json(ScanState *ts) {
             if (value_is_error(val)) {
                 return val;
             } else {
-                return value_error(str_fmt("expecting '%c', got '%c'",t,ch));
+                return value_errorf("expecting '%c', got '%c'",t,ch);
             }
         }
         PValue v = value_new(ValueValue,t=='}' ? ValueSimpleMap : ValueArray);
         v->v.ptr = seq_array_ref(ss);
         return v;
-    } else
-    if (ts->type == 0) {
-        return value_error("unexpected end of stream");
-    } else {
-        scan_scanf(ts,"%V",&val);
-        return val;
     }
-    return value_error("expecting '{' or '['");
+    case T_END:
+        return value_error("unexpected end of stream");
+    case T_STRING:
+        return value_str(scan_get_str(ts));
+    case T_NUMBER:
+        return value_float(scan_get_number(ts));
+    case T_IDEN: {
+        char buff[20];
+        scan_get_tok(ts,buff,sizeof(buff));
+        if (str_eq(buff,"null")) {
+            return value_new(ValueNull,ValueScalar);
+        } else
+        if (str_eq(buff,"true") || str_eq(buff,"false")) {
+            return value_bool(str_eq(buff,"true"));
+        } else {
+            return value_errorf("unknown token '%s'\n",buff);
+        }
+    } default:
+        return value_errorf("got '%c'; expecting '{' or '['",t);
+    }
 }
 
 int main()
@@ -298,6 +316,7 @@ int main()
     #define VF value_float
     #define VB value_bool
     #define VA value_simple_array
+
 
     v = VM(
         "one",VI(10),

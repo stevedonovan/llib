@@ -321,19 +321,19 @@ These are strings where occurences of a `$(var)` pattern are expanded.  Sometime
 'string interpolation', it's a good way to generate large documents like HTML output and does not
 suffer from the size limitations of the `printf` family.  You make a template object from a template string,
 and expand a template using that object plus a function to map string keys to values, and a 'map' object.
-The default form assumes that the object is just a NULL-terminated array of strings listing the keys 
-and values, and plain linear lookup. 
+The default form assumes that the object is just a NULL-terminated array of strings listing the keys
+and values, and plain linear lookup.
 
 ```C
     const char *tpl = "Hello $(name), how is $(home)?";
     char *tbl1[] = {"name","Dolly","home","here",NULL};
-    StrTempl st = str_templ_new(tpl,NULL);    
+    StrTempl st = str_templ_new(tpl,NULL);
     char *S = str_templ_subst(st,tbl1);
     assert(str_eq(S,"Hello Dolly, how is here?"));
 ```
 You don't have to use `$()` as the magic characters, which is the default indicated by `NULL` in `str_templ_new`.
 For instance, if expanding templates containing JavaScript it's better to use `@()` which will not conflict with
-use of JQuery.  
+use of JQuery.
 
 We can easily use a llib map with the more general form:
 
@@ -346,7 +346,7 @@ We can easily use a llib map with the more general form:
 ```
 
 String interpolation is more common in dynamic languages, but perfectly possible to do in less
-flexible static languages like C, as long as there is some mechanism available for string lookup.  
+flexible static languages like C, as long as there is some mechanism available for string lookup.
 You can even use `getenv` to expand environment variables, but it does not quite have the
 right signature.  Generally if any lookup fails, the replacement is the empty string.
 
@@ -368,7 +368,7 @@ following template:
 
 ```html
 <h2>$(title)</h2>
-<ul> 
+<ul>
 $(for items |
 <li><a src="$(url)">$(title)</a></li>
 |)
@@ -400,9 +400,57 @@ Here we exploit several known facts:
   * `obj_refcount() will return a count greater than zero if it is one of our objects
   *  refcounted arrays know their size; otherwise we assume NULL-terminated
   *  `list_object` and `map_object` can identify their respective types
-  
+
 The rest is poor man's OOP - see the last page of `template.c`.  In C this is often considered
 to be C++ envy, but OOP  predates C++ and is a good general strategy in this case;
 it just happens to be a bit more clumsy without built-in support.
+
+## Values
+
+This is a dynamic type that can _box_ the common C and llib types. A value can be an array of ints,
+a string, or a map of values, and so forth. There is a special type 'error', so using values is a
+flexible way for a C function to return a sensible error message.
+
+```C
+PValue v = my_function();
+if (value_is_error(v)) {
+    fprintf(stderr,"my_function() is borked: %s\n",value_as_string(v));
+} else { // we're cool
+    double res = value_as_float(v);
+    ...
+}
+```
+
+With values, you can have the same kind of dynamic ad-hoc data structures that are common
+in dynamic languages.  For instance, this is a neater way to specify the data for the
+HTML template just discussed:
+
+```C
+    PValue v = VM(
+        "title",VS("Pages"),
+        "items",VA(
+            VMS("url","index.html","title","Home"),
+            VMS("url","catalog.html","title","Links")
+        )
+    );
+```
+
+This uses llib's JSON support, which works very naturally with values. And JSON itself is a
+great notation to express dynamic data structures (although of course many people find the
+_ad-hoc_ part hard to handle!):
+
+```C
+    const char *js = "{'title':'Pages','items':[{'url':'index.html','title':'Home'},"
+        "{'url':'catalog.html','title':'Links'}]}";
+
+    ....
+    v = json_parse_string(js);
+    S = str_templ_subst_values(st,v);
+```
+
+Another useful property of values when used in templates is that they know how to turn themselves
+into a string.  With plain data, we have to assume that the expansions result in a string,
+but if they do result in a value, then `value_tostring` will be used. (The template function
+`$(i var)` will do integers to strings, however).
 
 

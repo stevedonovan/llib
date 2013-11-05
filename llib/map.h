@@ -15,8 +15,10 @@ typedef struct MapEntry_ {
     void *data;
 } MapEntry, *PEntry;
 
-// we'll reuse the same structure!
+// we'll reuse the same structure as a List!
+#ifndef LLIB_MAP_TYPEDEF
 typedef List Map;
+#endif
 
 #define map_size list_size
 
@@ -24,7 +26,7 @@ typedef struct MapIter_{
     void **pkey;
     void **pvalue;
     void *key;
-    void *value;    
+    void *value;
     Map *map;
     PEntry node;
     List *vstack;

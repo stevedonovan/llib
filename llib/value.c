@@ -4,16 +4,22 @@
 * Copyright Steve Donovan, 2013
 */
 #include "value.h"
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #ifdef _MSC_VER
 #define strtoll _strtoi64
+#define snprintf _snprintf
 #endif
 
 static void Value_dispose(PValue v) {
     if (v->vc != ValueScalar || (v->type & ValueRef)) {
         obj_unref(v->v.ptr);
     }
+}
+
+bool value_object(void *obj) {
+    return obj_dtor(obj) == (DisposeFn)Value_dispose;
 }
 
 PValue value_new(ValueType type, ValueContainer vc) {
@@ -79,6 +85,7 @@ PValue value_map (Map *m, ValueType type) {
 
 #define str_eq(s1,s2) (strcmp((s1),(s2))==0)
 
+// convert a string into a value of the desired type
 PValue value_parse(const char *str, ValueType type) {
     v_int_t ival;
     v_float_t fval;
@@ -97,7 +104,7 @@ PValue value_parse(const char *str, ValueType type) {
             return value_error(endptr);
         return value_float(fval);
     case ValueBool:
-        return value_bool(strcmp(str,"true")==0);
+        return value_bool(str_eq(str,"true"));
     case ValueNull:
         if (! str_eq(str,"null"))
             return value_error("only 'null' allowed");
@@ -107,3 +114,36 @@ PValue value_parse(const char *str, ValueType type) {
     }
 }
 
+// Default representation of a value as a string.
+// Only applies to scalar values (if you want to show arrays & maps
+// use json module). Returns a pointer to a static buffer, so don't mess with it!
+const char *value_tostring(PValue v) {
+    static char buff[35];
+    if (v->vc != ValueScalar)
+        return "<not a scalar>";
+    switch(v->type) {
+    #define outf(fmt,F) snprintf(buff,sizeof(buff),fmt,v->v.F),buff
+    case ValueInt:
+        return outf("%d",i);
+    case ValueString:
+    case ValueError:
+        return v->v.str;
+    case ValueFloat:
+        return outf("%0.16g",f);
+    case ValueNull:
+        return "null";
+    case ValueBool:
+        return v->v.i ? "true" : "false";
+    case ValueValue:
+        return value_tostring(v->v.v);
+    case ValuePointer:
+    case ValueRef:
+        if (v->v.ptr == NULL) {
+            return "<null>";
+        } else {
+            return outf("%p",ptr);
+        }
+    default:
+        return "?";
+    }
+}

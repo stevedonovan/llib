@@ -15,5 +15,6 @@ default {
     test('test-map'),
     test('test-str'),
     test('test-template'),
+    test('test-json'),
 }
 
