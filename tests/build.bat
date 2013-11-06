@@ -22,3 +22,6 @@ test-str.exe >test-str-output
 cl /nologo -c /O2 /WX /TP /I..  /D_CRT_SECURE_NO_DEPRECATE /DNDEBUG   test-template.c /Fotest-template.obj
 link /nologo test-template.obj  /LIBPATH:../llib  llib_static.lib  /OUT:test-template.exe
 test-template.exe >test-template-output
+cl /nologo -c /O2 /WX /TP /I..  /D_CRT_SECURE_NO_DEPRECATE /DNDEBUG   test-json.c /Fotest-json.obj
+link /nologo test-json.obj  /LIBPATH:../llib  llib_static.lib  /OUT:test-json.exe
+test-json.exe >test-json-output
