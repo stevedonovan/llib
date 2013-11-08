@@ -196,41 +196,53 @@ char *json_tostring(PValue v) {
     return (char*)seq_array_ref(s);
 }
 
+// important thing to remember about this parser is that it assumes that
+// the token state has already been advanced with scan_next.
 static PValue json_parse(ScanState *ts) {
-    char ch, *key;
-    PValue val;
+    char *key;
+    PValue val, err = NULL;
     int t = (int)ts->type;
     switch(t) {
     case '{':
-    case'[': {
+    case '[': {
         void*** ss = seq_new_ref(void*);
-        if (t == '{') {
-            t = '}';
-            while (scan_scanf(ts,"%q:%!%c",&key,json_parse,&val,&ch)){
+        int endt = t == '{' ? '}' : ']';  // corresponding close char        
+        t = scan_next(ts);  // either close or first entry
+        while (t != endt) { // while there are entries in map or list
+            // a map has a key followed by a colon...
+            if (endt == '}') { 
+                int tn;
+                key = scan_get_str(ts);
+                tn = scan_next(ts);
+                if (t != T_STRING || tn != ':') {
+                    obj_unref(key);
+                    err = value_error("expected 'key':<value> in map");
+                    break;
+                }
                 seq_add(ss,key);
-                if (value_is_error(val))
-                    break;
-                seq_add(ss,val);
-                if (ch == t)
-                    break;
+                scan_next(ts); // after ':' is the value...
             }
-        } else {
-            t = ']';
-            while (scan_scanf(ts,"%!%c",json_parse,&val,&ch)){
-                if (value_is_error(val))
-                    break;
-                seq_add(ss,val);
-                if (ch == t)
-                    break;
+            
+            // the value returned may be an error...               
+            val = json_parse(ts);
+            if (value_is_error(val)) {
+                err = val;
+                break;
+            }
+            seq_add(ss,val);     
+            
+            t = scan_next(ts); // should be separator or close                
+            if (t == ',') { // move to next item (key or value)
+                 t = scan_next(ts);
+            } else
+            if (t != endt) { // otherwise finished, or an error!
+                err = value_errorf("expecting ',' or '%c', got '%c'",endt,t);
+                break;                    
             }
         }
-        if (ch != t || value_is_error(val)) {
-            obj_unref(ss);
-            if (value_is_error(val)) {
-                return val;
-            } else {
-                return value_errorf("expecting '%c', got '%c'",t,ch);
-            }
+        if (err) {
+            obj_unref(ss); // clean up the temporary array...
+            return err;
         }
         PValue v = value_new(ValueValue,t=='}' ? ValueSimpleMap : ValueArray);
         v->v.ptr = seq_array_ref(ss);
@@ -238,6 +250,7 @@ static PValue json_parse(ScanState *ts) {
     }
     case T_END:
         return value_error("unexpected end of stream");
+    // scalars......
     case T_STRING:
         return value_str(scan_get_str(ts));
     case T_NUMBER:
@@ -251,7 +264,7 @@ static PValue json_parse(ScanState *ts) {
         if (str_eq(buff,"true") || str_eq(buff,"false")) {
             return value_bool(str_eq(buff,"true"));
         } else {
-            return value_errorf("unknown token '%s'\n",buff);
+            return value_errorf("unknown token '%s'",buff);
         }
     } default:
         return value_errorf("got '%c'; expecting '{' or '['",t);
@@ -260,17 +273,23 @@ static PValue json_parse(ScanState *ts) {
 
 // convert a string to JSON data.
 PValue json_parse_string(const char *str) {
+    PValue res;
     ScanState *st = scan_new_from_string(str);
     scan_next(st);
-    return json_parse(st);
+    res = json_parse(st);
+    obj_unref(st);
+    return res;
 }
 
 // convert a file to JSON data.
 PValue json_parse_file(const char *file) {
+    PValue res;
     ScanState *st = scan_new_from_file(file);
     if (! st)
         return value_errorf("cannot open '%s'",file);
     scan_next(st);
-    return json_parse(st);
+    res = json_parse(st);
+    obj_unref(st);
+    return res;
 }
 

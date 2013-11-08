@@ -13,12 +13,24 @@
 //const char *js = "{'one':[10,100], 'two':2, 'three':'hello'}";
 //const char *js = "{'one':1, 'two':2, 'three':'hello'}";
 //const char *js = "[10,20,30]";
+
 //const char *js = "[{'zwei':2.'twee':2},10,{'A':10,'B':[1,2]}]";
-const char *js = "[{'zwei':2,'twee':2},10,{'A':10,'B':[2,20]}]";
 
+const char *js = "[{'zwei':2,'twee':2},10,{'A':10,'B':[2,20]},[]]";
 
-int main()
+int main(int argc, char **argv)
 {
+    PValue v;
+    char *s;
+    if (argc > 1) {
+        v = json_parse_string(argv[1]);
+        s = json_tostring(v);
+        puts(s);
+        dispose(s,v);
+        printf("count = %d\n",obj_kount());
+        return 0;
+    }
+        
     PValue *va = array_new_ref(PValue,7);
     va[0] = value_str("hello dolly");
     va[1] = value_float(4.2);
@@ -49,11 +61,10 @@ int main()
     si[2] = 1000;
     va[6] = value_array(si,ValueInt);
 
-    PValue v = value_array(va,ValueValue);
-
-    char *s = json_tostring(v);
-
-    printf("got '%s'\n",s);
+    v = value_array(va,ValueValue);
+    s = json_tostring(v);
+    
+     printf("got '%s'\n",s);
 
     PValue e = value_error("completely borked");
     if (value_is_error(e)) {
