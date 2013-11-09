@@ -417,10 +417,9 @@ bool scan_scanf(ScanState* ts, const char *fmt,...)
             P = va_arg(ap,void*);
             char F = *fmt++;
             switch(F) {
-            case 'v':  
-            case 'V':   {// value
+            case 'v':  {// value
                 ValueType vt;
-                if (F == 'v') scan_next(ts);
+                scan_next(ts);
                 scan_get_tok(ts,ts->sbuff,STRSIZE);
                 char *str = ts->sbuff;
                 if (ts->type == T_NUMBER) {

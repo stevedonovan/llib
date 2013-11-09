@@ -92,6 +92,9 @@ PValue value_list (List *ls, ValueType type);
 PValue value_array (void *p, ValueType type);
 PValue value_map (Map *m, ValueType type);
 
+// for consistency
+#define value_string value_str
+
 PValue value_parse(const char *str, ValueType type);
 const char *value_tostring(PValue v);
 

@@ -85,6 +85,12 @@ PValue value_map (Map *m, ValueType type) {
 
 #define str_eq(s1,s2) (strcmp((s1),(s2))==0)
 
+static PValue conversion_error(const char *s, const char *t) {
+    char buff[50];
+    snprintf(buff,sizeof(buff),"'%s' is not a valid %s\n",s,t);
+    return value_error(buff);
+}
+
 // convert a string into a value of the desired type
 PValue value_parse(const char *str, ValueType type) {
     v_int_t ival;
@@ -96,12 +102,12 @@ PValue value_parse(const char *str, ValueType type) {
     case ValueInt:
         ival = strtoll(str, &endptr,10);
         if (*endptr)
-            return value_error(endptr);
+            return conversion_error(endptr,"int");
         return value_int(ival);
     case ValueFloat:
         fval = strtod(str, &endptr);
         if (*endptr)
-            return value_error(endptr);
+            return conversion_error(endptr,"float");
         return value_float(fval);
     case ValueBool:
         return value_bool(str_eq(str,"true"));

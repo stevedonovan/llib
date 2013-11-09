@@ -36,10 +36,14 @@ array can always be accessed with `*s`.
 
 #define out(x) fprintf(stderr,"%s = %x\n",#x,(intptr)x);
 
+static int kount = 0;
+
+//#define LLIB_PTR_LIST
+
+#ifdef LLIB_PTR_LIST
 // Generally one can't depend on malloc or other allocators returning pointers
 // within a given range. So we keep an array of 'our' pointers, which we know
 // for a fact were allocated using `new_obj`
-static int kount = 0;
 static int max_p = 0;
 static void *our_ptrs[MAX_PTRS];
 
@@ -69,6 +73,29 @@ static void remove_our_ptr(void *p) {
     our_ptrs[ptr_idx] = NULL;
     --kount;
 }
+#define our_ptr(p) (our_ptr_idx(p) != -1)
+#else
+static void *low_ptr, *high_ptr;
+
+static void add_our_ptr(void *p) {
+    if (! low_ptr) {
+        low_ptr = p;
+        high_ptr = p;
+    } else {
+        if (p < low_ptr)
+            low_ptr = p;
+        else if (p > high_ptr)
+            high_ptr = p;
+    }      
+}
+
+static int our_ptr (void *p) {
+    return p >= low_ptr && p <= high_ptr;
+}
+
+static void remove_our_ptr(void *p) {
+}
+#endif
 
 int obj_kount() { return kount; }
 
@@ -84,7 +111,7 @@ int obj_refcount (const void *p)
 {
     if (p == NULL) return -1;
     ObjHeader *pr = obj_header_(p);
-    if (our_ptr_idx(pr) != -1) {
+    if (our_ptr(pr)) {
         return pr->_ref;
     } else {
         return -1;
@@ -221,7 +248,11 @@ void *array_new_(int mlen, int len, int isref) {
     h->is_array = 1;
     h->is_ref_container = isref;
     P = (byte*)PTR_FROM_HEADER(h);
-    memset(P+mlen*len,0,mlen);
+    if (isref) {  // ref arrays are fully zeroed out
+        memset(P,0,mlen*(len+1));
+    } else { // otherwise just the last element
+        memset(P+mlen*len,0,mlen);
+    }
     return P;
 }
 
@@ -309,7 +340,6 @@ char *str_ref(char *s) {
 /// make a refcounted string from an arbitrary string.
 char *str_cpy(char *s) {
     int rc = obj_refcount(s);
-    //printf("'%s' %p %d\n",s,s,rc);
     if (rc == -1) {
         return str_new(s);
     } else {
