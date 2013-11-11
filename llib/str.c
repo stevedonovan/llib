@@ -234,7 +234,7 @@ char **str_strings(char *first,...) {
         ++n;
     }
     va_end(ap);
-    res = (char**)array_new_(sizeof(char*),n,false);
+    res = array_new(char*,n);
     res[0] = first;
     n = 1;
     va_start(ap,first);

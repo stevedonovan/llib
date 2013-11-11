@@ -19,7 +19,7 @@ static void Value_dispose(PValue v) {
 }
 
 bool value_object(void *obj) {
-    return obj_dtor(obj) == (DisposeFn)Value_dispose;
+    return obj_is_instance(obj,"Value");
 }
 
 PValue value_new(ValueType type, ValueContainer vc) {

@@ -71,12 +71,17 @@ void map_clear(Map *m) {
 }
 
 bool map_object (void *obj) {
-    return obj_dtor(obj) == (DisposeFn)map_clear;
+    return obj_is_instance(obj,"Map");
 }
 
+// Current implementation of Map struct is exactly the same as the List struct,
+// although they are distinct types with distinct dispose functions.
+
+void list_init_(List *self, int flags);
+
 Map *map_new(int ktype, enum MapValue vtype) {
-    Map *m = list_new (ktype);
-    (void)obj_set_dispose_fun(m, (DisposeFn)map_clear);
+    Map *m = obj_new(Map,(DisposeFn)map_clear);
+    list_init_((List*)m,ktype);
     set_vtype(m,vtype);
     return m;
 }
@@ -313,7 +318,7 @@ PEntry map_remove(Map *m, void *key) {
          root(m) = NULL;
          return node;
     }
-    
+
     if (! node->_right) {
         *parent_edge = node->_left;
     } else {

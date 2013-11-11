@@ -45,6 +45,7 @@ is used, which is also fine for integer values (up to intptr_t or uintptr_t in
 // @table ListIter
 // @within Types
 
+
 void list_free_item(List *ls, ListIter item) {
     if (list_is_container(ls)) {
         if (ls->flags & LIST_REF) {
@@ -77,11 +78,10 @@ static int string_equals(const char *s1, const char *s2) {
 }
 
 bool list_object (void *obj) {
-    return obj_dtor(obj) == (DisposeFn)List_dispose;
+    return obj_is_instance(obj,"List");
 }
 
-List *list_new (int flags) {
-    List *self = obj_new(List,List_dispose);
+void list_init_(List *self, int flags) {
     self->flags = flags;
     if (flags & LIST_STR) {
         self->compare = LIST_CMP strcmp;
@@ -93,6 +93,11 @@ List *list_new (int flags) {
     self->first = NULL;
     self->last = NULL;
     self->size = 0;
+}
+
+List *list_new (int flags) {
+    List *self = obj_new(List,List_dispose);
+    list_init_(self,flags);
     return self;
 }
 

@@ -71,15 +71,14 @@ static int string_cmp_desc(const char **m1, const char **m2, intptr offs) {
 #endif
 
 static CMPFN cmpfn(ElemKind kind, bool desc) {
-    if (desc) 
+    if (desc)
         return kind==ARRAY_INT ? (CMPFN)plain_cmp_desc : (CMPFN)string_cmp_desc;
     else
         return kind==ARRAY_INT ? (CMPFN)plain_cmp : (CMPFN)string_cmp;
 }
 
 void array_sort(void *P, ElemKind kind, bool desc, int ofs) {
-    ObjHeader *pr = obj_header_(P);
-    int len = pr->x.len, nelem = pr->mlen;
+    int len = array_len(P), nelem = obj_elem_size(P);
     qsort_x(P,len,nelem,(void*)ofs,cmpfn(kind,desc));
 }
 

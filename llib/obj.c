@@ -86,7 +86,7 @@ static void add_our_ptr(void *p) {
             low_ptr = p;
         else if (p > high_ptr)
             high_ptr = p;
-    }      
+    }
 }
 
 static int our_ptr (void *p) {
@@ -121,35 +121,83 @@ int obj_refcount (const void *p)
 #define PTR_FROM_HEADER(h) ((void*)(h+1))
 #define HEADER_FROM_PTR(P) ((ObjHeader*)P-1)
 
+// Type descripters are kept in an array
+#define LLIB_TYPE_MAX 4096
+
+ObjType obj_types[LLIB_TYPE_MAX];
+int obj_types_size = 0;
+
+typedef ObjType *OTP;
+
+OTP obj_type_(ObjHeader *h) {
+    return &obj_types[h->type];
+}
+
+OTP type_from_dtor(const char *name, DisposeFn dtor) {
+    if (dtor) {
+        for(OTP pt = obj_types; pt->name; ++pt) {
+            if (pt->dtor == dtor)
+                return pt;
+        }
+    } else { // no dispose fun, so let's match by name
+        for(OTP pt = obj_types; pt->name; ++pt) {
+            if (strcmp(pt->name,name) == 0)
+                return pt;
+        }
+    }
+    return NULL;
+}
+
+OTP add_new_type(int size, const char *type, DisposeFn dtor) {
+    OTP t = &obj_types[obj_types_size];
+    t->name = type;
+    t->dtor = dtor;
+    t->mlem = size;
+    t->idx = obj_types_size++;
+    // just in case...
+    obj_types[obj_types_size].name = NULL;
+    return t;
+}
+
 /// allocate a new refcounted object.
 // @tparam type T
 // @tparam DisposeFn optional destructior
 // @treturn T*
 // @function obj_new
 
-void *obj_new_(int size, DisposeFn dtor) {
+void *obj_new_(int size, const char *type, DisposeFn dtor) {
+    static bool initialized = false;
+    if (! initialized) { // type zero is a little special...
+        add_new_type(1,"char",NULL);
+        initialized = true;
+    }
     ObjHeader *h = new_obj(size);
-    h->x.dtor = dtor;
-    h->mlen = size;
+    h->_len = 0;
     h->_ref = 1;
     h->is_array = 0;
     h->is_ref_container = 0;
+
+    OTP t = type_from_dtor(type,dtor);
+    if (! t)
+        t = add_new_type(size,type,dtor);
+    h->type = t->idx;
     return PTR_FROM_HEADER(h);
 }
 
-DisposeFn obj_set_dispose_fun(const void *P,DisposeFn dtor) {
+// getting element size is now a little more indirect...
+
+/// size of this object.
+// For arrays, this is size of base type.
+int obj_elem_size(void *P) {
     ObjHeader *h = obj_header_(P);
-    DisposeFn old = h->x.dtor;
-    if (dtor) h->x.dtor = dtor;
-    return old;
+    return obj_type_(h)->mlem;
 }
 
-DisposeFn obj_dtor(const void *P) {
-    if (obj_refcount(P)==-1)
-        return NULL;
-    if (obj_header_(P)->is_array)
-        return NULL;
-    return obj_set_dispose_fun(P,NULL);
+/// whether an object matches a type by name
+bool obj_is_instance(const void *P, const char *name) {
+    if (obj_refcount(P) == -1)
+        return false;
+    return strcmp(obj_type(P)->name,name) == 0;
 }
 
 // Ref counted objects are either arrays or structs.
@@ -157,22 +205,21 @@ DisposeFn obj_dtor(const void *P) {
 // this has to unref those objects. For structs,
 // there may be an explicit destructor.
 
-void obj_free_(const void *P) {
-    ObjHeader *pr = obj_header_(P);
-    if (pr->is_array) {
-        if (pr->is_ref_container) {
+static void obj_free_(ObjHeader *h, const void *P) {
+    if (h->is_array) {
+        if (h->is_ref_container) {
             void **arr = (void**)P;
-            for (int i = 0,n = pr->x.len; i < n; i++) {
+            for (int i = 0, n = h->_len; i < n; i++) {
                 obj_unref(arr[i]);
             }
         }
     } else {
-        DisposeFn dtor = pr->x.dtor;
+        DisposeFn dtor = obj_type_(h)->dtor;
         if (dtor)
             dtor((void*)P);
     }
-    free(pr);
-    remove_our_ptr(pr);
+    remove_our_ptr(h);
+    free(h);
 }
 
 // Reference counting
@@ -183,8 +230,8 @@ void obj_free_(const void *P) {
 // @function obj_ref
 
 void obj_incr_(const void *P) {
-    ObjHeader *pr = obj_header_(P);
-    ++(pr->_ref);
+    ObjHeader *h = obj_header_(P);
+    ++(h->_ref);
 }
 
 /// decrease reference count (`unref`).
@@ -192,10 +239,10 @@ void obj_incr_(const void *P) {
 // dispose function, if any.
 void obj_unref(const void *P) {
     if (P == NULL) return;
-    ObjHeader *pr = obj_header_(P);
-    --(pr->_ref);
-    if (pr->_ref == 0)
-        obj_free_(P);
+    ObjHeader *h = obj_header_(P);
+    --(h->_ref);
+    if (h->_ref == 0)
+        obj_free_(h,P);
 }
 
 void obj_apply_v_varargs(void *o, PFun fn,va_list ap) {
@@ -239,11 +286,14 @@ typedef unsigned char byte;
 // @tparam int size
 // @function new_array_ref
 
-void *array_new_(int mlen, int len, int isref) {
+void *array_new_(int mlen, const char *name, int len, int isref) {
     ObjHeader *h = new_obj(mlen*(len+1));
     byte *P;
-    h->x.len = len;
-    h->mlen = mlen;
+    OTP t = type_from_dtor(name,NULL);
+    if (! t)
+        t = add_new_type(mlen,name,NULL);
+    h->type = t->idx;
+    h->_len = len;
     h->_ref = 1;
     h->is_array = 1;
     h->is_ref_container = isref;
@@ -278,12 +328,11 @@ void *array_new_(int mlen, int len, int isref) {
 // tparam type* array
 // @function array_len
 
-void *array_new_copy_ (int mlen, int len, int isref, void *P) {
-    void *arr = array_new_(mlen,len,isref);
+void *array_new_copy_ (int mlen, const char *name, int len, int isref, void *P) {
+    void *arr = array_new_(mlen,name,len,isref);
     memcpy(arr,P,mlen*len);
     return arr;
 }
-
 
 /// get a slice of an array.
 // @param P the array
@@ -291,10 +340,11 @@ void *array_new_copy_ (int mlen, int len, int isref, void *P) {
 // @param i2 upper bound (can be -1 for the rest)
 void * array_copy(void *P, int i1, int i2) {
     ObjHeader *pr = obj_header_(P);
-    int mlem = pr->mlen;
+    OTP t = obj_type_(pr);
+    int mlem = t->mlem;
     int offs = i1*mlem;
-    int len = i2 == -1 ? pr->x.len : i2-i1;
-    void *newp = array_new_(mlem,len,pr->is_ref_container);
+    int len = i2 == -1 ? pr->_len : i2-i1;
+    void *newp = array_new_(mlem,t->name,len,pr->is_ref_container);
     memcpy(newp,(char*)P+offs,mlem*len);
     return newp;
 }
@@ -304,8 +354,10 @@ void * array_copy(void *P, int i1, int i2) {
 // @param newsz the new size
 void * array_resize(void *P, int newsz) {
     ObjHeader *pr = obj_header_(P);
-    void *newp = array_new_(pr->mlen,newsz,pr->is_ref_container);
-    memcpy(newp,P,pr->mlen*pr->x.len);
+    OTP t = obj_type_(pr);
+    int mlen = t->mlem;
+    void *newp = array_new_(mlen,t->name,newsz,pr->is_ref_container);
+    memcpy(newp,P,mlen*pr->_len);
     // if old ref array is going to die, make sure it doesn't dispose our elements
     pr->is_ref_container = 0;
     obj_unref(P);
@@ -396,9 +448,9 @@ void seq_dispose(Seq *s)
 // @param T type
 // @function seq_new_ref
 
-void *seq_new_(int nlem, int isref) {
+void *seq_new_(int nlem, const char *name, int isref) {
     Seq *s = obj_new(Seq,seq_dispose);
-    s->arr = array_new_(nlem,INITIAL_CAP,isref);
+    s->arr = array_new_(nlem,name,INITIAL_CAP,isref);
     s->cap = INITIAL_CAP;// our capacity
     array_len(s->arr) = 0;// our size
     return (void*)s;
@@ -458,9 +510,10 @@ void *seq_array_ref(void *sp) {
         s->arr = array_resize(s->arr, len);
     }
   //  */
-    obj_incr_(s->arr);
+    void *arr = s->arr;
+    obj_incr_(arr);
     obj_unref(sp);
-    return s->arr;
+    return arr;
 }
 
 /// standard for-loop.
