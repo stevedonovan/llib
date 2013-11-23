@@ -18,6 +18,7 @@ bool str_starts_with(const char *s, const char *prefix);
 bool str_ends_with(const char *s, const char *postfix);
 int str_find_first_of(const char *s, const char *ps);
 int str_find_first_not_of(const char *s, const char *ps);
+void str_trim(char *s);
 char ** str_split(const char *s, const char *delim);
 char *str_concat(char **ss, const char *delim);
 char **str_strings(char *p,...);
@@ -30,5 +31,6 @@ void strbuf_addf(char **sp, const char *fmt, ...);
 char *strbuf_insert_at(char **sp, int pos, const char *src, int sz);
 char *strbuf_erase(char **sp, int pos, int len);
 char *strbuf_replace(char **sp, int pos, int len, const char *s);
+#define strbuf_tostring(sp) (char*)seq_array_ref(sp)
 
 #endif

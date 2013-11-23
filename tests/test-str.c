@@ -64,10 +64,17 @@ int main()
     assert(str_starts_with(S,"hell"));
     assert(str_ends_with(S,"dolly"));
     assert(! str_starts_with(S,"llo"));
+    unref(s);
+    s = strbuf_tostring(ss);
+    unref(s);
+    //unref(ss);
 
     test_split();
 
-    dispose(s, ss);
+    s = str_new("  hello dolly ");
+    str_trim(s);
+    printf("got '%s'\n",s);
+    unref(s);
     printf("kount %d\n",obj_kount());
     return 0;
 }

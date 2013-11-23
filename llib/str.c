@@ -20,10 +20,16 @@
 /// String buffers.
 // @section buffers
 
-/// new string buffer
+/// new string buffer.
+// CUrrently, string buffers are just sequences of chars.
 char **strbuf_new(void) {
     return seq_new(char);
 }
+
+/// append a character to a string buffer.
+// @tparam char** sp
+// @tparam char ch
+// @function strbuf_add
 
 /// append a string to a string buffer.
 void strbuf_adds(char **sp, const char *ss) {
@@ -145,6 +151,22 @@ int str_find_first_not_of(const char *s, const char *ps) {
     else
         return sz;
 }
+
+static const char *whitespace = " \t\n";
+
+/// trim a string in-inplace
+void str_trim(char *s) {
+    int sz = strspn(s,whitespace);
+    if (sz > 0)
+        memmove(s,s+sz,strlen(s)-sz+1);
+    char *p = s + strlen(s) - 1;
+    while (*p && strchr(whitespace,*p) != NULL)
+        --p;
+    *(p+1) = 0;
+}
+
+// " one "
+// sz = 1; srlen = 5. Move 5 chars, get "one "
 
 #ifdef _WIN32
 #ifdef _MSC_VER
