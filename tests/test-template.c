@@ -85,7 +85,8 @@ void using_json()
 const char *templ = "Hello $(name), how is $(home) at $(i age) ?\n"
     "$(with sub| $(A)=$(B)|)$(name)\n"
     "$(for items | hello $(X)|)\n"
-    "$(for ls | $(X) is here |) thanks!";
+    "$(for ls | $(X) is here |) thanks!\n"
+    "$(if es |Hola|)$(else |Hello $(home)|) $(name)";
 
 typedef char *Str;
 
@@ -122,12 +123,13 @@ int main()
         "sub",(char*)sbl,
         "items",(char*)smap,
         "ls",(char*)ls,
+       // "es","si",
         NULL
     };
 
     Str S1 = str_templ_subst(st,tbl);
     printf("got '%s'\n",S1);
-    Str S2= str_templ_subst(st,tbl);
+    Str S2 = str_templ_subst(st,tbl);
     assert(str_eq(S1,S2));
     dispose(S1,S2,st,smap,ls);
     printf("kount = %d\n",obj_kount());

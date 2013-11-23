@@ -49,23 +49,20 @@ int main()
 }
 ```
 C does not have smart pointers, but dumb pointers with hidden secrets. All objects
-are over-allocated, with a hidden header behind the pointer. If the object is an
-array, it keeps track of its size, otherwise contains a pointer to a function
-which acts as a 'destructor' for the object. Objects start out with a reference
+are over-allocated, with a hidden header behind the pointer. This keeps track of its
+size if it is an array, and there is a type descriptor indexing a type object
+which contains a 'destructor' for the object. Objects start out with a reference
 count of 1, and the macro `obj_ref` increments this count; if un-referenced and the
 count is zero, then we call the destructor and free the memory.
 
 
 ```C
 typedef struct ObjHeader_ {
-    union {
-      DisposeFn dtor;
-      uint32 len;
-    } x;
-    unsigned int _ref:15;
+    unsigned int type:14;
     unsigned int is_array:1;
     unsigned int is_ref_container:1;
-    unsigned int mlen:15;
+    unsigned int _ref:16;
+    unsigned int _len:32;
 } ObjHeader;
 ```
 
@@ -148,7 +145,7 @@ FOR(i,array_len(arr)) printf("%f ",arr[i]);
 printf("\n");
 
 // alternative macro
-// FOR(float,pf,arr) printf("%f ",*pf);
+// FOR_ARR(float,pf,arr) printf("%f ",*pf);
 
 ```
 
@@ -295,7 +292,7 @@ for character arrays.  `strbuf_adds` adds a string, and `strbuf_addf` is equival
 `strbuf_adds(ss,str_fmt(fmt,...))`.
 
 They are used for operations which modify strings, like inserting, removing and replacing, and
-resemble the [similar methods](?) of C++'s `std::string`.
+resemble the similar methods of C++'s `std::string`.
 
 Then there are operations on strings which don't modify them:
 
@@ -319,8 +316,9 @@ want to only use the allocated 'root' pointer.
 
 These are strings where occurences of a `$(var)` pattern are expanded.  Sometimes called
 'string interpolation', it's a good way to generate large documents like HTML output and does not
-suffer from the size limitations of the `printf` family.  You make a template object from a template string,
-and expand a template using that object plus a function to map string keys to values, and a 'map' object.
+suffer from the format string size limitations of the `printf` family.
+You make a template object from a template string, and expand a template using that
+object plus a function to map string keys to values, and a 'map' object.
 The default form assumes that the object is just a NULL-terminated array of strings listing the keys
 and values, and plain linear lookup.
 
@@ -331,9 +329,9 @@ and values, and plain linear lookup.
     char *S = str_templ_subst(st,tbl1);
     assert(str_eq(S,"Hello Dolly, how is here?"));
 ```
-You don't have to use `$()` as the magic characters, which is the default indicated by `NULL` in `str_templ_new`.
-For instance, if expanding templates containing JavaScript it's better to use `@()` which will not conflict with
-use of JQuery.
+You don't have to use `$()` as the magic characters, which is the default indicated by `NULL` in
+`str_templ_new`. For instance, if expanding templates containing JavaScript it's better to use `@()`
+which will not conflict with use of JQuery.
 
 We can easily use a llib map with the more general form:
 
@@ -451,6 +449,7 @@ _ad-hoc_ part hard to handle!):
 Another useful property of values when used in templates is that they know how to turn themselves
 into a string.  With plain data, we have to assume that the expansions result in a string,
 but if they do result in a value, then `value_tostring` will be used. (The template function
-`$(i var)` will do integers to strings, however).
+`$(i var)` will explicitly convert integers to strings, but it's hard to work with floating-point numbers
+this way).
 
 
