@@ -99,8 +99,27 @@ static void remove_our_ptr(void *p) {
 
 int obj_kount() { return kount; }
 
-static ObjHeader *new_obj(int size) {
-    void *obj = malloc(size + sizeof(ObjHeader));
+static void s_free(void *p, void *obj) {
+    free(obj);
+}
+
+static void *s_alloc(void *p, int size) {
+    return malloc(size);
+};
+
+ObjAllocator obj_default_allocator = {
+  s_alloc, s_free, NULL
+};
+
+static ObjHeader *new_obj(int size, ObjType *t) {
+    size += sizeof(ObjHeader);
+    void *obj;
+
+    if (! t->alloc) {
+        obj = malloc(size);
+    } else {
+        obj = t->alloc->alloc(t->alloc,size);
+    }
     add_our_ptr(obj);
     return (ObjHeader *)obj;
 }
@@ -171,15 +190,15 @@ void *obj_new_(int size, const char *type, DisposeFn dtor) {
         add_new_type(1,"char",NULL);
         initialized = true;
     }
-    ObjHeader *h = new_obj(size);
+    OTP t = type_from_dtor(type,dtor);
+    if (! t)
+        t = add_new_type(size,type,dtor);
+
+    ObjHeader *h = new_obj(size,t);
     h->_len = 0;
     h->_ref = 1;
     h->is_array = 0;
     h->is_ref_container = 0;
-
-    OTP t = type_from_dtor(type,dtor);
-    if (! t)
-        t = add_new_type(size,type,dtor);
     h->type = t->idx;
     return PTR_FROM_HEADER(h);
 }
@@ -206,6 +225,7 @@ bool obj_is_instance(const void *P, const char *name) {
 // there may be an explicit destructor.
 
 static void obj_free_(ObjHeader *h, const void *P) {
+    OTP t = obj_type_(h);
     if (h->is_array) {
         if (h->is_ref_container) {
             void **arr = (void**)P;
@@ -214,12 +234,15 @@ static void obj_free_(ObjHeader *h, const void *P) {
             }
         }
     } else {
-        DisposeFn dtor = obj_type_(h)->dtor;
-        if (dtor)
-            dtor((void*)P);
+        if (t->dtor)
+            t->dtor((void*)P);
     }
     remove_our_ptr(h);
-    free(h);
+    if (t->alloc) {
+        t->alloc->free(t->alloc,h);
+    } else {
+        free(h);
+    }
 }
 
 // Reference counting
@@ -276,22 +299,13 @@ typedef unsigned char byte;
 
 //? allocates len+1 - ok?
 
-/// create an array.
-// @tparam type T
-// @tparam int size
-// @function new_array
-
-/// create an array of refcounted objects.
-// @tparam type T
-// @tparam int size
-// @function new_array_ref
-
 void *array_new_(int mlen, const char *name, int len, int isref) {
-    ObjHeader *h = new_obj(mlen*(len+1));
-    byte *P;
     OTP t = type_from_dtor(name,NULL);
     if (! t)
         t = add_new_type(mlen,name,NULL);
+
+    ObjHeader *h = new_obj(mlen*(len+1),t);
+    byte *P;
     h->type = t->idx;
     h->_len = len;
     h->_ref = 1;
@@ -500,16 +514,15 @@ void seq_add_str(void *sp, const char *p) {
 }
 
 /// get the array from a sequence.
-// (This will transfer ownership and unref the sequence.)
+// (This will transfer ownership, shrink to fit,
+// and unref the sequence.)
 // @param sp the sequence
 void *seq_array_ref(void *sp) {
     Seq *s = (Seq *)sp;
-//    /*
     int len = array_len(s->arr);
     if (len < s->cap) {
         s->arr = array_resize(s->arr, len);
     }
-  //  */
     void *arr = s->arr;
     obj_incr_(arr);
     obj_unref(sp);
@@ -526,4 +539,4 @@ void *seq_array_ref(void *sp) {
 // @tparam type* loop pointer
 // @tparam type* array
 // @macro FOR_ARR
-// @usage FOR(int,pi,arr) printf("%d ",*pi);
+// @usage FOR_ARR(int,pi,arr) printf("%d ",*pi);

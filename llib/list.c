@@ -45,20 +45,25 @@ is used, which is also fine for integer values (up to intptr_t or uintptr_t in
 // @table ListIter
 // @within Types
 
+#define LW2L_(wp) (((List**)wp)[1])
+#define list_is_node(ls) ((ls)->flags & LIST_NODE)
+#define list_is_container(ls) (! list_is_node(ls))
 
 void list_free_item(List *ls, ListIter item) {
     if (list_is_container(ls)) {
         if (ls->flags & LIST_REF) {
             obj_unref (item->data);
         }
-        free(item);
+        ObjAllocator *alloc = ls->kind->alloc;
+        alloc->free(alloc,item);
     } else {
         obj_unref(item);
     }
 }
 
 ListIter list_new_item(List *ls, int sz) {
-    return (ListIter)malloc(sz);
+    ObjAllocator *alloc = ls->kind->alloc;
+    return (ListIter)alloc->alloc(alloc,sz);
 }
 
 static void List_dispose(List *self) {
@@ -81,14 +86,31 @@ bool list_object (void *obj) {
     return obj_is_instance(obj,"List");
 }
 
+extern ObjAllocator obj_default_allocator;
+
+static ListKind s_str_kind = {
+    (ListCmpFun)strcmp,
+    (ListEqualsFun)string_equals,
+    &obj_default_allocator
+};
+
+static ListKind s_ptr_kind = {
+    (ListCmpFun)simple_pointer_compare,
+    (ListEqualsFun)simple_pointer_equals,
+    &obj_default_allocator
+};
+
+void list_global_allocator(ObjAllocator *alloc) {
+    s_ptr_kind.alloc = alloc;
+    s_str_kind.alloc = alloc;
+}
+
 void list_init_(List *self, int flags) {
     self->flags = flags;
     if (flags & LIST_STR) {
-        self->compare = LIST_CMP strcmp;
-        self->equals = LIST_CMP string_equals;
+        self->kind = &s_str_kind;
     } else {
-        self->compare = LIST_CMP simple_pointer_compare;
-        self->equals = LIST_CMP simple_pointer_equals;
+        self->kind = &s_ptr_kind;
     }
     self->first = NULL;
     self->last = NULL;
@@ -115,11 +137,9 @@ List *list_new_node(bool str) {
     return list_new (LIST_NODE | (str ? LIST_STR : 0));
 }
 
-List *private_clone_list(List *other) {
+List *list_new_like(List *other) {
     List *ls = list_new(other->flags);
-    // these may have been set to custom functions
-    ls->compare = other->compare;
-    ls->equals = other->equals;
+    ls->kind = other->kind;
     return ls;
 }
 
@@ -201,8 +221,9 @@ ListIter list_insert_front(List *ls, void *data) {
 
 /// add data in sorted order.
 ListIter list_add_sorted(List *ls, void *data) {
+    ListCmpFun cmp = ls->kind->compare;
     FOR_LIST(item,ls) {
-        if (ls->compare(item->data,data) > 0) {
+        if (cmp(item->data,data) > 0) {
             return list_insert(ls, item, data);
         }
     }
@@ -247,8 +268,9 @@ void * list_pop(List *ls) {
 
 /// return an iterator to a given data value.
 ListIter list_find(List *ls, void *data) {
+    ListEqualsFun equals = ls->kind->equals;
     FOR_LIST(item,ls) {
-        if (ls->equals(item->data,data)) {
+        if (equals(item->data,data)) {
             return item;
         }
     }
@@ -291,7 +313,7 @@ void *list_get(List *ls, int idx) {
 
 /// make a new list containing list data that match a predicate.
 List *list_filter(List *other, ListPred fun) {
-    List *ls = private_clone_list(other);
+    List *ls = list_new_like(other);
     bool isref = ls->flags & LIST_REF;
     FOR_LIST(item,other) {
         if (! fun || (fun && fun(item->data))) {
@@ -305,7 +327,7 @@ List *list_filter(List *other, ListPred fun) {
 
 /// make a new list of the list items that match a predicate.
 List *list_filter_if(List *other, ListSearchFn fun, void *data) {
-    List *ls = private_clone_list(other);
+    List *ls = list_new_like(other);
     FOR_LIST(item,other) {
         if (fun(item,data))
             list_add(ls,obj_ref(data));
@@ -353,7 +375,7 @@ bool list_advance(List *ls, ListIter *iter, int len) {
 
 /// create a new list from another between two iterators.
 List* list_slice(List *other, ListIter begin, ListIter end) {
-    List *ls = private_clone_list(other);
+    List *ls = list_new_like(other);
     bool isc = list_is_container(ls);
     bool isref = ls->flags & LIST_REF;
     void *data;
@@ -396,14 +418,22 @@ void list_erase_n(List *ls, ListIter begin, int n) {
     list_erase(ls,begin,end);
 }
 
+static void copy_kind(List *s) {
+    ListKind *nk = (ListKind*)malloc(sizeof(ListKind));
+    memcpy(nk,s->kind,sizeof(ListKind));
+    s->kind = nk;
+}
+
 /// set the comparison operation for the objects in this list.
 void list_item_compare(List *ls, ListCmpFun cmp) {
-    ls->compare = cmp;
+    copy_kind(ls);
+    ls->kind->compare = cmp;
 }
 
 /// set the equality operation for the objects in this list.
 void list_item_equals(List *ls, ListEqualsFun cmp) {
-    ls->equals = cmp;
+    copy_kind(ls);
+    ls->kind->equals = cmp;
 }
 
 /// remove an item by data value, dispoing it.

@@ -18,13 +18,18 @@ typedef int (*ListCmpFun)(const void *p1, const void *p2);
 typedef ListCmpFun ListEqualsFun;
 #define LIST_CMP (ListCmpFun)
 
+typedef struct ListKind_ {
+    ListCmpFun compare;
+    ListEqualsFun equals;
+    ObjAllocator *alloc;
+} ListKind;
+
 struct List_ {
     ListEntry *first;
     ListEntry *last;
     int size;
-#ifdef _INSIDE_LIST_C
-_INSIDE_LIST_C
-#endif
+    int flags;
+    ListKind *kind;
 };
 
 #ifndef LLIB_LIST_TYPEDEF
@@ -57,12 +62,14 @@ for (ListIter var = (ListIter)listw_first(lw);\
 (var!=NULL) && (*((void**)lw)=&var->data); var = (ListIter)var->_next)
 
 List *list_new (int flags);
+void list_global_allocator(ObjAllocator *alloc);
 ListIter private_new_item(List *ls, void *data, int size);
 bool list_object (void *obj);
 List *list_new_ptr();
 List *list_new_str();
 List *list_new_ref();
 List *list_new_node(bool str);
+List *list_new_like(List *other);
 int list_size(List *ls);
 void * list_item_data (List *ls, void *item);
 ListIter list_start(List *ls);
@@ -114,6 +121,3 @@ ListIter listw_iter(void *p,int idx);
 #define listw_get(lw,idx) (listw_iter(lw,idx), **lw)
 
 #endif
-
-
-

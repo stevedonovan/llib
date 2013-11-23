@@ -9,12 +9,20 @@
 typedef unsigned int uint32;
 typedef unsigned short uint16;
 typedef void (*DisposeFn)(void*);
-typedef void (*PtrFun)(void *);
+typedef void (*PtrFun)(void*);
 typedef void *(*PFun)(void *,...);
+typedef void (*FreeFn)(void *,void *);
+typedef void *(*AllocFn)(void*,int);
 
 #ifndef __cplusplus
 #include <stdbool.h>
 #endif
+
+typedef struct ObjAllocator_ {
+    AllocFn alloc;
+    FreeFn free;
+    void *data;
+} ObjAllocator;
 
 typedef struct ObjHeader_ {
     unsigned int type:14;
@@ -27,6 +35,7 @@ typedef struct ObjHeader_ {
 typedef struct ObjType_ {
     const char *name;
     DisposeFn dtor;
+    ObjAllocator *alloc;
     uint16 mlem;
     uint16 idx;
 } ObjType;

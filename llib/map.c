@@ -25,7 +25,6 @@ This will work fine if simple equality defines a match, as with pointers and int
 #include <stdlib.h>
 #include <string.h>
 
-#include "private_list.h"
 #include "map.h"
 
 #define out(p) fprintf(stderr,"%s=%p (%d)\n",#p,p,obj_refcount(p))
@@ -177,7 +176,7 @@ static PEntry put_item(Map *m, void *key, void *data, int pointer_type) {
         PEntry P = (PEntry)root(m);
         PEntry last = P;
         int order, last_order = 0;
-        ListCmpFun compare = m->compare;
+        ListCmpFun compare = m->kind->compare;
         while (P) {
             order = compare(P->key,key);
             if (order == 0) { // gotcha - overwrite existing entry in map
@@ -245,7 +244,7 @@ static PEntry map_find(Map *m, void *key, PEntry** parent_edge) {
     if (! node) return NULL;  // we're empty!
     PEntry last = NULL;
     bool left = true;
-    ListCmpFun compare = m->compare;
+    ListCmpFun compare = m->kind->compare;
     while (node) {
         int order = compare(node->key,key);
         if (order == 0) { // gotcha!
