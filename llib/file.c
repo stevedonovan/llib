@@ -151,7 +151,7 @@ char **file_files_in_dir(const char *mask, int abs) {
 // @section paths
 
 static const char *after_dirsep(const char *path) {
-    char *p = strrchr(path,DIR_SEP);
+    const char *p = strrchr(path,DIR_SEP);
     return p ? p+1 : path;
 }
 

@@ -254,7 +254,7 @@ char *str_templ_subst_using(StrTempl stl, StrLookup lookup, void *data) {
                 if (! str_eq2(arg,"_"))
                     arg = lookup (data, arg);
                 else
-                    arg = data;
+                    arg = (char*)data;
                 part = fn(arg, (StrTempl)stl->parts[i+1]);
                 if (! strs)
                     strs = list_new_ref();
@@ -264,7 +264,7 @@ char *str_templ_subst_using(StrTempl stl, StrLookup lookup, void *data) {
                 if (! str_eq2(part,"_"))
                     part = lookup (data, part);
                 else
-                    part = data;
+                    part = (char*)data;
             }
             if (! part)
                 part = "";
