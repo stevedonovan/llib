@@ -28,7 +28,6 @@ is used, which is also fine for integer values (up to intptr_t or uintptr_t in
 #include <string.h>
 #include <stdarg.h>
 
-#include "private_list.h"
 #include "list.h"
 
 /// List type

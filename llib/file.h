@@ -11,4 +11,10 @@ int file_size(const char *file);
 char **file_getlines(FILE *f);
 char **file_command_lines(const char *cmd);
 char **file_files_in_dir(const char *dirname, int abs);
+
+char *file_basename(const char *path);
+char *file_dirname(const char *path);
+char *file_extension(const char *path);
+char *file_replace_extension(const char *path, const char *ext);
+
 #endif

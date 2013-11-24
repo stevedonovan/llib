@@ -36,11 +36,28 @@ void text_from_file()
     unref(res);
 }
 
+#define DUMPS(expr) printf("%s = '%s'\n",#expr,expr)
+
+void path_manipulation(const char *path)
+{
+    if (! path)
+#ifdef _WIN32
+        path = "\\users\\steve\\myfiles\\bonzo.txt";
+#else
+        path = "/home/steve/myfiles/bonzo.txt";
+#endif
+    DUMPS(file_basename(path));
+    DUMPS(file_dirname(path));
+    DUMPS(file_extension(path));
+    DUMPS(file_replace_extension(path,".tmp"));
+}
+
 int main(int argc, char **argv)
 {
     text_from_file();
     reading_lines("test-file.c");
     getting_files("*.c");
     printf("remaining %d\n",obj_kount());
+    path_manipulation(NULL);
     return 0;
 }

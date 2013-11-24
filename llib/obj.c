@@ -404,12 +404,12 @@ char *str_ref(char *s) {
 }
 
 /// make a refcounted string from an arbitrary string.
-char *str_cpy(char *s) {
+char *str_cpy(const char *s) {
     int rc = obj_refcount(s);
     if (rc == -1) {
         return str_new(s);
     } else {
-        return s;
+        return (char*)s;
     }
 }
 

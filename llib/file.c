@@ -12,6 +12,7 @@ Extended file handling.
 #ifdef _WIN32
 #define DIR "dir /b"
 #define PWD "%cd%\\"
+#define DIR_SEP '\\'
 #ifdef _MSC_VER
 #define popen _popen
 #define pclose _pclose
@@ -20,6 +21,7 @@ Extended file handling.
 #define DIR "ls"
 #define PWD "$PWD/"
 // popen/pclose not part of C99 <stdio.h>
+#define DIR_SEP '/'
 #define _BSD_SOURCE
 #endif
 
@@ -141,3 +143,61 @@ char **file_files_in_dir(const char *mask, int abs) {
         return lines;
     }
 }
+
+/// Operations on File paths.
+// Unlike the POSIX functions basename and dirname,
+// these functions are guaranteed not to touch the passed string,
+// and will always return a refcounted string.
+// @section paths
+
+static const char *after_dirsep(const char *path) {
+    char *p = strrchr(path,DIR_SEP);
+    return p ? p+1 : path;
+}
+
+/// file part of a path.
+// E.g. '/my/path/bonzo.dog' => 'bonzo.dog'
+char *file_basename(const char *path) {
+    return str_cpy(after_dirsep(path));
+}
+
+/// file part of a path.
+// E.g. '/my/path/bonzo.dog' => '/my/path'
+char *file_dirname(const char *path) {
+    const char *p = after_dirsep(path);
+    int sz = p ? (intptr)p - (intptr)path : 0;
+    char *res = str_new_size(sz);
+    strncpy(res,path,sz);
+    return res;
+}
+
+/// extension of a path.
+// Note: this will ignore any periods in the path itself.
+char *file_extension(const char *path) {
+    const char *p = after_dirsep(path);
+    p = strchr(p,'.');
+    if (p)
+        return str_cpy(p);
+    else
+        return str_cpy("");
+}
+
+/// replace existing extension of path.
+// `ext` may be the empty string, and `path` may not have
+// a extension.
+char *file_replace_extension(const char *path, const char *ext) {
+    const char *p = after_dirsep(path);
+    char *res;
+    int sz, next = strlen(ext);
+    p = strchr(p,'.');
+    if (p) { // we already have an extension
+        sz = (intptr)p - (intptr)path;
+    } else {
+        sz = strlen(path);
+    }
+    res = str_new_size(sz + next);
+    strncpy(res,path,sz);
+    strcpy(res+sz,ext);
+    return res;
+}
+
