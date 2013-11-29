@@ -25,7 +25,7 @@ PValue json_parse_file(const char *file);
 #define VM value_map_of_values
 #define VMS value_map_of_str
 #define VI value_int
-#define VS value_str
+#define VS str_ref
 #define VF value_float
 #define VB value_bool
 #define VA value_array_of_values

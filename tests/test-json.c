@@ -30,45 +30,44 @@ int main(int argc, char **argv)
         printf("count = %d\n",obj_kount());
         return 0;
     }
-        
+
     PValue *va = array_new_ref(PValue,7);
-    va[0] = value_str("hello dolly");
+    va[0] = str_new("hello dolly");
     va[1] = value_float(4.2);
 
     List *ls = list_new_str();
     list_add_items(ls, "bonzo","dog");
 
-    va[2] = value_list(ls,ValueString);
+    va[2] = ls;
 
     List *li = list_new_ptr();
     list_add(li,(void*)103);
     list_add(li,(void*)20);
-    va[3] = value_list(li ,ValueInt);
+    va[3] = li;
 
     Map *m = map_new_str_ptr();
     map_puti(m,"frodo",54);
     map_puti(m,"bilbo",112);
-    va[4] = value_map(m,ValueInt);
+    va[4] = m;
 
     double *ai = array_new(double,2);
     ai[0] = 10.0;
     ai[1] = 20;
-    va[5] = value_array(ai,ValueFloat);
+    va[5] = ai;
 
     short *si = array_new(short,3);
     si[0] = 10;
     si[1] = 100;
     si[2] = 1000;
-    va[6] = value_array(si,ValueInt);
+    va[6] = si;
 
-    v = value_array(va,ValueValue);
-    s = json_tostring(v);
-    
-     printf("got '%s'\n",s);
+    s = json_tostring(va);
+
+    printf("got '%s'\n",s);
 
     PValue e = value_error("completely borked");
     if (value_is_error(e)) {
-        printf("here is an error: %s\n",value_as_string(e));
+        printf("here is an error: %s\n",e);
     }
     dispose(v,s, e);
 

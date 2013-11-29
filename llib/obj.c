@@ -143,8 +143,19 @@ int obj_refcount (const void *p)
 // Type descripters are kept in an array
 #define LLIB_TYPE_MAX 4096
 
-ObjType obj_types[LLIB_TYPE_MAX];
-int obj_types_size = 0;
+ObjType obj_types[LLIB_TYPE_MAX] = {
+    {"char",NULL,NULL,1,0},
+    {"echar_",NULL,NULL,1,1},
+    {"int",NULL,NULL,sizeof(int),2},
+    {"long long",NULL,NULL,sizeof(long long),3},
+    {"double",NULL,NULL,sizeof(double),4},
+    {"float",NULL,NULL,sizeof(float),5},
+    {"bool",NULL,NULL,sizeof(bool),6},
+    {"MapKeyValue",NULL,NULL,sizeof(MapKeyValue),7}
+};
+
+const ObjType *obj_types_ptr = obj_types;
+int obj_types_size = 8;
 
 typedef ObjType *OTP;
 
@@ -167,7 +178,7 @@ OTP type_from_dtor(const char *name, DisposeFn dtor) {
     return NULL;
 }
 
-OTP add_new_type(int size, const char *type, DisposeFn dtor) {
+OTP obj_new_type(int size, const char *type, DisposeFn dtor) {
     OTP t = &obj_types[obj_types_size];
     t->name = type;
     t->dtor = dtor;
@@ -185,14 +196,9 @@ OTP add_new_type(int size, const char *type, DisposeFn dtor) {
 // @function obj_new
 
 void *obj_new_(int size, const char *type, DisposeFn dtor) {
-    static bool initialized = false;
-    if (! initialized) { // type zero is a little special...
-        add_new_type(1,"char",NULL);
-        initialized = true;
-    }
     OTP t = type_from_dtor(type,dtor);
     if (! t)
-        t = add_new_type(size,type,dtor);
+        t = obj_new_type(size,type,dtor);
 
     ObjHeader *h = new_obj(size,t);
     h->_len = 0;
@@ -302,7 +308,7 @@ typedef unsigned char byte;
 void *array_new_(int mlen, const char *name, int len, int isref) {
     OTP t = type_from_dtor(name,NULL);
     if (! t)
-        t = add_new_type(mlen,name,NULL);
+        t = obj_new_type(mlen,name,NULL);
 
     ObjHeader *h = new_obj(mlen*(len+1),t);
     byte *P;

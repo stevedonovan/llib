@@ -18,7 +18,7 @@ int main(int argc, char **argv)
     }
     v = json_parse_file(argv[1]);
     if (value_is_error(v)) {
-        printf("json error: %s\n",value_as_string(v));
+        printf("json error: %s\n",v);
         goto err;
     }
     res = file_read_all(argv[2],true);

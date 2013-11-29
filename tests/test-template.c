@@ -73,7 +73,7 @@ void using_json()
     dispose(s,v);
     v = json_parse_string(js);
     if (value_is_error(v)) {
-        fprintf(stderr,"error '%s'\n",value_as_string(v));
+        fprintf(stderr,"error '%s'\n",v);
     } else {
         s = str_templ_subst_values(st,v);
         puts(s);

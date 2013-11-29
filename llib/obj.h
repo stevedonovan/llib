@@ -8,6 +8,7 @@
 #define _LLIB_OBJ_H
 typedef unsigned int uint32;
 typedef unsigned short uint16;
+typedef long long int64;
 typedef void (*DisposeFn)(void*);
 typedef void (*PtrFun)(void*);
 typedef void *(*PFun)(void *,...);
@@ -39,6 +40,22 @@ typedef struct ObjType_ {
     uint16 mlem;
     uint16 idx;
 } ObjType;
+
+enum {
+    OBJ_CHAR_T = 0,
+    OBJ_ECHAR_T = 1,
+    OBJ_INT_T = 2,
+    OBJ_LLONG_T = 3,
+    OBJ_DOUBLE_T = 4,
+    OBJ_FLOAT_T = 5,
+    OBJ_BOOL_T = 6,
+    OBJ_KEYVALUE_T = 7
+};
+
+typedef struct {
+    void *key;
+    void *value;
+} MapKeyValue;
 
 #if defined(_M_X64) || defined(__amd64__)
 #define LLIB_64_BITS
@@ -76,6 +93,7 @@ typedef int intptr;
 
 int obj_kount();
 ObjType *obj_type_(ObjHeader *h);
+ObjType *obj_new_type(int size, const char *type, DisposeFn dtor);
 int obj_elem_size(void *P);
 void *obj_new_(int size, const char *type,DisposeFn dtor);
 bool obj_is_instance(const void *P, const char *name);

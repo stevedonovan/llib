@@ -10,12 +10,13 @@
 #include <llib/scan.h>
 #include <llib/map.h>
 
-int main()
+int main(int argc, char **argv)
 {
     char word[100];
-    ScanState *ts = scan_new_from_file("../readme.md");
+    const char *file = argv[1] ? argv[1] : "../readme.md";
+    ScanState *ts = scan_new_from_file(file);
     if (ts == NULL) {
-        printf("could not open this file\n");
+        printf("could not open '%s'\n",file);
         return 1;
     }
 
@@ -34,7 +35,7 @@ int main()
     array_sort_struct_ptr (pkv,true,MapKeyValue,value);
 
     FOR(i,10) {
-        printf("%s\t%d\n",(char*)pkv[i].key,(int)pkv[i].value);
+        printf("%s\t%d\n",(char*)pkv[i].key,(intptr)pkv[i].value);
     }
 
     dispose(m,ts,pkv);

@@ -144,13 +144,10 @@ static char *i_impl (void *arg, StrTempl stl) {
     return str_fmt("%d", (intptr)arg);
 }
 
-static void get_lookup(void *item, StrLookup *plookup, PFun *pitem);
+static StrLookup get_lookup(void *item);
 
 static char *with_impl (void *arg, StrTempl stl) {
-    StrLookup mlookup;
-    PFun mitem;
-    get_lookup(arg,&mlookup,&mitem);
-    return str_templ_subst_using(stl,mlookup,mitem(arg));
+    return str_templ_subst_using(stl,get_lookup(arg),arg);
 }
 
 struct Iter_;
@@ -167,15 +164,14 @@ static Iter get_iterator (void *obj);
 
 static char *for_impl (void *arg, StrTempl stl) {
     StrLookup mlookup = NULL;
-    PFun mitem = NULL;
     Iter a = get_iterator(arg);
     Str *out = array_new_ref(Str,a->n);
     void *item;
     int i = 0;
     while (a->next(a,&item)) {
         if (i == 0) // assume all items have same type
-            get_lookup(item,&mlookup,&mitem);
-        out[i++] = str_templ_subst_using(stl,mlookup,mitem(item));
+            mlookup = get_lookup(item);
+        out[i++] = str_templ_subst_using(stl,mlookup,item);
     }
     Str res = str_concat(out,"");
     obj_unref(out);
@@ -268,7 +264,7 @@ char *str_templ_subst_using(StrTempl stl, StrLookup lookup, void *data) {
             }
             if (! part)
                 part = "";
-            else if (value_object(part))
+            else if (value_is_box(part))
                 part = (char*)value_tostring((PValue)part);
         }
         out[i] = part;
@@ -294,13 +290,12 @@ char *str_templ_subst(StrTempl stl, char **substs) {
 // pair array.
 char *str_templ_subst_values(StrTempl st, PValue v) {
     StrLookup lookup;
-    void *obj = value_as_pointer(v);
-    if (map_object(obj))
+    if (value_is_map(v))
         lookup = (StrLookup)map_get;
     else
         lookup = (StrLookup)str_lookup;
 
-    return str_templ_subst_using(st,lookup,obj);
+    return str_templ_subst_using(st,lookup,v);
 }
 
 static bool iter_arr_next(Iter it, void **pv) {
@@ -332,9 +327,6 @@ static Iter get_iterator (void *obj) {
             ++n;
         ai->next = iter_arr_next;
     } else {
-        if (value_object(obj)) {
-            obj = value_as_pointer((PValue)obj);
-        }
         if (list_object(obj)) {
             List *L = (List*)obj;
             n = list_size(L);
@@ -350,16 +342,10 @@ static Iter get_iterator (void *obj) {
     return ai;
 }
 
-static void *pass_thru(void *obj) { return obj; }
-static void *our_value_as_pointer(void *obj) { return value_as_pointer((PValue)obj); }
 
-static void get_lookup(void *item, StrLookup *plookup, PFun *pitem) {
-    *plookup = (StrLookup)str_lookup; // default 'simple map'
-    *pitem = (PFun)pass_thru;
-    if (value_object(item)) {  // then we'll need to unbox!
-        item = value_as_pointer((PValue)item);
-        *pitem = (PFun)our_value_as_pointer;
-    }
+static StrLookup get_lookup(void *item) {
     if (map_object(item))
-        *plookup = (StrLookup)map_get;
+        return (StrLookup)map_get;
+    else
+        return (StrLookup)str_lookup; // default 'simple map'
 }

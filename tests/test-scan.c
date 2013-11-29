@@ -79,7 +79,7 @@ int main() {
         scan_get_line(ts,buff,BUFSZ);
         printf("value '%s'\n",buff);
     }
-    
+
     ////// scan_scanf //////
 
     const char *xml = "<boo a='woo' b='doll'>bonzo dog <(10,20,30),(1,2,3);";
@@ -116,7 +116,7 @@ int main() {
         printf("%s='%s'\n",key,v);
         dispose(key,v);
     }
-    
+
     // %v means read next token as a Value
     config_data = "alpha=1 beta=2 gamma=hello delta='frodo'";
     PValue val;
@@ -124,9 +124,9 @@ int main() {
     while (scan_scanf(ts,"%s=%v",&key,&val)) {
         printf("%s=",key);
         if (value_is_string(val))
-            printf("'%s'\n",value_as_string(val));
+            printf("'%s'\n",val);
         else if (value_is_int(val))
-            printf("%d\n",value_as_int(val));
+            printf("%d\n",*(intptr*)val);
         dispose(key,val);
     }
     unref(ts);

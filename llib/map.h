@@ -32,12 +32,6 @@ typedef struct MapIter_{
     List *vstack;
 } MapIterStruct, *MapIter;
 
-typedef struct {
-    void *key;
-    void *value;
-} MapKeyValue;
-
-
 #define map_geti(m,s) ((intptr)map_get(m,(void*)(s)))
 #define map_puti(m,k,v) map_put(m,(void*)(k),(void*)(v))
 
