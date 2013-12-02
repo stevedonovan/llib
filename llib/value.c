@@ -110,30 +110,35 @@ PValue value_parse(const char *str, ValueType type) {
     }
 }
 
+#define S str_new
+
 /// Default representation of a value as a string.
 // Only applies to scalar values (if you want to show arrays & maps
-// use json module). Returns a pointer to a static buffer, so don't mess with it!
+// use json module).
 const char *value_tostring(PValue v) {
-    static char buff[35];
+    char buff[65];
     if (v == NULL)
-        return "null";
+        return S("null");
     if (obj_refcount(v) == -1)
-        return "<NAO>";
+        return S("<NAO>");  // Not An Object
     int typeslot = obj_type_index(v);
     if (!  value_is_array(v)) {
         switch(typeslot) {
-        #define outf(fmt,T) snprintf(buff,sizeof(buff),fmt,*((T*)v)),buff
+        #define outf(fmt,T) snprintf(buff,sizeof(buff),fmt,*((T*)v))
         case OBJ_LLONG_T:
-            return outf("%d",int64);
+            outf("%d",int64);
+            break;
         case OBJ_DOUBLE_T:
-            return outf("%0.16g",double);
+            outf("%0.16g",double);
+            break;
         case OBJ_BOOL_T:
-            return (*(bool*)v) ? "true" : "false";
+            return S((*(bool*)v) ? "true" : "false");
         }
     } else if (typeslot == OBJ_CHAR_T || typeslot == OBJ_ECHAR_T) {
-        return (const char*)v;  // already strings
+        return str_ref(v);  // already a string object
+    } else {
+        snprintf(buff,sizeof(buff),"%s(%p)",obj_type(v)->name,v);
     }
-    snprintf(buff,sizeof(buff),"%s(%p)",obj_type(v)->name,v);
-    return buff;
+    return S(buff);
 }
 

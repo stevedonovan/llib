@@ -111,7 +111,7 @@ void *array_copy(void *P, int i1, int i2);
 void *array_resize(void *P, int newsz);
 char *str_new(const char *s);
 char *str_new_size(int sz);
-char *str_ref(char *s);
+const char *str_ref(const char *s);
 char *str_cpy(const char *s);
 
 typedef enum {

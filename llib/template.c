@@ -241,9 +241,10 @@ char *str_templ_subst_using(StrTempl stl, StrLookup lookup, void *data) {
         part = stl->parts[i];
         mark= *part;
         if (mark > 0 && mark < TMARKER) {
+            bool ref_str = false;
             ++part;
             if (mark != TVAR) { // function-style evaluation
-                TemplateFun fn = (TemplateFun)lookup (builtin_funs,part);
+                TemplateFun fn = (TemplateFun)str_lookup (builtin_funs,part);
                 char *arg = part + strlen(part) + 1;
                 assert(fn != NULL);
                 // always looks up the argument in current context
@@ -252,9 +253,7 @@ char *str_templ_subst_using(StrTempl stl, StrLookup lookup, void *data) {
                 else
                     arg = (char*)data;
                 part = fn(arg, (StrTempl)stl->parts[i+1]);
-                if (! strs)
-                    strs = list_new_ref();
-                list_add(strs,part);
+                ref_str = true;
             } else {
                 // note that '_' stands for the data, without lookup
                 if (! str_eq2(part,"_"))
@@ -264,8 +263,15 @@ char *str_templ_subst_using(StrTempl stl, StrLookup lookup, void *data) {
             }
             if (! part)
                 part = "";
-            else if (value_is_box(part))
+            else if (value_is_box(part)) {
                 part = (char*)value_tostring((PValue)part);
+                ref_str = true;
+            }
+            if (ref_str) {
+                if (! strs)
+                    strs = list_new_ref();
+                list_add(strs,part);
+            }
         }
         out[i] = part;
     }

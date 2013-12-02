@@ -407,12 +407,12 @@ char *str_new_size(int sz) {
 }
 
 /// increase the refcount of a string.
-char *str_ref(char *s) {
+const char *str_ref(const char *s) {
     int rc = obj_refcount(s);
     if (rc == -1)
         return str_new(s);
     else
-        return (char*)obj_ref(s);
+        return (const char*)obj_ref(s);
 }
 
 /// make a refcounted string from an arbitrary string.
