@@ -54,7 +54,7 @@ static void dump_simple_map (SStr p, PValue vi);
 static void dump_value(SStr s, PValue v)
 {
     if (v == NULL) {
-        strbuf_adds(v,"null");
+        strbuf_adds(s,"null");
         return;
     }
     if (obj_refcount(v) == -1)  { // not one of ours, treat as integer

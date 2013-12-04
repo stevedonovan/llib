@@ -69,7 +69,7 @@ int main(int argc, char **argv)
     if (value_is_error(e)) {
         printf("here is an error: %s\n",e);
     }
-    dispose(v,s, e);
+    dispose(va,s, e);
 
     v = VM(
         "one",VI(10),
