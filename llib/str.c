@@ -270,7 +270,7 @@ char **str_strings(char *first,...) {
 // Look up a value in a 'simple map'.
 // These are arrays of strings where the odd entries are keys
 // and the even entries are values.
-char *str_lookup(char **substs, char *name) {
+char *str_lookup(SMap substs, const char *name) {
     for (char **S = substs;  *S; S += 2) {
         if (strcmp(*S,name)==0)
             return *(S+1);

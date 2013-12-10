@@ -1,0 +1,1 @@
+cat obj.c scan.c list.c map.c sort.c json.c file.c str.c value.c template.c  > all.c

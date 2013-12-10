@@ -29,6 +29,10 @@ typedef void *PValue;
 
 #define value_errorf(fmt,...) value_error(str_fmt(fmt,__VA_ARGS__))
 
+#define value_as_int(P) (int)(*(long long*)(P))
+#define value_as_float(P) (*(double*)(P))
+#define value_as_bool(P) (*(bool*)(P))
+
 bool value_is_string(PValue v);
 bool value_is_error(PValue v);
 PValue value_error (const char *msg);

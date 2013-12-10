@@ -77,7 +77,7 @@ PValue value_bool (bool i) {
 
 static PValue conversion_error(const char *s, const char *t) {
     char buff[50];
-    snprintf(buff,sizeof(buff),"'%s' is not a valid %s\n",s,t);
+    snprintf(buff,sizeof(buff),"'%s' is not a valid %s",s,t);
     return value_error(buff);
 }
 
@@ -88,7 +88,7 @@ PValue value_parse(const char *str, ValueType type) {
     char *endptr;
     switch(type) {
     case ValueString:
-        return (void*)str;
+        return (void*)str_new(str);
     case ValueInt:
         ival = strtoll(str, &endptr,10);
         if (*endptr)

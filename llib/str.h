@@ -11,6 +11,8 @@
 
 #define str_eq(s1,s2) (strcmp((s1),(s2))==0)
 
+typedef const char **SMap;
+
 char *str_fmt(const char *fmt,...);
 int str_findstr(const char *s, const char *sub);
 int str_findch(const char *s, char ch);
@@ -22,7 +24,7 @@ void str_trim(char *s);
 char ** str_split(const char *s, const char *delim);
 char *str_concat(char **ss, const char *delim);
 char **str_strings(char *p,...);
-char *str_lookup(char **substs, char *name);
+char *str_lookup(SMap substs, const char *name);
 
 char **strbuf_new(void);
 #define strbuf_add seq_add

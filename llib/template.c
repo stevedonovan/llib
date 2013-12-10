@@ -19,8 +19,6 @@ if the default clashes with the target language syntax.
 #include "map.h"
 #include "value.h"
 
-char *str_lookup(char **substs, char *name) ;
-
 struct StrTempl_ {
     char *str;
     char **parts;
