@@ -24,6 +24,7 @@ bool str_starts_with(const char *s, const char *prefix);
 bool str_ends_with(const char *s, const char *postfix);
 int str_find_first_of(const char *s, const char *ps);
 int str_find_first_not_of(const char *s, const char *ps);
+bool str_is_blank(const char *s);
 void str_trim(char *s);
 char ** str_split(const char *s, const char *delim);
 char *str_concat(char **ss, const char *delim);

@@ -1,0 +1,4 @@
+<root>
+    <item name='age' type='int'>10</item>
+    <item name='name' type='string'>Bonzo</item>
+</root>

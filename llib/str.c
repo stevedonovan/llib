@@ -152,7 +152,7 @@ int str_find_first_not_of(const char *s, const char *ps) {
         return sz;
 }
 
-static const char *whitespace = " \t\n";
+static const char *whitespace = " \t\r\n";
 
 /// trim a string in-inplace
 void str_trim(char *s) {
@@ -164,6 +164,12 @@ void str_trim(char *s) {
         --p;
     *(p+1) = 0;
 }
+
+/// does a string only consist of blank characters?
+bool str_is_blank(const char *s) {
+    return strspn(s,whitespace) == strlen(s);
+}
+
 
 // " one "
 // sz = 1; srlen = 5. Move 5 chars, get "one "

@@ -1,4 +1,4 @@
 c99.library{'llib',
-    src='obj sort list file scan map str value template json seq smap',
+    src='obj sort list file scan map str value template json json-data seq smap xml',
     defines=choose(WINDOWS and CC=='gcc','LLIB_PTR_LIST')
 }

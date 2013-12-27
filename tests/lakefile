@@ -16,5 +16,6 @@ default {
     test('test-str'),
     test('test-template'),
     test('test-json'),
+    test('test-xml'),
 }
 
