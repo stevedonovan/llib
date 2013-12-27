@@ -215,6 +215,11 @@ void scan_advance(ScanState* ts, int offs)
     ts->P += offs;
 }
 
+/// look at character ahead
+char scan_peek(ScanState *ts, int offs) {
+    return ts->P[offs];
+}
+
 /// grab a string upto (but not including) a final target string.
 // Advances the scanner (use `scan_advance` with negative offset to back off)
 int scan_get_upto(ScanState* ts, const char *target, char *buff, int bufsz)

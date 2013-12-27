@@ -159,7 +159,7 @@ can just say `ref(*s)` and then it's fine to dispose of the seq itself. The func
 the seq, plus resizing to fit.
 
 These can also explicitly be _reference containers_ which derereference their objects
-afterwards if you use `seq_new_ref`.
+afterwards if you create them using `seq_new_ref`.
 
 ## Linked Lists
 
@@ -238,7 +238,7 @@ common integer-valued case:
 The implementation in llib is a binary tree - not in general the best, but it works
 reliably and has defined iteration order.
 
-Maps can be initialized from arrays of `Mapkeyvalue` structs. Afterwards, such an
+Maps can be initialized from arrays of `MapkeyValue` structs. Afterwards, such an
 array can be generated using `map_to_array`:
 
 ```C
@@ -260,6 +260,8 @@ array can be generated using `map_to_array`:
     unref(m);
     unref(pkv);
 ```
+
+llib also provides 'simple maps' which are arrays of strings where the even elements are the keys and the odd elements are the values;  `str_lookup` will look up these values by linear search, which is efficient enough for small arrays.
 
 ## Strings
 
@@ -288,7 +290,7 @@ Building up strings is a common need, and llib provides two ways to do it.  If y
 an array of strings then feed it to `str_concat` with a delimiter - it is the inverse operation
 to `str_split`. If the string is built up in an ad-hoc fashion then use the `strbuf_*` functions.
 A `string buffer` is basically a sequence, so that `strbuf_add` is exactly the same as `seq_add`
-for character arrays.  `strbuf_adds` adds a string, and `strbuf_addf` is equivalent to
+for character arrays.  `strbuf_adds` appends a string, and `strbuf_addf` is equivalent to
 `strbuf_adds(ss,str_fmt(fmt,...))`.
 
 They are used for operations which modify strings, like inserting, removing and replacing, and
@@ -405,19 +407,43 @@ it just happens to be a bit more clumsy without built-in support.
 
 ## Values
 
-This is a dynamic type that can _box_ the common C and llib types. A value can be an array of ints,
-a string, or a map of values, and so forth. There is a special type 'error', so using values is a
+llib values have dynamic types since they have their type encoded in their headers.
+A value can be an array of ints, a string, or a map of other values, and so forth, and
+its type and structure can be inspected at run-time.
+To represent numbers we have to introduce wrappers for integer, float and boolean 
+types, rather as it is done in Java.  This being C, the programmer has to explicitly box floats
+(for example) using `value_float` and so forth, and unbox with `value_as_float`. 
+
+Ref-counted strings are llib values, although string literals need an explicit `str_new`.
+
+The typedef `PValue` is just `void*`. There is a special type 'error', so using values is a
 flexible way for a C function to return a sensible error message.
 
 ```C
 PValue v = my_function();
 if (value_is_error(v)) {
-    fprintf(stderr,"my_function() is borked: %s\n",value_as_string(v));
+    fprintf(stderr,"my_function() is borked: %s\n",(char*)v);
 } else { // we're cool
     double res = value_as_float(v);
     ...
 }
 ```
+
+Note that an error value is just a ref-counted string, with a distinct _type_.  llib types are distinct
+if they have different _names_, so the trick is to define a standard type slot `OBJ_ECHAR_T` 
+where the type name is "echar_ *" and then make an error like so:
+
+```C
+PValue value_error (const char *msg) {
+    PValue v = str_new(msg);
+    obj_set_type(v,OBJ_ECHAR_T);
+    return v;
+}
+```
+
+(`my_function` could actually return floats, arrays, ad absurdum and the caller could 
+distinguish between these using the `value_is_xxx` functions.  But this is not a good idea
+in general and causes confusion even with dynamic languages.)
 
 With values, you can have the same kind of dynamic ad-hoc data structures that are common
 in dynamic languages.  For instance, this is a neater way to specify the data for the
@@ -435,7 +461,7 @@ HTML template just discussed:
 
 This uses llib's JSON support, which works very naturally with values. And JSON itself is a
 great notation to express dynamic data structures (although of course many people find the
-_ad-hoc_ part hard to handle!):
+_ad-hoc_ part less of a solution and more of a problem):
 
 ```C
     const char *js = "{'title':'Pages','items':[{'url':'index.html','title':'Home'},"
@@ -446,10 +472,11 @@ _ad-hoc_ part hard to handle!):
     S = str_templ_subst_values(st,v);
 ```
 
-Another useful property of values when used in templates is that they know how to turn themselves
-into a string.  With plain data, we have to assume that the expansions result in a string,
+Another useful property of values when used in templates is that they know how 
+to turn themselves  into a string.  With plain data, we have to assume that the
+expansions result in a string,
 but if they do result in a value, then `value_tostring` will be used. (The template function
-`$(i var)` will explicitly convert integers to strings, but it's hard to work with floating-point numbers
-this way).
+`$(i var)` will explicitly convert integers to strings, but it's hard to work with
+floating-point numbers this way).
 
 

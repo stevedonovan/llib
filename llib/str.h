@@ -13,6 +13,10 @@
 
 typedef const char **SMap;
 
+char*** smap_new(bool ref);
+void smap_put(char*** smap, const char *name, void *data);
+char** smap_close(char*** smap);
+
 char *str_fmt(const char *fmt,...);
 int str_findstr(const char *s, const char *sub);
 int str_findch(const char *s, char ch);

@@ -50,6 +50,7 @@ bool scan_fetch_line(ScanState* ts, int skipws);
 void scan_force_line_mode(ScanState* ts);
 void scan_push_back(ScanState* ts);
 char scan_getch(ScanState* ts);
+char scan_peek(ScanState *ts, int offs);
 void scan_advance(ScanState* ts, int offs);
 int scan_get_upto(ScanState* ts, const char *target,char *buff, int bufsz);
 bool scan_skip_whitespace(ScanState* ts);
