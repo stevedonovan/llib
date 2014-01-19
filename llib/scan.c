@@ -292,6 +292,7 @@ ScanTokenType scan_next(ScanState* ts)
         ts->inner_flags ^= RETURN_OLD_VALUE;
         return ts->type;
     }
+    int c_parsefloat = ! (ts->flags & C_NOFLOAT);
     if (! scan_skip_whitespace(ts)) return ts->type=T_END;  // means: finis, end of file, bail out.
     char ch = *ts->P;
     int c_iden = ts->flags & C_IDEN;
@@ -301,7 +302,7 @@ ScanTokenType scan_next(ScanState* ts)
         ts->end_P = ts->P;
         return (ts->type = T_TOKEN);
     } else //------- NUMBERS ------------------
-    if (isdigit(ch)  || ((ch == '.' || ch == '-') && isdigit(*(ts->P+1)))) {
+    if (isdigit(ch)  || (c_parsefloat && ch == '-' && isdigit(*(ts->P+1)))) {
         int c_num = ts->flags & C_NUMBER;
         ts->type = T_NUMBER;
         ts->int_type = T_INT;
@@ -324,16 +325,18 @@ ScanTokenType scan_next(ScanState* ts)
                 scan_skip_digits(ts);
             }
         }
-        if (*ts->P == '.') {               // (opt) fractional part
-            ts->P++;
-            scan_skip_digits(ts);
-            ntype = T_DOUBLE;
-        }
-        if (*ts->P == 'e' || *ts->P == 'E') { // (opt) exponent part
-            ts->P++;
-            if (*ts->P == '+' || *ts->P == '-') ts->P++;  // (opt) exp sign
-            scan_skip_digits(ts);
-            ntype = T_DOUBLE;
+        if (c_parsefloat)  {
+            if (*ts->P == '.') {               // (opt) fractional part
+                ts->P++;
+                scan_skip_digits(ts);
+                ntype = T_DOUBLE;
+            }
+            if (*ts->P == 'e' || *ts->P == 'E') { // (opt) exponent part
+                ts->P++;
+                if (*ts->P == '+' || *ts->P == '-') ts->P++;  // (opt) exp sign
+                scan_skip_digits(ts);
+                ntype = T_DOUBLE;
+            }
         }
         ts->end_P = ts->P;
         ts->int_type = ntype;

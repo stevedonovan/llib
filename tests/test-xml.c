@@ -27,7 +27,9 @@ int main(int argc, char**argv)
     );
     s = xml_tostring(v,0);
     printf("%s\n",s);
-    obj_unref_v(v, s);
+    char *s2 = json_tostring(v);
+    printf("json %s\n",s2);
+    obj_unref_v(v, s, s2);
     printf("kount %d\n",obj_kount());
     return 0;
 }

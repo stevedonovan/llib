@@ -1,9 +1,10 @@
 ## A Compact C Utilities Library
 
-Since we are now in the 21st century, this uses C99, but is compatible with
+Since we are now in the 21st century, llib uses C99, but is compatible with
 MSVC when compiled as C++.  This leads to some 'unnecessary' casting to keep
 C++ happy, but working in the intersection between C99 and MSVC C++ makes this
-library very portable.
+library very portable.  The features it depends on are the freedom to declare variables in
+for-loops and variadic preprocessor macros.
 
 It has been tested on Windows 7 64-bit (mingw and MSVC), and both Linux 32-bit and
 64-bit.
@@ -13,7 +14,7 @@ Apache Portable Runtime but these are big and awkward to use on all platforms.
 llib aims to be small as possible and intended for _static_ linking with your
 application (the BSD licensing should help with this).
 
-llib provides a refcounting mechanism, extended string functions,dynamically-resizable arrays,
+llib provides a refcounting mechanism, extended string functions, dynamically-resizable arrays,
 doubly-linked lists and maps using binary trees. The aim of this first release is
 not to produce the most efficient code possible but to explore the API and validate
 the refcounting semantics.
@@ -208,8 +209,8 @@ aliasing magic for us:
 
 ```
 
-They are declared as if they were seqs (pointers to arrays) and there's then
-a way to iterate over typed values.
+They are declared as if they were seqs (pointers to arrays) and there's a way
+to iterate over typed values.
 
 ## Maps
 
@@ -460,7 +461,7 @@ HTML template just discussed:
 ```
 
 This uses llib's JSON support, which works very naturally with values. And JSON itself is a
-great notation to express dynamic data structures (although of course many people find the
+great notation to express dynamic data structures (although many people find the
 _ad-hoc_ part less of a solution and more of a problem):
 
 ```C
@@ -478,5 +479,80 @@ expansions result in a string,
 but if they do result in a value, then `value_tostring` will be used. (The template function
 `$(i var)` will explicitly convert integers to strings, but it's hard to work with
 floating-point numbers this way).
+
+## XML
+ 
+This is a large and opinionated subject, so let me state that what most people need is 'pointy-bracket data language' (PBDL) rather than full-blown schemas-and-transforms (XML). In particular, it is a common configuration format.  When used in that way, we can simplify life by ignoring empty text elements and comments - since it is the structure of the _data_ that is important.  If test.xml is:
+
+```xml
+<root>
+    <item name='age' type='int'>10</item>
+    <item name='name' type='string'>Bonzo</item>
+</root>
+```
+
+then `xml_parse_file("test.xml",true)` will return a `root` element with two `item` child elements. The representation is a little unusual but straightforward; an element is an array of objects, with the first item being the tag name, the second (optional) item being an array of atributes (so-called 'simple map') and the remainder contains the child nodes - these are either strings or elements themselves.  So `test.xml` is completely equivalent to this data constructor:
+
+```C
+    v = VAS("root",
+        VAS("item",VMS("name","age","type","int"),"10"),
+        VAS("item",VMS("name","name","type","string"),"Bonzo")
+    );
+```
+
+and the output with `json_tostring` is
+
+```C
+["root",["item",{"name":"age","type":"int"},"10"],["item",{"name":"name","type":"string"},"Bonzo"]]
+```
+
+## Command-line Parsing
+
+There are standard ways of processing command-line arguments in POSIX, but they're fairly primitive and not available directly on Windows. The `arg` module gives a higher-level way of specifying arguments, which allows you to bind C variables to named flags and arguments. Here is a modified head-like utility:
+
+```C
+// cmd.c
+#include <stdio.h>
+#include <llib/arg.h>
+
+int lines;
+FILE *file;
+bool print_lines;
+
+ArgFlags args[] = {
+    {"int lines=10",'n',&lines,"number of lines to print"},
+    {"bool lineno",'l',&print_lines,"output line numbers"},
+    {"infile #1=stdin",0,&file,"file to dump"},
+    {NULL,0,NULL,NULL}
+};
+
+int main(int argc,  const char **argv)
+{
+    args_command_line(args,argv);
+    char buff[512];
+    int i = 1;
+    while (fgets(buff,sizeof(buff),file)) {
+        if (print_lines)
+            printf("%03d\t%s",i,buff);
+        else
+            printf("%s",buff);
+        if (i++ == lines)
+            break;  
+    }
+    fclose(file);
+    return 0;
+}
+```
+
+This was inspired by the [lapp](?) framework for Lua; one specifies the arguments in a way that they can be used both for printing out help automatically and with enough type information that values can be parsed correctly.  So `cmd -l x` is an error because 'x' is not a valid integer; `cmd temp.txt` is an error if `temp.txt` cannot be opened for reading.  So we keep the logic of the program as straightforward as possible; note how the type and default value is specified using pseudo-C notation (the default value for a boolean flag is `false` but can be set to `true`.)
+
+Otherwise, the flag parsing is GNU style, with long flags using '--' and short aliases with '-'. Short flags can be combined '-abc' and their values can follow immediately after '-I/usr/include/lua'.
+
+A flag specifier like `string include[]` binds to an array of strings (`char**`) and a default cannot be specified; if the flag is not present the variable is initialized to a array of zero length. llib arrays know their size, so we don't have to track this separately.
+
+Flags can also be implemented by _functions_, which you can see in action in `examples/testa.c`. Unlike variable flags, these can take an indefinite number of arguments. _Commands_ are related, where a program exposes its functionality with subcommands. for instance 'git status'.  `testa` shows how a simple but effective interactive prompt can be produced by spliting the line and parsing it explicitly.
+
+Since llib is linked statically by default, the resulting programs remain small; `cmd` is only 22Kb on a 32-bit Linux system.
+
 
 

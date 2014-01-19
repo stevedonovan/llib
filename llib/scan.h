@@ -20,7 +20,8 @@ typedef enum {
    C_IDEN = 1,
    C_NUMBER = 2,
    C_STRING = 4,
-   C_WSPACE = 16
+   C_WSPACE = 16,
+   C_NOFLOAT = 32
 } ScanFlagType;
 
 typedef void (*ScanNumberFun) (void *data, double x);

@@ -38,8 +38,6 @@ array can always be accessed with `*s`.
 
 static int kount = 0;
 
-//#define LLIB_PTR_LIST
-
 #ifdef LLIB_PTR_LIST
 // Generally one can't depend on malloc or other allocators returning pointers
 // within a given range. So we keep an array of 'our' pointers, which we know
@@ -56,7 +54,8 @@ static int our_ptr_idx(void *p) {
 }
 
 static void add_our_ptr(void *p) {
-    int idx = our_ptr_idx(p);
+    // look for first empty slot, or a new one if none found.
+    int idx = our_ptr_idx(NULL);
     if (idx == -1) {
         our_ptrs[max_p] = p;
         ++max_p;
@@ -75,6 +74,9 @@ static void remove_our_ptr(void *p) {
 }
 #define our_ptr(p) (our_ptr_idx(p) != -1)
 #else
+// if the libc supports, here is a simpler scheme which assumes that 'our' pointers are always
+// between the lowest and highest pointer value allocated so far.  This scheme of course gives a false
+// positive if a pointer was just allocated with plain malloc, so be careful about using obj_unref
 static void *low_ptr, *high_ptr;
 
 static void add_our_ptr(void *p) {
