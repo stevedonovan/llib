@@ -505,6 +505,73 @@ and the output with `json_tostring` is
 ```C
 ["root",["item",{"name":"age","type":"int"},"10"],["item",{"name":"name","type":"string"},"Bonzo"]]
 ```
+## Tabular Data
+
+The `table_*` functions work with files containing rows of data separated by a delimiter, either
+space or commas.  These files may have a initial header containing field names.  A novel aspect
+of llib table support is that you can ask for _columns_ to be generated and converted.
+
+Assume we have a simple CSV file like so:
+
+```C
+Name,Age
+Bonzo,12
+Alice,16
+Frodo,46
+Bilbo,144
+.....
+    Table *t = table_new_from_file("test.csv", TableCsv | TableColumns | TableAll);
+    char **titles = t->col_names; // {"Name","Age"}
+    char **first = t->rows[0]; // {"Bonzo","12"}
+    float *ages = (float*)t->cols[1];  // {12,16,46,144}
+```
+
+The `TableCsv` option implies `TableComma` and `TableColumnNames` (first line is field names); `TableAll` means that all of the file is to be read immediately, and `TableColumns` means that 
+columns are to be constructed.
+
+This constructor, and its relative `table_new_from_stream`, will always return a `Table` object; 
+if the `error` field is non-NULL, then it describes the error.
+
+By default, if a column appears to be numerical, it is converted to floats.  It's possible to have
+more control over this by explicitly specifying the conversion to be used for each column:
+
+```C
+    Table *t = table_new_from_file(file, TableCsv | TableAll);
+    if (t->error) {
+        fprintf(stderr,"%s\n",t->error);
+        return 1;
+    }
+    table_convert_cols(t,0,TableString,1,TableInt,-1);
+    table_generate_columns(t);
+    int *ages = (int*)t->cols[1]; // {12,16,46,144}
+```
+
+When done explicitly, only the columns specified will be constructed.
+
+Normally data is read from a stdio stream, but `table_add_row` can be used to construct
+a table from other data sources.  This has the correct signature to be used with the Sqlite 
+C API's `sqlite3_exec` function:
+
+```C
+    int err;
+    sqlite3 *conn;
+    char *errmsg;
+    
+    err = sqlite3_open("test.sl3",&conn);
+
+    Table *t = table_new(TableCsv | TableColumns);
+    
+    err = sqlite3_exec(conn,"select * from test",
+        table_add_row,t,&errmsg);
+    
+    if (err) {
+        printf("err '%s'\n",errmsg);
+        return 1;
+    }
+
+    table_finish_rows(t);
+```
+
 
 ## Command-line Parsing
 
