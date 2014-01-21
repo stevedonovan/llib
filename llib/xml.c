@@ -33,7 +33,7 @@ static Str get_tag_name(ScanState *ts) {
         if (t != '-' && t != ':')
             break;
         strbuf_add(res,t);
-        scan_next(ts);        
+        scan_next(ts);
     }
     return strbuf_tostring(res);
 }
@@ -42,7 +42,7 @@ static Str get_tag_name(ScanState *ts) {
 
 static PValue parse_xml(ScanState *ts, bool is_data) {
     PValue err;
-    if (ts->type != '<') 
+    if (ts->type != '<')
         return value_error("expecting '<'");
  again:
     scan_next(ts);
@@ -55,7 +55,7 @@ static PValue parse_xml(ScanState *ts, bool is_data) {
             return value_error("expecting name after '<'");
     }
     PValue ** elem = seq_new(PValue);
-    Str** attribs = NULL;
+    char*** attribs = NULL;
     Str name = get_tag_name(ts);
     if (ts->type == T_IDEN) { // attributes!
         attribs = smap_new(true);
@@ -93,19 +93,19 @@ static PValue parse_xml(ScanState *ts, bool is_data) {
                     obj_unref(txt);
                 }
             }
-            scan_next(ts); 
+            scan_next(ts);
             expect(ts->type,'<');
             if (scan_peek(ts,0) == '/') { // finished...
                 scan_next(ts);
                 break;
-            } 
+            }
             PValue e = parse_xml(ts, is_data);
             if (value_is_error(e)) {
                 err = e;
                 goto cleanup;
             }
             seq_add(elem, e);
-        }            
+        }
     }
     if (ts->type == '/') {
         scan_next(ts);
@@ -118,7 +118,7 @@ static PValue parse_xml(ScanState *ts, bool is_data) {
             //scan_next(ts);
         }
         expect(ts->type,'>');
-        
+
         seq_insert(elem,0,&name,1);
         if (attribs) {
             Str *attr = smap_close(attribs);
@@ -163,13 +163,13 @@ PValue xml_parse_file(const char *file, bool is_data) {
 
 /// tag name of an element.
 const char *xml_tag(PValue* doc) {
-    return doc[0];
+    return (const char*)doc[0];
 }
 
 /// attributes of an element (as an SMap).
 char** xml_attribs(PValue* doc) {
-    if (doc[1] && value_is_simple_map(doc[1])) 
-        return doc[1];
+    if (doc[1] && value_is_simple_map(doc[1]))
+        return (char**)doc[1];
     return NULL;
 }
 
@@ -182,11 +182,12 @@ PValue *xml_children(PValue* doc, int* plen) {
         ++res;
         --(*plen);
     }
-    return res;        
+    return res;
 }
 
-static void tostring_xml(PValue doc, char** ss, int level, int indent) {
+static void tostring_xml(PValue data, char** ss, int level, int indent) {
     int n;
+    PValue *doc = (PValue*)data;
     const char *name = xml_tag(doc);
     strbuf_add(ss, '<');
     strbuf_adds(ss, name);
@@ -203,14 +204,14 @@ static void tostring_xml(PValue doc, char** ss, int level, int indent) {
             strbuf_addf(ss,"\n%.*c",level*indent,' '); //"                                       ");
         for (; *kids; ++kids) {
             PValue elem = *kids;
-            if (value_is_string(elem))  
-                strbuf_adds(ss, elem);
+            if (value_is_string(elem))
+                strbuf_adds(ss, (const char*)elem);
             else
                 tostring_xml(elem, ss, level+1, indent);
         }
         if (indent)
             strbuf_addf(ss,"\n%.*c",level*indent,' '); //"                                       ");
-        
+
         strbuf_addf(ss, "</%s>",name);
     } else {
         strbuf_adds(ss,"/>");

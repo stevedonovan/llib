@@ -6,7 +6,7 @@
 char *str_lookup(SMap substs, const char *name) {
     for (const char **S = substs;  *S; S += 2) {
         if (strcmp(*S,name)==0)
-            return *(S+1);
+            return (char*)*(S+1);
     }
     return NULL;
 }
@@ -19,8 +19,8 @@ char*** smap_new(bool ref) {
 }
 
 void smap_put(char*** smap, const char *name, void *data) {
-    seq_add(smap,(void*)name);
-    seq_add(smap,data);
+    seq_add(smap,(char*)name);
+    seq_add(smap,(char*)data);
 }
 
 char** smap_close(char*** smap) {

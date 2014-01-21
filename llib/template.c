@@ -205,7 +205,7 @@ static char *else_impl (void *arg, StrTempl stl) {
 }
 
 #define C (char*)
-char *builtin_funs[] = {
+const char *builtin_funs[] = {
     "i",C i_impl,
     "with",C with_impl,
     "for",C for_impl,

@@ -12,7 +12,7 @@ typedef char *Str;
 typedef char **Strings;
 
 Table *table_new(TableOptions opts) {
-    Table *T = obj_new(Table,Table_dispose);    
+    Table *T = obj_new(Table,Table_dispose);
     memset(T,0,sizeof(Table));
     T->opts = opts;
     T->delim = (opts & TableComma) ? "," : "\t";
@@ -49,12 +49,12 @@ void table_convert_cols (Table *T,...) {
             break;
         int how = va_arg(ap,int);
         switch(how) {
-        case TableString:  conv = no_convert; break;            
+        case TableString:  conv = no_convert; break;
         case TableFloat:  conv = float_convert; break;
         case TableInt: conv = int_convert; break;
         case TableCustom: conv = va_arg(ap,TableConvFun); break;
         }
-        conversions[idx] = conv;            
+        conversions[idx] = conv;
     }
     T->row_conv = conversions;
     T->opts |= TableColumns;
@@ -64,7 +64,7 @@ void table_convert_cols (Table *T,...) {
 bool table_generate_columns (Table *T) {
     // generate columns if requested!
     if (T->opts & TableColumns) {
-        const char *err;    
+        const char *err;
         int ncols = T->ncols, nrows = T->nrows;
         // (this array is guaranteed to be NULLed out since it's a reference array)
         void ***cols = array_new_ref(void**,ncols);
@@ -84,15 +84,15 @@ bool table_generate_columns (Table *T) {
                         } else {
                             conv[ic] = float_convert;
                             cols[ic] = (void**)array_new(float,nrows);
-                        }                    
-                    }  
+                        }
+                    }
                 } else {
                     FOR(ic,ncols) {
                         if (! conv[ic]) continue;
                         if (conv[ic] == no_convert)
-                            cols[ic] = (void**)array_new(char*,nrows);                
+                            cols[ic] = (void**)array_new(char*,nrows);
                         else
-                            cols[ic] = (void**)array_new(float,nrows);                
+                            cols[ic] = (void**)array_new(float,nrows);
                     }
                 }
             }
@@ -101,13 +101,13 @@ bool table_generate_columns (Table *T) {
                     err = conv[ic](row[ic], &cols[ic][ir]);
                     if (err) {
                         T->error = str_fmt("conversion error: '%s' at row %d col %d",err,ir+1,ic+1);
-                        return false;                        
-                    }                    
+                        return false;
+                    }
                 }
             }
         }
     }
-    return true;    
+    return true;
 }
 
 bool table_read_all(Table *T) {
@@ -116,13 +116,13 @@ bool table_read_all(Table *T) {
     Strings lines = file_getlines(T->in);
     fclose(T->in);
     T->in = NULL;
-    
+
     int nrows = array_len(lines);
     while (strlen(lines[nrows-1]) == 0) {
         --nrows;
     }
     T->nrows = nrows;
-    
+
     // and split these lines into the rows
     T->rows = array_new_ref(Strings,nrows);
     FOR (i,nrows) {
@@ -139,7 +139,7 @@ bool table_read_all(Table *T) {
         T->rows[i] = row;
     }
     obj_unref(lines);
-    
+
     return table_generate_columns(T);
 }
 
@@ -158,7 +158,7 @@ static Strings strings_copy(Strings s, int n) {
     FOR(i,n) {
         res[i] = str_new(s[i]);
     }
-    return res;    
+    return res;
 }
 
 int table_add_row(void *d, int ncols, char **row, char **columns) {
@@ -175,13 +175,13 @@ int table_add_row(void *d, int ncols, char **row, char **columns) {
 }
 
 bool table_finish_rows(Table *T) {
-    Strings* rows = seq_array_ref(T->rows);
+    Strings* rows = (Strings*)seq_array_ref(T->rows);
     T->rows = rows;
     return table_generate_columns(T);
 }
 
 Table* table_new_from_stream(FILE *in, TableOptions opts) {
-    Table *T = table_new(opts);    
+    Table *T = table_new(opts);
     T->in = in;
     table_read_col_names(T);
     return T;
@@ -191,7 +191,7 @@ Table* table_new_from_file(const char *fname, TableOptions opts) {
     Table *T = table_new(opts);
     FILE *in = fopen(fname,"r");
     if (! in) {
-        T->error = str_fmt("cannot open '%s'",fname);      
+        T->error = str_fmt("cannot open '%s'",fname);
         return T;
     }
     T->in = in;
