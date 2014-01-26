@@ -10,7 +10,7 @@
 #include <llib/json.h>
 
 #ifndef STANDALONE_FLOT
-#define FLOT_CDN "file:///C:/Users/steve/dev/flot"
+#define FLOT_CDN "file:///home/user/libs//flot"
 #define JQUERY_CDN FLOT_CDN "/jquery.min.js"
 #else
 #define FLOT_CDN "http://www.flotcharts.org/flot/"
@@ -19,7 +19,7 @@
 
 typedef double (*MapFun)(double);
 
-double *farray_range(double x1, double x2, double dx) {
+double *farr_range(double x1, double x2, double dx) {
     int n = ceil((x2 - x1)/dx);
     double *arr = array_new(double,n);
     int i = 0;
@@ -29,7 +29,7 @@ double *farray_range(double x1, double x2, double dx) {
     return arr;
 }
 
-double *farray_map(double *a, MapFun f) {
+double *farr_map(double *a, MapFun f) {
     int n = array_len(a);
     double *b = array_new(double,n);
     FOR(i,n) {
@@ -47,6 +47,7 @@ typedef struct flot_ {
     int width;
     int height;
     Map *map;
+    List *text_marks;
 } Flot;
 
 typedef struct Series_ {
@@ -123,6 +124,7 @@ Flot *flot_new_(PValue options)  {
     }
     P->xtitle = NULL; //str_ref(xtitle);
     P->ytitle = NULL; //str_ref(ytitle);
+    P->text_marks = NULL;
     P->width = 600;
     P->height = 300;
     P->series = list_new_ref();
@@ -136,6 +138,21 @@ Flot *flot_new_(PValue options)  {
 
 void flot_option(Flot *P, CStr key, CStr subkey, const void* value) {
     put_submap(P->map,key,subkey,value);
+}
+
+typedef struct TextMark_ {
+    double x,y;
+    const char *text;
+} TextMark;
+
+void flot_text_mark(Flot *P, double x, double y, const char *text) {
+    if (! P->text_marks) 
+        P->text_marks = list_new_ref();
+    TextMark *mark = obj_new(TextMark,NULL);
+    mark->x = x;
+    mark->y = y;
+    mark->text = text;
+    list_add(P->text_marks, mark);
 }
 
 static void Series_dispose(Series *S) {
@@ -210,6 +227,15 @@ void flot_render(CStr name) {
         map_puts(pd,"width",VI(P->width));
         map_puts(pd,"height",VI(P->height));
         map_puts(pd,"div",VS(P->id));
+        
+        if (P->text_marks) {
+            char **out = strbuf_new();
+            FOR_LIST(p,P->text_marks) {
+                TextMark *m = p->data;
+                strbuf_addf(out,"text_marking(plot_%s,'%s',%f,%f,'%s')\n",P->id,P->id,m->x,m->y,m->text);
+            }
+            map_puts(pd,"textmarks",strbuf_tostring(out));
+        }
 
         // an array of all the data objects of the series
         PValue *series = array_new_ref(PValue,list_size(P->series));
@@ -244,6 +270,60 @@ PValue flot_gradient(const char *start, const char *finish) {
     return VMS("colors",VAS(start,finish));
 }
 
+#define flot_markings(...) "grid.markings",VA(__VA_ARGS__)
+
+#define flot_line(axis,x,colour,line_width) VMS("color",colour,"lineWidth",VF(line_width), axis,VMS("from",VF(x),"to",VF(x)))
+#define flot_vert_line(x,c,w) flot_line("xaxis",x,c,w)
+#define flot_horz_line(x,c,w) flot_line("xaxis",x,c,w)
+
+// does not work for flot -run:  undefined symbol 'value_map_of_str'
+//~ PValue flot_line(const char *axis, double x, const char *colour, int line_width) {
+    //~ return VMS("color",colour,"lineWidth",VF(line_width), axis,VMS("from",VF(x),"to",VF(x)));
+//~ }
+
+#define PlotMin -1e-100
+#define PlotMax +1e-100
+
+PValue flot_region(const char *axis, double x1, double x2, const char *colour) {
+    Map *m = map_new_str_ref();
+    Map *s = map_new_str_ref();
+    map_puts(m,"color",VS(colour));
+    map_puts(m,axis,s);
+    if (x1 > PlotMin)
+        map_puts(s,"from",VF(x1));
+    if (x2 < PlotMax)
+        map_puts(s,"to",VF(x2));
+    return m;
+    //return value_array_values_(3,"color","#f6f6f6","yaxis",value_array_values_(3,"to",VF(x),NULL),NULL);
+}
+
+#define flot_vert_region(x1,x2,c) flot_region("xaxis",x1,x2,c)
+#define flot_horz_region(x1,x2,c) flot_region("yaxis",x1,x2,c)
+
+
+#define flot_empty list_new_ptr
+
+#define farr_values(...) farr_values_(__VA_ARGS__,PlotMax)
+
+double *farr_values_(double x,...) {
+    va_list ap;
+    double v, *res;
+    int n = 1;
+    va_start(ap,x);
+    while (va_arg(ap,double) != PlotMax)
+        ++n;
+    va_end(ap);
+    res = array_new(double,n);
+    n = 1;
+    res[0] = x;
+    va_start(ap,x);
+    while ((v = va_arg(ap,double)) != PlotMax) {
+        res[n++] = v;
+    }
+    va_end(ap);
+    return res;
+}
+
 int main()
 {
     Flot *P = flot_new("caption", "First Test",
@@ -252,38 +332,42 @@ int main()
         "legend.position","nw"
     );
 
+    // Series data must be llib arrays of doubles 
     double X[] = {1,2,3,4,5};
     double Y1[] = {10,15,23,29,31};
-    double Y2[] = {9,9,25,28,32};
     double *xv = array_new_copy(double,X,5);
     double *yv1 = array_new_copy(double,Y1,5);
-
+    // be careful with this one - values must be explicitly floating-point!
+    double *yv2 = farr_values(9.0,9.0,25.0,28.0,32.0);
+    
     const char *gray = "#f6f6f6";
 
     flot_series_new(P,xv,yv1, PlotLines,"label","cats",
         "lines.lineWidth",VF(1),
         "lines.fill",VF(0.2)  // specified as an alpha to be applied to line colour
     );
-    flot_series_new(P,xv,array_new_copy(double,Y2,5), PlotPoints,"label","dogs","color","#F00");
+    flot_series_new(P,xv,yv2, PlotPoints,"label","dogs","color","#F00");
+    flot_series_new(P,farr_values(2.0,12.0,4.0,25.0),NULL,PlotLines,"label","lizards");
 
     // this is based on the Flot annotations example
-
+    
     Flot *P2 = flot_new("caption","Second Test",
         "legend.show",False, // no legend
         // and explicitly give ourselves some more vertical room
         "yaxis.min",VF(-2),"yaxis.max",VF(2),
-        "grid.markings",VA( // an array of markings (you can use a list instead)
-            VMS("color",gray,"yaxis",VMS("from",VF(1))), // gray band from +1 to +2
-            VMS("color",gray,"yaxis",VMS("to",VF(-1))),  // gray band from -2 to -1
-            //VMS("color",gray,"xaxis",VMS("from",VF(5),"to",VF(15))),
-            // and a vertical line at 2
-            VMS("color","#000","lineWidth",VF(1), "xaxis",VMS("from",VF(2),"to",VF(2)))
+        flot_markings (
+            flot_horz_region(1,PlotMax,gray),
+            flot_horz_region(PlotMin,-1,gray),
+            flot_vert_line(2,"#000",1),
+            flot_vert_line(10,"red",1)
         ),
         // grid lines switched off by making them white and the border explicitly black
         "grid.color","#FFF","grid.borderColor","#000",
         // switch off ticks with an empty list/array
-        "xaxis.ticks",list_new_ptr()
+        "xaxis.ticks",flot_empty()
     );
+    
+    flot_text_mark(P2,2,-1.2,"Warming up");
 
     // can pack X and Y as even and odd values in a single array
     double *vv = array_new(double,40);
@@ -302,4 +386,3 @@ int main()
     return 0;
 }
 
-// (double*)seq_array_ref(vv)

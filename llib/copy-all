@@ -1,1 +1,1 @@
-cat obj.c scan.c list.c map.c sort.c json.c file.c str.c value.c template.c json-data.c arg.c seq.c smap.c xml.c > all.c
+cat obj.c scan.c list.c map.c sort.c json.c file.c str.c value.c template.c json-data.c arg.c seq.c smap.c xml.c table.c > all.c

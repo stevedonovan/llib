@@ -13,12 +13,19 @@
 <div id="@(div)" style="width:@(width)px;height:@(height)px"></div>
 |)
 <script type="text/javascript">
+    function text_marking(plot,id,xp,yp, text) {
+ 		var o = plot.pointOffset({ x: xp, y: yp});
+		// Append it to the placeholder that Flot already uses for positioning
+		$("#"+id).append("<div style='position:absolute;left:" + (o.left + 4) + "px;top:" + o.top + "px;color:#666;font-size:smaller'>" + text + "</div>");
+    }
+
 $(function () {
 @(for plots |
-  $.plot( $("#@(div)"),
+  var plot_@(div) = $.plot( $("#@(div)"),
     @(data),
     @(options)
  )
+ @(textmarks)
 |)
 });
 </script>
