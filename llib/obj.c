@@ -192,6 +192,13 @@ OTP obj_new_type(int size, const char *type, DisposeFn dtor) {
     return t;
 }
 
+static bool initialized = false;
+
+static void initialize_types() {
+    initialized = true;
+    memcpy(obj_types,obj_types_initialized,sizeof(obj_types_initialized));
+}
+
 /// allocate a new refcounted object.
 // @tparam type T
 // @tparam DisposeFn optional destructior
@@ -199,10 +206,8 @@ OTP obj_new_type(int size, const char *type, DisposeFn dtor) {
 // @function obj_new
 
 void *obj_new_(int size, const char *type, DisposeFn dtor) {
-    static bool initialized = false;
     if (! initialized) {
-        initialized = true;
-        memcpy(obj_types,obj_types_initialized,sizeof(obj_types_initialized));
+        initialize_types();
     }
     OTP t = type_from_dtor(type,dtor);
     if (! t)
@@ -314,6 +319,10 @@ typedef unsigned char byte;
 //? allocates len+1 - ok?
 
 void *array_new_(int mlen, const char *name, int len, int isref) {
+    if (! initialized) {
+        initialize_types();
+    }
+
     OTP t = type_from_dtor(name,NULL);
     if (! t)
         t = obj_new_type(mlen,name,NULL);
