@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
+#define _USE_MATH_DEFINES
 #include <math.h>
 #include <llib/file.h>
 #include <llib/list.h>
@@ -10,7 +11,7 @@
 #include <llib/json.h>
 
 #ifndef STANDALONE_FLOT
-#define FLOT_CDN "file:///home/user/libs//flot"
+#define FLOT_CDN "file:///home/user/dev/flot"
 #define JQUERY_CDN FLOT_CDN "/jquery.min.js"
 #else
 #define FLOT_CDN "http://www.flotcharts.org/flot/"
@@ -18,6 +19,8 @@
 #endif
 
 typedef double (*MapFun)(double);
+
+typedef double* farr_t;
 
 double *farr_range(double x1, double x2, double dx) {
     int n = ceil((x2 - x1)/dx);
@@ -37,6 +40,66 @@ double *farr_map(double *a, MapFun f) {
     }
     return b;
 }
+
+static farr_t sample_helper(void *A, int i1, int istep, int *pi2) {
+    if (*pi2 == -1)
+        *pi2 = array_len(A);
+    int n = (*pi2 - i1)/istep;
+    return array_new(double,n);    
+}
+
+double *farr_sample(double *A, int i1, int i2, int istep) {
+    farr_t res = sample_helper(A,i1,istep,&i2);
+    for (int i = i1, k = 0; i < i2; i += istep,k++)
+        res[k] = A[i];
+    return res;
+}
+
+double *farr_sample_float(float *A, int i1, int i2, int istep) {
+    farr_t res = sample_helper(A,i1,istep,&i2);
+    for (int i = i1, k = 0; i < i2; i += istep,k++)
+        res[k] = A[i];
+    return res;
+}
+
+double *farr_sample_int(int *A, int i1, int i2, int istep) {
+    farr_t res = sample_helper(A,i1,istep,&i2);
+    for (int i = i1, k = 0; i < i2; i += istep,k++)
+        res[k] = A[i];
+    return res;
+}
+
+void farr_scale(double *A, double m, double c) {
+    FOR(i,array_len(A))
+        A[i] = m*A[i] + c;
+}
+
+
+#define seq_add2(s,x1,x2) {seq_add(s,x1); seq_add(s,x2);}
+
+#define farr_seq(s) ((double*)seq_array_ref(s))
+
+#define farr_copy(arr) array_new_copy(double,arr,sizeof(arr)/sizeof(double))
+
+double *farr_2(double x1,double x2) {
+    double *res = array_new(double,2);
+    res[0] = x1;
+    res[1] = x2;
+    return res;
+}
+
+double *farr_4(double x1,double x2,double x3,double x4) {
+    double *res = array_new(double,4);
+    res[0] = x1;
+    res[1] = x2;
+    res[2] = x3;
+    res[3] = x4;
+    return res;
+}
+
+#define FlotMax 1e100
+#define FlotMin -FlotMax
+
 
 typedef struct flot_ {
     List *series;
@@ -65,10 +128,7 @@ static double **interleave(double *X, double *Y) {
     int n = array_len(X);
     double **pnts = array_new_ref(double*,n);
     FOR(i,n) {
-        double *pnt = array_new(double,2);
-        pnt[0] = X[i];
-        pnt[1] = Y[i];
-        pnts[i] = pnt;
+        pnts[i] = farr_2(X[i],Y[i]);
     }
     return pnts;
 }
@@ -80,18 +140,51 @@ static void flot_dispose(Flot *P) {
 PValue True = NULL, False = NULL;
 static List *plots = NULL;
 static int kount = 1;
+static bool has_time_axis = false;
 
 //? these go in map.h?
 #define map_gets(m,key) map_get(m,(void*)key)
 #define map_puts(m,key,val) map_put(m,(void*)key,(void*)val)
 
-static void put_submap(Map *map, CStr key, CStr subkey, const void* value) {
-    Map *sub = map_gets(map,key);
-    if (! sub) {
-        sub = map_new_str_ref();
-        map_puts(map,key,sub);
+static char *splitdot(char *key) {
+    char *p = strchr(key,'.');
+    if (p) { // sub.key
+        *p = '\0';
+        return p+1;
+    } else 
+        return NULL;
+}
+
+#define MAX_KEY 128
+
+static void put_submap(Map *map, CStr ckey, const void* value) {
+    char key[MAX_KEY];
+    strcpy(key,ckey);
+    char *subkey = splitdot(key);
+    if (! subkey) {
+        map_puts(map,key,value);
+    } else {
+        Map *sub = map_gets(map,subkey);
+        if (! sub) {
+            sub = map_new_str_ref();
+            map_puts(map,key,sub);
+        }
+        put_submap(sub,subkey,value);
     }
-    map_puts(sub,subkey,value);
+}
+
+static PValue get_submap(Map *map, CStr ckey) {
+    char key[MAX_KEY];
+    strcpy(key,ckey);
+    char *subkey = splitdot(key);
+    if (! subkey) {
+        return map_gets(map,key);
+    } else {
+        Map *sub = map_gets(map,key);
+        if (! sub)
+            return NULL;
+        return get_submap(sub,subkey);
+    }
 }
 
 static void update_options(Map *map, PValue options) {
@@ -101,14 +194,7 @@ static void update_options(Map *map, PValue options) {
         for (int i = 0, n = array_len(omap); i < n; i+=2) {
             char *key = omap[i];
             void *value = omap[i+1];
-            char *p = strchr(key,'.');
-            if (p) { // sub.key
-                char *subkey = p+1;
-                *p = '\0';
-                put_submap(map,key,subkey,value);
-            } else {
-                map_put(map,key,value);
-            }
+            put_submap(map,key,value);
         }
     }
 }
@@ -122,8 +208,8 @@ Flot *flot_new_(PValue options)  {
         False = VB(false);
         plots = list_new_ptr();
     }
-    P->xtitle = NULL; //str_ref(xtitle);
-    P->ytitle = NULL; //str_ref(ytitle);
+    P->xtitle = NULL;
+    P->ytitle = NULL;
     P->text_marks = NULL;
     P->width = 600;
     P->height = 300;
@@ -132,12 +218,16 @@ Flot *flot_new_(PValue options)  {
     P->id = str_fmt("placeholder%d",kount++);
     update_options(P->map,options);
     P->caption = map_get(P->map,"caption");
+    if (get_submap(P->map,"xaxis.mode")) {
+        puts("oh yes time!");
+        has_time_axis = true;
+    }
     list_add(plots,P);
     return P;
 }
 
-void flot_option(Flot *P, CStr key, CStr subkey, const void* value) {
-    put_submap(P->map,key,subkey,value);
+void flot_option(Flot *P, CStr key, const void* value) {
+    put_submap(P->map,key,value);
 }
 
 typedef struct TextMark_ {
@@ -160,10 +250,10 @@ static void Series_dispose(Series *S) {
 }
 
 enum {
-    PlotLines = 1,
-    PlotPoints = 2,
-    PlotBars = 4,
-    PlotFill = 8
+    FlotLines = 1,
+    FlotPoints = 2,
+    FlotBars = 4,
+    FlotFill = 8
 };
 
 #define flot_series_new(p,x,y,flags,...) flot_series_new_(p,x,y,flags,value_map_of_str(__VA_ARGS__))
@@ -172,17 +262,17 @@ Series *flot_series_new_(Flot *p, double *X, double *Y, int flags, PValue option
     Series *s = obj_new(Series,Series_dispose);
     s->plot = p;
     s->map = map_new_str_ref();
-    if (flags == PlotBars) {
-        put_submap(s->map,"bars","show",True);
+    if (flags == FlotBars) {
+        put_submap(s->map,"bars.show",True);
     } else {
-        if (flags & PlotLines) {
-            put_submap(s->map,"lines","show",True);
-            if (flags & PlotFill) {
-                put_submap(s->map,"lines","fill",VF(0.5));
+        if (flags & FlotLines) {
+            put_submap(s->map,"lines.show",True);
+            if (flags & FlotFill) {
+                put_submap(s->map,"lines.fill",VF(0.5));
             }
         }
-        if (flags & PlotPoints) {
-            put_submap(s->map,"points","show",True);
+        if (flags & FlotPoints) {
+            put_submap(s->map,"points.show",True);
         }
     }
     update_options(s->map,options);
@@ -207,8 +297,8 @@ Series *flot_series_new_(Flot *p, double *X, double *Y, int flags, PValue option
     return s;
 }
 
-void flot_series_option(Series *S, CStr key, CStr subkey, const void* value) {
-    put_submap(S->map,key,subkey,value);
+void flot_series_option(Series *S, CStr key, const void* value) {
+    put_submap(S->map,key,value);
 }
 
 void flot_render(CStr name) {
@@ -218,7 +308,7 @@ void flot_render(CStr name) {
         perror("template read");
         exit(1);
     }
-
+    
     List *plist = list_new_ref();
     FOR_LIST(iter,plots) {
         Map *pd = map_new_str_ref();
@@ -236,7 +326,7 @@ void flot_render(CStr name) {
             }
             map_puts(pd,"textmarks",strbuf_tostring(out));
         }
-
+    
         // an array of all the data objects of the series
         PValue *series = array_new_ref(PValue,list_size(P->series));
         int i = 0;
@@ -244,18 +334,24 @@ void flot_render(CStr name) {
             Series *S = p->data;
             series[i++] = S->map;
         }
-
+        
+    
         map_puts(pd,"data",json_tostring(series));
         map_puts(pd,"options",json_tostring(P->map));
         list_add(plist,pd);
     }
 
+    
     // and write the substitution out to the HTML output...
     StrTempl st = str_templ_new(tpl,"@()");
     Map *data = map_new_str_ref();
     map_puts(data,"flot",FLOT_CDN);
     map_puts(data,"jquery",JQUERY_CDN);
+    map_puts(data,"title",name); // for now...
     map_puts(data,"plots",plist);
+    if (has_time_axis)
+        map_puts(data,"uses_time","");
+    
     char *res = str_templ_subst_values(st,data);
     FILE *out = fopen(str_fmt("%s.html",name),"w");
     fputs(res,out);
@@ -281,17 +377,15 @@ PValue flot_gradient(const char *start, const char *finish) {
     //~ return VMS("color",colour,"lineWidth",VF(line_width), axis,VMS("from",VF(x),"to",VF(x)));
 //~ }
 
-#define PlotMin -1e-100
-#define PlotMax +1e-100
 
 PValue flot_region(const char *axis, double x1, double x2, const char *colour) {
     Map *m = map_new_str_ref();
     Map *s = map_new_str_ref();
     map_puts(m,"color",VS(colour));
     map_puts(m,axis,s);
-    if (x1 > PlotMin)
+    if (x1 > FlotMin)
         map_puts(s,"from",VF(x1));
-    if (x2 < PlotMax)
+    if (x2 < FlotMax)
         map_puts(s,"to",VF(x2));
     return m;
     //return value_array_values_(3,"color","#f6f6f6","yaxis",value_array_values_(3,"to",VF(x),NULL),NULL);
@@ -303,27 +397,7 @@ PValue flot_region(const char *axis, double x1, double x2, const char *colour) {
 
 #define flot_empty list_new_ptr
 
-#define farr_values(...) farr_values_(__VA_ARGS__,PlotMax)
-
-double *farr_values_(double x,...) {
-    va_list ap;
-    double v, *res;
-    int n = 1;
-    va_start(ap,x);
-    while (va_arg(ap,double) != PlotMax)
-        ++n;
-    va_end(ap);
-    res = array_new(double,n);
-    n = 1;
-    res[0] = x;
-    va_start(ap,x);
-    while ((v = va_arg(ap,double)) != PlotMax) {
-        res[n++] = v;
-    }
-    va_end(ap);
-    return res;
-}
-
+/*
 int main()
 {
     Flot *P = flot_new("caption", "First Test",
@@ -342,12 +416,12 @@ int main()
     
     const char *gray = "#f6f6f6";
 
-    flot_series_new(P,xv,yv1, PlotLines,"label","cats",
+    flot_series_new(P,xv,yv1, FlotLines,"label","cats",
         "lines.lineWidth",VF(1),
         "lines.fill",VF(0.2)  // specified as an alpha to be applied to line colour
     );
-    flot_series_new(P,xv,yv2, PlotPoints,"label","dogs","color","#F00");
-    flot_series_new(P,farr_values(2.0,12.0,4.0,25.0),NULL,PlotLines,"label","lizards");
+    flot_series_new(P,xv,yv2, FlotPoints,"label","dogs","color","#F00");
+    flot_series_new(P,farr_values(2.0,12.0,4.0,25.0),NULL,FlotLines,"label","lizards");
 
     // this is based on the Flot annotations example
     
@@ -377,7 +451,7 @@ int main()
         vv[k++] = sin(i);
     }
 
-    flot_series_new(P2,vv,NULL,PlotBars,
+    flot_series_new(P2,vv,NULL,FlotBars,
        "color","#333", "bars.barWidth",VF(0.5),"bars.fill",VF(0.6)
     );
 
@@ -385,4 +459,4 @@ int main()
 
     return 0;
 }
-
+*/

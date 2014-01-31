@@ -2,10 +2,13 @@
 <html>
  <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
-    <title>llib Flot</title>
+    <title>@(title)</title>
     <!--[if lte IE 8]><script language="javascript" type="text/javascript" src="@(flot)/excanvas.min.js"></script><![endif]-->
     <script language="javascript" type="text/javascript" src="@(jquery)"></script>
     <script language="javascript" type="text/javascript" src="@(flot)/jquery.flot.js"></script>
+    @(if uses_time |
+        <script language="javascript" type="text/javascript" src="@(flot)/jquery.flot.time.js"></script>
+    |)
  </head>
 <body>
 @(for plots |
