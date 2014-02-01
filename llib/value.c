@@ -13,32 +13,36 @@
 #define snprintf _snprintf
 #endif
 
+bool value_is_box(PValue v) {
+    return array_len(v)==1 && ! obj_is_array(v);
+}
+
+static bool check_type(PValue v, int ttype) {
+    return value_is_box(v) && obj_type_index(v) == ttype;
+}
+
 bool value_is_string(PValue v) {
-    return obj_type_index(v) == OBJ_CHAR_T;
+    return check_type(v,OBJ_CHAR_T);
 }
 
 bool value_is_error(PValue v) {
-    return obj_type_index(v) == OBJ_ECHAR_T;
+    return check_type(v,OBJ_ECHAR_T);
 }
 
 bool value_is_float(PValue v) {
-    return obj_type_index(v) == OBJ_DOUBLE_T;
+    return check_type(v,OBJ_DOUBLE_T);
 }
 
 bool value_is_int(PValue v) {
-    return obj_type_index(v) == OBJ_LLONG_T;
+    return check_type(v,OBJ_LLONG_T);
 }
 
 bool value_is_bool(PValue v) {
-    return obj_type_index(v) == OBJ_BOOL_T;
+    return check_type(v,OBJ_BOOL_T);
 }
 
 bool value_is_simple_map(PValue v) {
     return obj_type_index(v) == OBJ_KEYVALUE_T;
-}
-
-bool value_is_box(PValue v) {
-    return array_len(v)==1 && ! obj_is_array(v);
 }
 
 void obj_set_type(void *P,int t) {

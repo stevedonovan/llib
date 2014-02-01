@@ -37,6 +37,10 @@ Each time you call `scan_next`, the scanner finds the next _token_,
 #include "scan.h"
 #include "value.h"
 
+#ifdef _MSC_VER
+#define strtoull _strtoui64
+#endif
+
 // maximum size of an 'identifier'
 #define IDENSZ 128
 
@@ -51,10 +55,10 @@ static const char *copy_str(char *tok, int len, const char *start, const char *e
     return tok;
 }
 
-static long convert_int(const char *buff, int base)
+static long long convert_int(const char *buff, int base)
 {
     char endptr[10];
-    long val = strtoul(buff,(char **)&endptr,base);
+    long long val = strtoull(buff,(char **)&endptr,base);
     return val;
 }
 
