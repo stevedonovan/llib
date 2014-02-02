@@ -86,7 +86,7 @@ bool table_generate_columns (Table *T) {
                             cols[ic] = (void**)array_new(float,nrows);
                         }
                     }
-                } else {
+                } else {*
                     FOR(ic,ncols) {
                         if (! conv[ic]) continue;
                         if (conv[ic] == no_convert)
@@ -133,7 +133,7 @@ bool table_read_all(Table *T) {
             T->ncols = ncols;
         }
         if (array_len(row) != ncols) {
-            T->error = str_fmt("row %d has %d items instead of %d",i+1,array_len(row),nrows);
+            T->error = str_fmt("row %d has %d items instead of %d",i+1,array_len(row),ncols);
             return false;
         }
         T->rows[i] = row;
