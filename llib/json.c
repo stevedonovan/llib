@@ -166,11 +166,13 @@ static PValue json_parse(ScanState *ts) {
     case '{':
     case '[': {
         void*** ss = seq_new_ref(void*);
-        int endt = t == '{' ? '}' : ']';  // corresponding close char
+        bool ismap = t == '{';
+        int endt = ismap ? '}' : ']';  // corresponding close char
+        int nfloats = 0;
         t = scan_next(ts);  // either close or first entry
         while (t != endt) { // while there are entries in map or list
             // a map has a key followed by a colon...
-            if (endt == '}') {
+            if (ismap) {
                 int tn;
                 key = scan_get_str(ts);
                 tn = scan_next(ts);
@@ -190,6 +192,8 @@ static PValue json_parse(ScanState *ts) {
                 break;
             }
             seq_add(ss,val);
+            if (value_is_float(val))
+                ++nfloats;
 
             t = scan_next(ts); // should be separator or close
             if (t == ',') { // move to next item (key or value)
@@ -204,11 +208,20 @@ static PValue json_parse(ScanState *ts) {
             obj_unref(ss); // clean up the temporary array...
             return err;
         }
-        void* vals = seq_array_ref(ss);
-        if (endt == '}') {
+        void** vals = seq_array_ref(ss);
+        if (ismap) {
             obj_type_index(vals) = OBJ_KEYVALUE_T;
+        } else {
+            int n = array_len(vals);
+            if (n == nfloats) {
+                double *arr = array_new(double,n);
+                FOR(i,n) 
+                    arr[i] = value_as_float(vals[i]);
+                obj_unref(vals);
+                vals = (void*)arr;
+            }            
         }
-        return vals;
+        return (void*)vals;
     }
     case T_END:
         return value_error("unexpected end of stream");
