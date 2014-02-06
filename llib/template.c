@@ -254,10 +254,16 @@ char *str_templ_subst_using(StrTempl stl, StrLookup lookup, void *data) {
                 ref_str = true;
             } else {
                 // note that '_' stands for the data, without lookup
-                if (! str_eq2(part,"_"))
-                    part = lookup (data, part);
-                else
+                if (! str_eq2(part,"_")) {
+                    char *res = lookup (data, part);
+                    // which might fail; if there's a parent context, look there
+                    if (! res && stl->parent) {
+                        res = stl->parent->lookup(stl->parent->data,part);
+                    }
+                    part = res;                    
+                } else {
                     part = (char*)data;
+                }
             }
             if (! part)
                 part = "";
@@ -346,10 +352,17 @@ static Iter get_iterator (void *obj) {
     return ai;
 }
 
+static char*null_lookup(char **d, char *key) {
+    return NULL;
+}
 
 static StrLookup get_lookup(void *item) {
-    if (map_object(item))
+    if (map_object(item)) {
         return (StrLookup)map_get;
-    else
-        return (StrLookup)str_lookup; // default 'simple map'
+    } else
+    if (obj_refcount(item) != -1 && obj_elem_size(item) == sizeof(char*) && array_len(item) > 0) {
+        return (StrLookup)str_lookup; //  'simple map'
+    } else {
+        return (StrLookup)null_lookup; // default : cannot lookup
+    }
 }

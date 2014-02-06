@@ -86,7 +86,7 @@ bool table_generate_columns (Table *T) {
                             cols[ic] = (void**)array_new(float,nrows);
                         }
                     }
-                } else {*
+                } else {
                     FOR(ic,ncols) {
                         if (! conv[ic]) continue;
                         if (conv[ic] == no_convert)
