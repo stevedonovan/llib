@@ -45,11 +45,6 @@ typedef const char *CStr;
 
 static List *plugins = NULL;
 
-static void list_add_unique(List *ls, void *data) {
-    if (! list_find(ls,data))
-        list_add(ls,data);
-}
-
 static double **interleave(double *X, double *Y) {
     int n = array_len(X);
     double **pnts = array_new_ref(double*,n);
@@ -66,10 +61,6 @@ static void flot_dispose(Flot *P) {
 PValue True = NULL, False = NULL;
 static List *plots = NULL;
 static int kount = 1;
-
-//? these go in map.h?
-#define map_gets(m,key) map_get(m,(void*)key)
-#define map_puts(m,key,val) map_put(m,(void*)key,(void*)val)
 
 static char *splitdot(char *key) {
     char *p = strchr(key,'.');
@@ -92,7 +83,6 @@ static void put_submap(Map *map, CStr ckey, const void* value) {
         map_puts(map,key,value);
     } else {
         Map *sub = map_gets(map,key);
-        //printf("sub %s %s %p\n",subkey,key,sub);
         if (! sub) {
             sub = map_new_str_ref();
             map_puts(map,key,sub);
@@ -279,7 +269,6 @@ void flot_render(CStr name) {
         list_add(plist,pd);
     }
 
-    
     // and write the substitution out to the HTML output...
     StrTempl st = str_templ_new(tpl,"@()");
     Map *data = map_new_str_ref();
@@ -290,9 +279,11 @@ void flot_render(CStr name) {
     map_puts(data,"plugins",plugins);
     
     char *res = str_templ_subst_values(st,data);
-    FILE *out = fopen(str_fmt("%s.html",name),"w");
+    char *html = str_fmt("%s.html",name);
+    FILE *out = fopen(html,"w");
     fputs(res,out);
     fclose(out);
+    printf("output written to %s\n",html);    
 }
 
 char *flot_rgba(int r, int g, int b,int a) {
@@ -331,69 +322,5 @@ PValue flot_region(const char *axis, double x1, double x2, const char *colour) {
 #define flot_vert_region(x1,x2,c) flot_region("xaxis",x1,x2,c)
 #define flot_horz_region(x1,x2,c) flot_region("yaxis",x1,x2,c)
 
-
 #define flot_empty list_new_ptr
 
-/*
-int main()
-{
-    Flot *P = flot_new("caption", "First Test",
-        "grid.backgroundColor",flot_gradient("#FFF","#EEE"),
-        // 'nw' is short for North West, i.e. top-left
-        "legend.position","nw"
-    );
-
-    // Series data must be llib arrays of doubles 
-    double X[] = {1,2,3,4,5};
-    double Y1[] = {10,15,23,29,31};
-    double *xv = array_new_copy(double,X,5);
-    double *yv1 = array_new_copy(double,Y1,5);
-    // be careful with this one - values must be explicitly floating-point!
-    double *yv2 = farr_values(9.0,9.0,25.0,28.0,32.0);
-    
-    const char *gray = "#f6f6f6";
-
-    flot_series_new(P,xv,yv1, FlotLines,"label","cats",
-        "lines.lineWidth",VF(1),
-        "lines.fill",VF(0.2)  // specified as an alpha to be applied to line colour
-    );
-    flot_series_new(P,xv,yv2, FlotPoints,"label","dogs","color","#F00");
-    flot_series_new(P,farr_values(2.0,12.0,4.0,25.0),NULL,FlotLines,"label","lizards");
-
-    // this is based on the Flot annotations example
-    
-    Flot *P2 = flot_new("caption","Second Test",
-        "legend.show",False, // no legend
-        // and explicitly give ourselves some more vertical room
-        "yaxis.min",VF(-2),"yaxis.max",VF(2),
-        flot_markings (
-            flot_horz_region(1,PlotMax,gray),
-            flot_horz_region(PlotMin,-1,gray),
-            flot_vert_line(2,"#000",1),
-            flot_vert_line(10,"red",1)
-        ),
-        // grid lines switched off by making them white and the border explicitly black
-        "grid.color","#FFF","grid.borderColor","#000",
-        // switch off ticks with an empty list/array
-        "xaxis.ticks",flot_empty()
-    );
-    
-    flot_text_mark(P2,2,-1.2,"Warming up");
-
-    // can pack X and Y as even and odd values in a single array
-    double *vv = array_new(double,40);
-    int k = 0;
-    FOR(i,20) {
-        vv[k++] = i;
-        vv[k++] = sin(i);
-    }
-
-    flot_series_new(P2,vv,NULL,FlotBars,
-       "color","#333", "bars.barWidth",VF(0.5),"bars.fill",VF(0.6)
-    );
-
-    flot_render("test");
-
-    return 0;
-}
-*/

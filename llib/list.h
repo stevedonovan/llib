@@ -80,6 +80,7 @@ ListIter list_add (List *ls, void *data);
 ListIter list_insert(List *ls, ListIter before, void *data);
 ListIter list_insert_front(List *ls, void *data);
 ListIter list_add_sorted(List *ls, void *data);
+void list_add_unique(List *ls, void *data);
 ListIter list_remove(List *ls, ListIter item);
 void *list_delete(List *ls, ListIter item) ;
 void * list_pop(List *ls);

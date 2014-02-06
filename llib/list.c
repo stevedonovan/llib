@@ -229,6 +229,13 @@ ListIter list_add_sorted(List *ls, void *data) {
     return list_add(ls,data);
 }
 
+/// only add data if not already present in list.
+void list_add_unique(List *ls, void *data) {
+    if (! list_find(ls,data))
+        list_add(ls,data);
+}
+
+
 /// removes item from list.
 ListIter list_remove(List *ls, ListIter item) {
     if (item == NULL) return NULL;

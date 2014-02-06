@@ -65,6 +65,9 @@ void map_visit(void *data, PEntry node, MapCallback fun, int order);
 MapIter map_iter_new (Map *m, void *pkey, void *pvalue);
 MapIter map_iter_next (MapIter iter);
 
+#define map_gets(m,key) map_get(m,(void*)key)
+#define map_puts(m,key,val) map_put(m,(void*)key,(void*)val)
+
 #define FOR_MAP(iter,map) for (MapIter iter = map_iter_new(map,NULL,NULL);\
 iter; iter = map_iter_next(iter))
 
