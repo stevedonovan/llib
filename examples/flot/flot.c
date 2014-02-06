@@ -77,7 +77,7 @@ void farr_scale(double *A, double m, double c) {
 
 #define seq_add2(s,x1,x2) {seq_add(s,x1); seq_add(s,x2);}
 
-#define farr_seq(s) ((double*)seq_array_ref(s))
+#define farr_from_seq(s) ((double*)seq_array_ref(s))
 
 #define farr_copy(arr) array_new_copy(double,arr,sizeof(arr)/sizeof(double))
 
@@ -124,6 +124,13 @@ typedef struct Series_ {
 typedef char *Str;
 typedef const char *CStr;
 
+static List *plugins = NULL;
+
+static void list_add_unique(List *ls, void *data) {
+    if (! list_find(ls,data))
+        list_add(ls,data);
+}
+
 static double **interleave(double *X, double *Y) {
     int n = array_len(X);
     double **pnts = array_new_ref(double*,n);
@@ -140,7 +147,6 @@ static void flot_dispose(Flot *P) {
 PValue True = NULL, False = NULL;
 static List *plots = NULL;
 static int kount = 1;
-static bool has_time_axis = false;
 
 //? these go in map.h?
 #define map_gets(m,key) map_get(m,(void*)key)
@@ -157,6 +163,8 @@ static char *splitdot(char *key) {
 
 #define MAX_KEY 128
 
+// key may be in dotted form, e.g. "points.show" - in this case 'points' refers to a submap
+// and 'show' is the subkey into that submap.
 static void put_submap(Map *map, CStr ckey, const void* value) {
     char key[MAX_KEY];
     strcpy(key,ckey);
@@ -164,11 +172,12 @@ static void put_submap(Map *map, CStr ckey, const void* value) {
     if (! subkey) {
         map_puts(map,key,value);
     } else {
-        Map *sub = map_gets(map,subkey);
+        Map *sub = map_gets(map,key);
+        //printf("sub %s %s %p\n",subkey,key,sub);
         if (! sub) {
             sub = map_new_str_ref();
             map_puts(map,key,sub);
-        }
+        }        
         put_submap(sub,subkey,value);
     }
 }
@@ -207,6 +216,7 @@ Flot *flot_new_(PValue options)  {
         True = VB(true);
         False = VB(false);
         plots = list_new_ptr();
+        plugins = list_new_str();
     }
     P->xtitle = NULL;
     P->ytitle = NULL;
@@ -219,8 +229,7 @@ Flot *flot_new_(PValue options)  {
     update_options(P->map,options);
     P->caption = map_get(P->map,"caption");
     if (get_submap(P->map,"xaxis.mode")) {
-        puts("oh yes time!");
-        has_time_axis = true;
+        list_add_unique(plugins,"time");
     }
     list_add(plots,P);
     return P;
@@ -276,23 +285,34 @@ Series *flot_series_new_(Flot *p, double *X, double *Y, int flags, PValue option
         }
     }
     update_options(s->map,options);
-    if (! Y) { // even values are X, odd values are Y
-        double *vv = X;
-        int n = array_len(vv);
-        double *X = array_new(double,n/2), *Y = array_new(double,n/2);
-        for (int i = 0, k = 0; i < n; i+=2,k++) {
-            X[k] = vv[i];
-            Y[k] = vv[i+1];
+    double **xydata = NULL;
+    if (! Y) { 
+        // might already be an array in the correct form!
+        void **D = (void*)X;
+        if (obj_refcount(D[0]) != -1 && array_len(D[0]) > 0) {
+            xydata = (double**)X;
+        } else { // even values are X, odd values are Y
+            double *vv = X;
+            int n = array_len(vv);
+            double *X = array_new(double,n/2), *Y = array_new(double,n/2);
+            for (int i = 0, k = 0; i < n; i+=2,k++) {
+                X[k] = vv[i];
+                Y[k] = vv[i+1];
+            }
+            s->X = X;
+            s->Y = Y;
+            obj_unref(vv);
         }
-        s->X = X;
-        s->Y = Y;
-        obj_unref(vv);
     } else {
         s->X = obj_ref(X);
         s->Y = obj_ref(Y);
     }
-    double **xydata = interleave(s->X,s->Y);
+    if (! xydata)
+        xydata = interleave(s->X,s->Y);
     map_puts(s->map,"data",xydata);
+    if (get_submap(s->map,"points.errorbars")) {
+        list_add_unique(plugins,"errorbars");
+    }
     list_add(p->series,s);
     return s;
 }
@@ -333,8 +353,7 @@ void flot_render(CStr name) {
         FOR_LIST(p,P->series) {
             Series *S = p->data;
             series[i++] = S->map;
-        }
-        
+        }        
     
         map_puts(pd,"data",json_tostring(series));
         map_puts(pd,"options",json_tostring(P->map));
@@ -349,8 +368,7 @@ void flot_render(CStr name) {
     map_puts(data,"jquery",JQUERY_CDN);
     map_puts(data,"title",name); // for now...
     map_puts(data,"plots",plist);
-    if (has_time_axis)
-        map_puts(data,"uses_time","");
+    map_puts(data,"plugins",plugins);
     
     char *res = str_templ_subst_values(st,data);
     FILE *out = fopen(str_fmt("%s.html",name),"w");

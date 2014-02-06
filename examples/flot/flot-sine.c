@@ -11,8 +11,8 @@ int main()
         seq_add2(vcos,x,cos(x));
     }
 
-    flot_series_new(P,farr_seq(vsin), NULL,FlotLines,"label","sine");
-    flot_series_new(P,farr_seq(vcos), NULL,FlotLines,"label","cosine");
+    flot_series_new(P,farr_from_seq(vsin), NULL,FlotLines,"label","sine");
+    flot_series_new(P,farr_from_seq(vcos), NULL,FlotLines,"label","cosine");
     
     flot_render("sine");
     return 0;
