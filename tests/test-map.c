@@ -36,7 +36,7 @@ void dump(Data* d) {
 }
 
 void dumpi(void *k, void *v) {
-    printf("%d:%d ",k,v);
+    printf("%d:%d ",(intptr)k,(intptr)v);
 }
 
 #define P (void *)
@@ -68,7 +68,7 @@ void struct_maps()
     printf("size was %d\n",map_size(map));
 
     FOR_MAP(iter,map) {
-        printf("[%s]=%d,",iter->key,((Data*)(iter->value))->age );
+        printf("[%s]=%d,",(char*)iter->key,((Data*)(iter->value))->age );
     }
     printf("\n");
 
@@ -112,7 +112,7 @@ void string_maps()
     MapKeyValue *pkv = map_to_array(m);
 
     for (MapKeyValue *p = pkv; p->key; ++p)
-        printf("%s='%s' ",p->key,p->value);
+        printf("%s='%s' ",(char*)p->key,(char*)p->value);
     printf("\n");
 
     unref(m);
@@ -138,7 +138,7 @@ void int_maps()
 
     map_remove(m,P 5);
     FOR_MAP(iter,m) {
-        printf("[%d]=%d,",iter->key,iter->value);
+        printf("[%d]=%d,",(intptr)iter->key,(intptr)iter->value);
     }
     printf("\n");
     unref(m);

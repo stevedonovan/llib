@@ -66,7 +66,7 @@ int main() {
     long *sl = array_new_copy(long,vals,5);
     array_sort(sl,ARRAY_INT,false, 0);
     FOR(i,array_len(sl)) {
-        printf("%d ",sl[i]);
+        printf("%d ",(int)sl[i]);
     }
     printf("\n");
     printf("len %d\n",array_len(pa));

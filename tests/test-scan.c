@@ -124,7 +124,7 @@ int main() {
     while (scan_scanf(ts,"%s=%v",&key,&val)) {
         printf("%s=",key);
         if (value_is_string(val))
-            printf("'%s'\n",val);
+            printf("'%s'\n",(char*)val);
         else if (value_is_int(val))
             printf("%d\n",*(intptr*)val);
         dispose(key,val);

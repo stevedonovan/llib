@@ -55,14 +55,14 @@ void test_person_list() {
 
 void compare_int_list(List *ls, int *arr) {
     int n;
-    FOR_LIST_T(int,n,ls)
+    FOR_LIST_T(intptr,n,ls)
         assert(n == *arr++);
 }
 
 void dump_int_list(List *ls) {
     int n;
-    FOR_LIST_T(int,n,ls)
-        printf("%d ",n);
+    FOR_LIST_T(intptr,n,ls)
+        printf("%d ",(int)n);
     printf("\n");
 }
 
@@ -78,8 +78,8 @@ void test_int_list() {
     list_add_items(li,D 40,D 50,D 60);
 
     // indexing is slow in general, unless we're close to one of the ends
-    assert ( (int)list_get(li,-1) == 60 );
-    assert ( (int)list_get(li,1) == 20 );
+    assert ( (intptr)list_get(li,-1) == 60 );
+    assert ( (intptr)list_get(li,1) == 20 );
 
     int o1[] = {10,20,30,40,50,60};
     compare_int_list(li,o1);
@@ -124,8 +124,8 @@ void test_int_list() {
 
     // it's safe to remove items with this statement,
     // but you do need to know the magic 'p_' name of the iterator
-    int n;
-    FOR_LIST_T(int,n,s)
+    intptr n;
+    FOR_LIST_T(intptr,n,s)
         if (n == 3 || n == 6)
             list_delete(s,p_);
     dump_int_list(s);
@@ -165,7 +165,6 @@ void test_ref_list()
     Foo *f2 = Foo_new("two");
     list_add_items(ff,f1,f2);
     unref(ff);
-    //printf("fook %d!\n",fook);
     assert(fook == 0);
 }
 
@@ -201,4 +200,5 @@ int main() {
     printf("wrapper lists\n");
     test_wrapper();
     printf("kount %d\n",obj_kount());
+    return 0;
 }
