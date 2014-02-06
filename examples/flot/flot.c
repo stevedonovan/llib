@@ -1,7 +1,5 @@
 #include <stdio.h>
 #include <stdlib.h>
-#define _USE_MATH_DEFINES
-#include <math.h>
 #include <llib/file.h>
 #include <llib/list.h>
 #include <llib/map.h>
@@ -9,97 +7,18 @@
 #include <llib/template.h>
 #define LLIB_JSON_EASY
 #include <llib/json.h>
+#include <llib/farr.h>
 
 #ifndef STANDALONE_FLOT
-#define FLOT_CDN "file:///home/user/dev/flot"
+#define FLOT_CDN "file:///home/steve/projects/flot"
 #define JQUERY_CDN FLOT_CDN "/jquery.min.js"
 #else
 #define FLOT_CDN "http://www.flotcharts.org/flot/"
 #define JQUERY_CDN "http://ajax.googleapis.com/ajax/libs/jquery/1.10.2/jquery.min.js"
 #endif
 
-typedef double (*MapFun)(double);
-
-typedef double* farr_t;
-
-double *farr_range(double x1, double x2, double dx) {
-    int n = ceil((x2 - x1)/dx);
-    double *arr = array_new(double,n);
-    int i = 0;
-    for (double x = x1; x < x2; x += dx) {
-        arr[i++] = x;
-    }
-    return arr;
-}
-
-double *farr_map(double *a, MapFun f) {
-    int n = array_len(a);
-    double *b = array_new(double,n);
-    FOR(i,n) {
-        b[i] = f(a[i]);
-    }
-    return b;
-}
-
-static farr_t sample_helper(void *A, int i1, int istep, int *pi2) {
-    if (*pi2 == -1)
-        *pi2 = array_len(A);
-    int n = (*pi2 - i1)/istep;
-    return array_new(double,n);    
-}
-
-double *farr_sample(double *A, int i1, int i2, int istep) {
-    farr_t res = sample_helper(A,i1,istep,&i2);
-    for (int i = i1, k = 0; i < i2; i += istep,k++)
-        res[k] = A[i];
-    return res;
-}
-
-double *farr_sample_float(float *A, int i1, int i2, int istep) {
-    farr_t res = sample_helper(A,i1,istep,&i2);
-    for (int i = i1, k = 0; i < i2; i += istep,k++)
-        res[k] = A[i];
-    return res;
-}
-
-double *farr_sample_int(int *A, int i1, int i2, int istep) {
-    farr_t res = sample_helper(A,i1,istep,&i2);
-    for (int i = i1, k = 0; i < i2; i += istep,k++)
-        res[k] = A[i];
-    return res;
-}
-
-void farr_scale(double *A, double m, double c) {
-    FOR(i,array_len(A))
-        A[i] = m*A[i] + c;
-}
-
-
-#define seq_add2(s,x1,x2) {seq_add(s,x1); seq_add(s,x2);}
-
-#define farr_from_seq(s) ((double*)seq_array_ref(s))
-
-#define farr_copy(arr) array_new_copy(double,arr,sizeof(arr)/sizeof(double))
-
-double *farr_2(double x1,double x2) {
-    double *res = array_new(double,2);
-    res[0] = x1;
-    res[1] = x2;
-    return res;
-}
-
-double *farr_4(double x1,double x2,double x3,double x4) {
-    double *res = array_new(double,4);
-    res[0] = x1;
-    res[1] = x2;
-    res[2] = x3;
-    res[3] = x4;
-    return res;
-}
-
 #define FlotMax 1e100
 #define FlotMin -FlotMax
-
 
 typedef struct flot_ {
     List *series;

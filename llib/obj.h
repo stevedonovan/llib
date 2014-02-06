@@ -137,6 +137,7 @@ typedef struct Seq_ {
 #define seq_new_str() (char***)seq_new_(sizeof(char*),"char",1)
 #define seq_add(s,v) {int idx_=seq_next_(s); (*(s)) [idx_] = (v);}
 #define seq_add_items(s,...)   obj_apply_varargs(s,(PFun)seq_add_ptr,__VA_ARGS__,NULL)
+#define seq_add2(s,x1,x2) {seq_add(s,x1); seq_add(s,x2);}
 
 void *seq_new_(int nlem, const char *name, int ref);
 int seq_next_(void *s);
