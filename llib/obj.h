@@ -91,7 +91,10 @@ typedef int intptr;
 #define dispose obj_unref_v
 #endif
 
+#define obj_pool_count(P) (array_len(**((void****)P) ))
+
 int obj_kount();
+void *obj_pool();
 ObjType *obj_type_(ObjHeader *h);
 ObjType *obj_new_type(int size, const char *type, DisposeFn dtor);
 int obj_elem_size(void *P);
