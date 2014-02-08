@@ -68,12 +68,14 @@ bool table_generate_columns (Table *T) {
         int ncols = T->ncols, nrows = T->nrows;
         // (this array is guaranteed to be NULLed out since it's a reference array)
         void ***cols = array_new_ref(void**,ncols);
+        // a temporary horrible hack: an alias for columns of 32-bit values.
+        int **icols = (int**)cols;
         TableConvFun *conv = T->row_conv;
         T->cols = cols;
         FOR(ir,nrows) {
             Strings row = T->rows[ir];
             if (ir == 0) {
-                if (! conv) { // any float columns?
+                if (! conv) { // auto-conversion case: any float columns?
                     float tmp;
                     conv = T->row_conv = array_new(TableConvFun,ncols);
                     FOR(ic,ncols) {
@@ -86,11 +88,14 @@ bool table_generate_columns (Table *T) {
                             cols[ic] = (void**)array_new(float,nrows);
                         }
                     }
-                } else {
+                } else { // we've been given the types of particular columns to be extracted
                     FOR(ic,ncols) {
                         if (! conv[ic]) continue;
                         if (conv[ic] == no_convert)
                             cols[ic] = (void**)array_new(char*,nrows);
+                        else 
+                        if (conv[ic] == int_convert)
+                            cols[ic] = (void**)array_new(int,nrows);
                         else
                             cols[ic] = (void**)array_new(float,nrows);
                     }
@@ -98,7 +103,10 @@ bool table_generate_columns (Table *T) {
             }
             FOR(ic,ncols) {
                 if (conv[ic]) {
-                    err = conv[ic](row[ic], &cols[ic][ir]);
+                    if (conv[ic] == no_convert) 
+                        err = conv[ic](row[ic], &cols[ic][ir]);
+                    else
+                        err = conv[ic](row[ic], &icols[ic][ir]);
                     if (err) {
                         T->error = str_fmt("conversion error: '%s' at row %d col %d",err,ir+1,ic+1);
                         return false;
