@@ -22,7 +22,7 @@ static bool check_type(PValue v, int ttype) {
 }
 
 bool value_is_string(PValue v) {
-    return check_type(v,OBJ_CHAR_T);
+    return obj_is_array(v) && obj_type_index(v) == OBJ_CHAR_T;
 }
 
 bool value_is_error(PValue v) {
