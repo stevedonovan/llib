@@ -208,18 +208,18 @@ static PValue json_parse(ScanState *ts) {
             obj_unref(ss); // clean up the temporary array...
             return err;
         }
-        void** vals = seq_array_ref(ss);
+        void** vals = (void**)seq_array_ref(ss);
         if (ismap) {
             obj_type_index(vals) = OBJ_KEYVALUE_T;
         } else {
             int n = array_len(vals);
             if (n == nfloats) {
                 double *arr = array_new(double,n);
-                FOR(i,n) 
+                FOR(i,n)
                     arr[i] = value_as_float(vals[i]);
                 obj_unref(vals);
-                vals = (void*)arr;
-            }            
+                vals = (void**)arr;
+            }
         }
         return (void*)vals;
     }

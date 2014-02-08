@@ -9,7 +9,7 @@ typedef struct Table_ {
     char **col_names;
     int ncols, nrows;
     char ***rows;
-    void ***cols;    
+    void ***cols;
     const char *error;
     const char *delim;
     TableConvFun *row_conv;
@@ -17,7 +17,7 @@ typedef struct Table_ {
     int opts;
 } Table;
 
-typedef enum {
+enum {
     TableTab = 0,
     TableComma = 1,
     TableColumnNames = 2,
@@ -28,15 +28,15 @@ typedef enum {
     TableInt = 1,
     TableFloat = 2,
     TableCustom = 3
-} TableOptions;
+};
 
-Table *table_new(TableOptions opts);
+Table *table_new(int opts);
 int table_add_row(void *d, int ncols, char **row, char **columns);
 bool table_finish_rows(Table *T);
 
 void table_convert_cols (Table *T,...);
 bool table_generate_columns (Table *T);
 
-Table* table_new_from_stream(FILE *in, TableOptions opts);
-Table* table_new_from_file(const char *fname, TableOptions opts);
+Table* table_new_from_stream(FILE *in, int opts);
+Table* table_new_from_file(const char *fname, int opts);
 #endif

@@ -11,7 +11,7 @@ static void Table_dispose(Table *t) {
 typedef char *Str;
 typedef char **Strings;
 
-Table *table_new(TableOptions opts) {
+Table *table_new(int opts) {
     Table *T = obj_new(Table,Table_dispose);
     memset(T,0,sizeof(Table));
     T->opts = opts;
@@ -93,7 +93,7 @@ bool table_generate_columns (Table *T) {
                         if (! conv[ic]) continue;
                         if (conv[ic] == no_convert)
                             cols[ic] = (void**)array_new(char*,nrows);
-                        else 
+                        else
                         if (conv[ic] == int_convert)
                             cols[ic] = (void**)array_new(int,nrows);
                         else
@@ -103,7 +103,7 @@ bool table_generate_columns (Table *T) {
             }
             FOR(ic,ncols) {
                 if (conv[ic]) {
-                    if (conv[ic] == no_convert) 
+                    if (conv[ic] == no_convert)
                         err = conv[ic](row[ic], &cols[ic][ir]);
                     else
                         err = conv[ic](row[ic], &icols[ic][ir]);
@@ -188,14 +188,14 @@ bool table_finish_rows(Table *T) {
     return table_generate_columns(T);
 }
 
-Table* table_new_from_stream(FILE *in, TableOptions opts) {
+Table* table_new_from_stream(FILE *in, int opts) {
     Table *T = table_new(opts);
     T->in = in;
     table_read_col_names(T);
     return T;
 }
 
-Table* table_new_from_file(const char *fname, TableOptions opts) {
+Table* table_new_from_file(const char *fname, int opts) {
     Table *T = table_new(opts);
     FILE *in = fopen(fname,"r");
     if (! in) {
