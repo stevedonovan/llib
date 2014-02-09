@@ -187,7 +187,7 @@ OTP obj_new_type(int size, const char *type, DisposeFn dtor) {
 ////// Object Pool Support //////
 // An object pool is a ref seq containing all objects generated since the pool
 // was created.  The actual pool object is a ref to that seq, so that disposing
-// of it will turn off the pool.
+// of it will drain the pool.
 
 typedef void* ObjPool;
 
@@ -280,18 +280,32 @@ bool obj_is_instance(const void *P, const char *name) {
 
 static void obj_free_(ObjHeader *h, const void *P) {
     OTP t = obj_type_(h);
-    if (h->is_array) {
+    if (h->is_array) { // arrays may be reference containers
         if (h->is_ref_container) {
             void **arr = (void**)P;
             for (int i = 0, n = h->_len; i < n; i++) {
                 obj_unref(arr[i]);
             }
         }
-    } else {
+    } else { // otherwise there may be a custom dispose operation for the type
         if (t->dtor)
             t->dtor((void*)P);
     }
+    
     remove_our_ptr(h);
+    
+    // if the object pool is active, then remove our pointer from it!
+    if (_obj_pool) {
+        void **objs = *_obj_pool;
+        FOR(i,array_len(objs)) {
+            if (objs[i] == P) {
+                objs[i] = NULL;
+                break;
+            }
+        }        
+    }
+    
+    // the object's type might have a custom allocator
     if (t->alloc) {
         t->alloc->free(t->alloc,h);
     } else {

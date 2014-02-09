@@ -116,6 +116,12 @@ PValue value_parse(const char *str, ValueType type) {
 
 #define S str_new
 
+#ifdef _WIN32
+#define LONG_LONG_FMT "%I64d"
+#else
+#define LONG_LONG_FMT "%lld"
+#endif
+
 /// Default representation of a value as a string.
 // Only applies to scalar values (if you want to show arrays & maps
 // use json module).
@@ -130,7 +136,7 @@ const char *value_tostring(PValue v) {
         switch(typeslot) {
         #define outf(fmt,T) snprintf(buff,sizeof(buff),fmt,*((T*)v))
         case OBJ_LLONG_T:
-            outf("%d",int64);
+            outf(LONG_LONG_FMT,int64);
             break;
         case OBJ_DOUBLE_T:
             outf("%0.16g",double);
