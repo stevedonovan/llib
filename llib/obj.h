@@ -85,10 +85,13 @@ typedef int intptr;
 #define str_sub (char*)array_copy
 #define str_len array_len
 
+#define obj_scoped __attribute((cleanup(__auto_unref))) 
+
 #ifndef OBJ_REF_ABBREV
 #define ref obj_ref
 #define unref obj_unref
 #define dispose obj_unref_v
+#define scoped obj_scoped
 #endif
 
 #define obj_pool_count(P) (array_len(**((void****)P) ))
@@ -103,6 +106,7 @@ bool obj_is_instance(const void *P, const char *name);
 void obj_incr_(const void *P);
 void obj_unref(const void *P);
 void obj_apply_varargs(void *o, PFun fn,...);
+void __auto_unref(void *p) ;
 
 #define obj_apply(dest,s,src,g) obj_apply_(dest,(PFun)s,src,(PFun)g)
 void obj_apply_ (void *dest, PFun setter, void *src, PFun getter);
