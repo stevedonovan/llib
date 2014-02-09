@@ -27,7 +27,6 @@ Extended file handling.
 
 #include <stdio.h>
 #include <stdlib.h>
-#include <errno.h>
 #include <string.h>
 #include "file.h"
 
@@ -201,24 +200,4 @@ char *file_replace_extension(const char *path, const char *ext) {
     strcpy(res+sz,ext);
     return res;
 }
-
-typedef struct {
-    FILE *f;
-} FileW;
-
-static void FileW_dispose(FileW *pf) {
-    printf("dispose '%p'\n",pf->f);
-    fclose(pf->f);
-}
-
-FILE **file_fopen(const char *file, const char *how) {
-    FILE *f = fopen(file,how);
-    if (! f) {
-        return (FILE**)value_error(strerror(errno));
-    }
-    FileW *res = obj_new(FileW,FileW_dispose);    
-    res->f = f;
-    return (FILE**)res;
-}
-
 

@@ -15,21 +15,23 @@
 // their entry to NULL.  So when we finally drain the pool, it only contains
 // genuine alive orphan objects.
 //
-// 
+//
 
 extern DisposeFn _pool_filter, _pool_cleaner;
 
 typedef void* ObjPool;
 
-static void*** _obj_pool;
-static void*** _pool_stack;
+typedef void*** VoidSeq;
+
+static VoidSeq _obj_pool;
+static VoidSeq _pool_stack;
 static ObjPool *_pool_marker;
 
-static void seq_stack_push(void*** stack, void *value) {
+static void seq_stack_push(VoidSeq stack, void *value) {
     seq_add(_pool_stack,_obj_pool);
 }
 
-static void *seq_stack_pop(void*** stack) { 
+static void *seq_stack_pop(VoidSeq stack) {
     void **arr = *stack;
     int top = array_len(arr)-1;
     if (top == -1) // empty?
@@ -40,7 +42,7 @@ static void *seq_stack_pop(void*** stack) {
 }
 
 static void pool_add(void *P) {
-    seq_add(_obj_pool, P);    
+    seq_add(_obj_pool, P);
 }
 
 static void pool_clean(void *P) {
@@ -55,16 +57,16 @@ static void pool_clean(void *P) {
 
 static void pool_dispose(ObjPool * p) {
     // NB not to try any cleanup at this point!
-    _pool_cleaner = NULL;    
+    _pool_cleaner = NULL;
     obj_unref(*p);  // kill the actual pool (ref seq containing objects)
     _pool_cleaner = pool_clean;
-    
-    _obj_pool = seq_stack_pop(_pool_stack); 
-    
-    if (_obj_pool == NULL) { // stop using the pool; it's dead!            
-        _pool_marker = NULL;            
+
+    _obj_pool = (VoidSeq)seq_stack_pop(_pool_stack);
+
+    if (_obj_pool == NULL) { // stop using the pool; it's dead!
+        _pool_marker = NULL;
         _pool_filter = NULL;
-        _pool_cleaner = NULL;    
+        _pool_cleaner = NULL;
         obj_unref(_pool_stack);
         _pool_stack = NULL;
     }

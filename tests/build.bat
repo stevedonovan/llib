@@ -25,3 +25,6 @@ test-template.exe >test-template-output
 cl /nologo -c /O2 /WX /TP /I..  /D_CRT_SECURE_NO_DEPRECATE /DNDEBUG   test-json.c /Fotest-json.obj
 link /nologo test-json.obj  /LIBPATH:../llib  llib_static.lib  /OUT:test-json.exe
 test-json.exe >test-json-output
+cl /nologo -c /O2 /WX /TP /I..  /D_CRT_SECURE_NO_DEPRECATE /DNDEBUG   test-xml.c /Fotest-xml.obj
+link /nologo test-xml.obj  /LIBPATH:../llib  llib_static.lib  /OUT:test-xml.exe
+test-xml.exe >test-xml-output
