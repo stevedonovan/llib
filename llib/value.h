@@ -32,6 +32,7 @@ typedef void *PValue;
 #define value_as_int(P) (int)(*(long long*)(P))
 #define value_as_float(P) (*(double*)(P))
 #define value_as_bool(P) (*(bool*)(P))
+#define value_as_string(P) ((char*)P)
 
 bool value_is_string(PValue v);
 bool value_is_error(PValue v);

@@ -7,6 +7,7 @@ char *file_gets(FILE *f, char *buff, int bufsize);
 char *file_getline(FILE *f);
 char *file_read_all(const char *file, bool text);
 FILE *fopen_or_die(const char *file, const char *mode);
+FILE **file_fopen(const char *file, const char *how);
 int file_size(const char *file);
 char **file_getlines(FILE *f);
 char **file_command_lines(const char *cmd);

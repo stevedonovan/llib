@@ -26,7 +26,7 @@ bool value_is_string(PValue v) {
 }
 
 bool value_is_error(PValue v) {
-    return check_type(v,OBJ_ECHAR_T);
+    return obj_is_array(v) && obj_type_index(v) == OBJ_ECHAR_T;
 }
 
 bool value_is_float(PValue v) {
