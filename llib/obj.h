@@ -39,6 +39,9 @@ typedef struct ObjType_ {
     ObjAllocator *alloc;
     uint16 mlem;
     uint16 idx;
+#ifdef DEBUG
+    int instances;
+#endif
 } ObjType;
 
 enum {
@@ -85,7 +88,7 @@ typedef int intptr;
 #define str_sub (char*)array_copy
 #define str_len array_len
 
-#define obj_scoped __attribute((cleanup(__auto_unref))) 
+#define obj_scoped __attribute((cleanup(__auto_unref)))
 
 #ifndef OBJ_REF_ABBREV
 #define ref obj_ref
@@ -96,6 +99,13 @@ typedef int intptr;
 
 #define obj_pool_count(P) (array_len(**((void****)P) ))
 
+#ifdef DEBUG
+void obj_dump_types(bool all);
+#ifdef LLIB_PTR_LIST
+void obj_dump_pointers();
+#endif
+void obj_dump_all();
+#endif
 int obj_kount();
 void *obj_pool();
 ObjType *obj_type_(ObjHeader *h);

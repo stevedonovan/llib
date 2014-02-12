@@ -125,6 +125,9 @@ static ObjHeader *new_obj(int size, ObjType *t) {
         obj = t->alloc->alloc(t->alloc,size);
     }
     add_our_ptr(obj);
+#ifdef DEBUG
+    ++t->instances;
+#endif
     return (ObjHeader *)obj;
 }
 
@@ -269,13 +272,17 @@ static void obj_free_(ObjHeader *h, const void *P) {
         if (t->dtor)
             t->dtor((void*)P);
     }
-    
+
     remove_our_ptr(h);
-    
+
+#ifdef DEBUG
+    --t->instances;
+#endif
+
     // if the object pool is active, then remove our pointer from it!
-    if (_pool_cleaner) 
+    if (_pool_cleaner)
         _pool_cleaner((void *)P);
-    
+
     // the object's type might have a custom allocator
     if (t->alloc) {
         t->alloc->free(t->alloc,h);
@@ -333,6 +340,52 @@ void obj_apply_varargs(void *o, PFun fn,...) {
     obj_apply_v_varargs(o,fn,ap);
     va_end(ap);
 }
+
+#ifdef DEBUG
+void obj_dump_types(bool all) {
+    printf("+++ llib types\n");
+    FOR(i,obj_types_size) {
+        ObjType *t = &obj_types[i];
+        if (all || t->instances > 0) {
+            printf("%3d (%s) size %d",t->idx, t->name,t->mlem);
+            if (t->instances > 0)
+                printf(" --> %d alive\n",t->instances);
+            else
+                printf("\n");
+        }
+    }
+    printf("+++\n");
+}
+
+void obj_type_name(void *P, char *buff) {
+    buff += sprintf(buff,"(%s*)",obj_type(P)->name);
+    if (obj_is_array(P))
+        sprintf(buff,"[%d]",array_len(P));
+}
+
+#ifdef LLIB_PTR_LIST
+void obj_dump_pointers() {
+    char name[128];
+    printf("+++ llib objects\n");
+    FOR(i,max_p) {
+        if (our_ptrs[i] != NULL) {
+            void *P = (void*)((ObjHeader*)our_ptrs[i] + 1);
+            obj_type_name(P,name);
+            printf("%p ref %d type %s\n",P,obj_refcount(P),name);
+        }
+    }
+    printf("+++\n");
+}
+#endif
+
+void obj_dump_all() {
+    obj_dump_types(false);
+#ifdef LLIB_PTR_LIST
+    obj_dump_pointers();
+#endif
+}
+#endif
+
 
 typedef unsigned char byte;
 

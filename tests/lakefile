@@ -1,6 +1,8 @@
 libs = choose(MSVC,'llib_static','llib')
 local function test(f)
-    return c99.program{f,incdir='..',libdir='../llib',libs=libs}:run()
+    return c99.program{f,incdir='..',libdir='../llib',
+	libs=libs,defines=choose(DEBUG,'DEBUG')
+    }:run()
 end
 if P then
   default{ test(P) }
