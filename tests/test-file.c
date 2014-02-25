@@ -42,7 +42,7 @@ void path_manipulation(const char *path)
 {
     if (! path)
 #ifdef _WIN32
-        path = "\\users\\steve\\myfiles\\bonzo.txt";
+        path = "c:\\users\\steve\\myfiles\\bonzo.txt";
 #else
         path = "/home/steve/myfiles/bonzo.txt";
 #endif
@@ -59,5 +59,7 @@ int main(int argc, char **argv)
     getting_files("*.c");
     printf("remaining %d\n",obj_kount());
     path_manipulation(NULL);
+    char *res = file_command("which test-file.exe");
+    printf("[%s]\n",res);
     return 0;
 }

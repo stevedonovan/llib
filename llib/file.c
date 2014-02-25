@@ -86,13 +86,10 @@ int file_size(const char *file)
     return sz;
 }
 
-static char* read_all(FILE *fp) {
+static char* read_all(FILE *fp, bool text) {
     int sz = size_of_file(fp);
     char *res = str_new_size(sz);
-    int nr = fread(res,1,sz,fp);
-    if (nr != sz) {
-        fprintf(stderr,"file_read_all: got %d expected %d\n",nr,sz);
-    }
+    fread(res,1,sz,fp);
     if (text) {
         strip_eol(res);
     }
@@ -106,7 +103,7 @@ char *file_read_all(const char *file, bool text) {
     FILE *fp = fopen(file,text ? "r" : "rb");
     if (! fp)
         return NULL;
-    return read_all(fp);
+    return read_all(fp,text);
 }
 
 typedef char *Str;
@@ -125,10 +122,10 @@ static FILE *popen_out(const char *cmd) {
 }
 
 /// output of a command as text.
-// Will capture stderr as well.
+// Only first line! Use file_command_lines for the rest!
 char *file_command(const char *cmd) {
     FILE *out = popen_out(cmd);
-    Str text = read_all(out);
+    Str text = file_getline(out);
     pclose(out);
     return text;
 }
