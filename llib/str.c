@@ -5,6 +5,13 @@
 */
 
 ////  string manipulation.
+//
+// When building up strings use a strbuf, which is a sequence of chars;
+// the actual string is always `*S` but use `strbuf_tostring(S)` to properly clean up and
+// dispose of the sequence.
+//
+// Then there are searching operations which return a boolean or integer index.
+//
 // @module str
 
 // for strtok_r
@@ -113,6 +120,27 @@ char *str_fmt(const char *fmt,...) {
     return str;
 }
 
+static const char *whitespace = " \t\r\n";
+
+/// trim a string in-inplace
+void str_trim(char *s) {
+    int sz = strspn(s,whitespace);
+    if (sz > 0)
+        memmove(s,s+sz,strlen(s)-sz+1);
+    char *p = s + strlen(s) - 1;
+    while (*p && strchr(whitespace,*p) != NULL)
+        --p;
+    *(p+1) = 0;
+}
+
+/// does a string only consist of blank characters?
+bool str_is_blank(const char *s) {
+    return strspn(s,whitespace) == strlen(s);
+}
+
+/// Finding things in strings.
+// @section finding
+
 /// find substring `sub` in the string.
 int str_findstr(const char *s, const char *sub) {
     const char *P = strstr(s,sub);
@@ -151,28 +179,6 @@ int str_find_first_not_of(const char *s, const char *ps) {
     else
         return sz;
 }
-
-static const char *whitespace = " \t\r\n";
-
-/// trim a string in-inplace
-void str_trim(char *s) {
-    int sz = strspn(s,whitespace);
-    if (sz > 0)
-        memmove(s,s+sz,strlen(s)-sz+1);
-    char *p = s + strlen(s) - 1;
-    while (*p && strchr(whitespace,*p) != NULL)
-        --p;
-    *(p+1) = 0;
-}
-
-/// does a string only consist of blank characters?
-bool str_is_blank(const char *s) {
-    return strspn(s,whitespace) == strlen(s);
-}
-
-
-// " one "
-// sz = 1; srlen = 5. Move 5 chars, get "one "
 
 #ifdef _WIN32
 #ifdef _MSC_VER
@@ -251,7 +257,8 @@ char *str_concat(char **ss, const char *delim) {
 }
 
 // useful function for making quick arrays of strings.
-// Note that this is _not_ a refcounted array.
+// Note that this array is _not_ a ref container; the
+// string addresses are just copied over.
 char **str_strings(char *first,...) {
     va_list ap;
     char *S;

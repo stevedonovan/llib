@@ -27,6 +27,8 @@ Foo *foo_new()
 
 #define DUMP(T,F,arr) FOR_ARR(T,p_,arr) \
     printf(F,*p_);  printf("\n");
+    
+typedef unsigned char byte;
 
 int main()
 {
@@ -39,6 +41,7 @@ int main()
     seq_add(fs, 50);
     FOR (i,22)
         seq_add(fs,i);
+    // seq is always pointer to the array
     printf("size %d \n",array_len(*fs));
     DUMP(int,"%d ",*fs);
     obj_unref(fs);
@@ -46,8 +49,23 @@ int main()
     double **ss = seq_new(double);
     seq_add(ss,1.0);
     seq_add(ss,2.0);
-    DUMP(double,"%f ",*ss)
-
+    // can append arrays
+    double *xx = array_new(double,2);
+    xx[0] = 3.0;
+    xx[1] = 4.0;
+    seq_adda(ss,xx,-1); // -> -1 means use array_len of xx
+    // and finally size-to-fit and extract the constructed array,
+    // deferencing the seq.
+    double *S = (double*)seq_array_ref(ss);
+    DUMP(double,"%f ",S);
+    
+    byte **bb = seq_new(byte);
+    byte b1[] = {10,20,30};
+    byte b2[] = {40,50,60};
+    seq_adda(bb,b1,3);
+    seq_adda(bb,b2,3);
+    DUMP(byte,"%d ",*bb);
+    
     // ref seqs are containers for ref objects
     typedef Foo *PFoo;
     PFoo **sf = seq_new_ref(PFoo);

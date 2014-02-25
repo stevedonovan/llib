@@ -163,6 +163,7 @@ void seq_add_str(void *sp, const char*p);
 void seq_resize(Seq *s, int nsz);
 void seq_remove(void *sp, int pos, int len);
 void seq_insert(void *sp, int pos, void *src, int sz);
+void seq_adda(void *sp, void *buff, int sz);
 void *seq_array_ref(void *sp);
 
 #endif

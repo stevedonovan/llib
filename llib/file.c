@@ -7,6 +7,14 @@
 /****
 Extended file handling.
 
+Mostly wrappers around familar functions; `file_gets` is a `fgets` that strips the line feed;
+The other functions return a refcounted string, or array of strings (like with `file_getlines`)
+
+There are functions that work with parts of filenames which don't have the limitations and gotchas
+of the libc equivalents.
+
+Finally, `file_fopen` provides a file wrapper `FILE**`. It returns an actual error string if it fails,
+and disposing this file object will close the underlying stream.
 */
 
 #ifdef _WIN32
@@ -58,16 +66,6 @@ char *file_getline(FILE *f) {
     return str_new(buff);
 }
 
-/// old friend `fopen` with dignified suicide.
-FILE *fopen_or_die(const char *file, const char *mode) {
-    FILE *f = fopen(file,mode);
-    if (f == NULL) {
-        perror("fopen");
-        exit(1);
-    }
-    return f;
-}
-
 static int size_of_file(FILE *fp) {
     int sz = fseek(fp, 0L, SEEK_END);
     sz = ftell(fp);
@@ -88,12 +86,7 @@ int file_size(const char *file)
     return sz;
 }
 
-/// read the contents of a file.
-// If `text` is true, will also strip any \r\n at the end.
-char *file_read_all(const char *file, bool text) {
-    FILE *fp = fopen(file,text ? "r" : "rb");
-    if (! fp)
-        return NULL;
+static char* read_all(FILE *fp) {
     int sz = size_of_file(fp);
     char *res = str_new_size(sz);
     int nr = fread(res,1,sz,fp);
@@ -107,6 +100,15 @@ char *file_read_all(const char *file, bool text) {
     return res;
 }
 
+/// read the contents of a file.
+// If `text` is true, will also strip any \r\n at the end.
+char *file_read_all(const char *file, bool text) {
+    FILE *fp = fopen(file,text ? "r" : "rb");
+    if (! fp)
+        return NULL;
+    return read_all(fp);
+}
+
 typedef char *Str;
 
 /// all the files from a file.
@@ -116,12 +118,25 @@ char **file_getlines(FILE *f) {
     return (Str*)seq_array_ref(lines);
 }
 
+static FILE *popen_out(const char *cmd) {
+    char buff[MAX_PATH];
+    sprintf(buff,"%s 2>&1",cmd);
+    return popen(buff,"r");
+}
+
+/// output of a command as text.
+// Will capture stderr as well.
+char *file_command(const char *cmd) {
+    FILE *out = popen_out(cmd);
+    Str text = read_all(out);
+    pclose(out);
+    return text;
+}
+
 /// output of a command as lines.
 // Will capture stderr as well.
 char **file_command_lines(const char *cmd) {
-    char buff[MAX_PATH];
-    sprintf(buff,"%s 2>&1",cmd);
-    FILE *out = popen(buff,"r");
+    FILE *out = popen_out(cmd);
     Str *lines = file_getlines(out);
     pclose(out);
     return lines;
@@ -135,7 +150,7 @@ char **file_files_in_dir(const char *mask, int abs) {
     } else {
         sprintf(buff,"%s %s",DIR,mask);
     }
-    Str *lines = file_command_lines(buff);
+    Str *lines = file_command_lines(buff); //--->????
     if (array_len(lines) == 1 && strstr(lines[0],"No such file") != NULL) {
         obj_unref(lines);
         return NULL;

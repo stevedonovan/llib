@@ -1,11 +1,14 @@
 libs = choose(MSVC,'llib_static','llib')
-local function test(f)
+function build(f)
     return c99.program{f,incdir='..',libdir='../llib',
 	libs=libs,defines=choose(DEBUG,'DEBUG')
-    }:run()
+    }
 end
+function test(f) return build(f):run() end
 if P then
-  default{ test(P) }
+  local prog = P..EXE_EXT
+  if path.exists(prog) then os.remove(prog) end
+  default{ build(P) }
   return
 end
 default {

@@ -1,3 +1,9 @@
+/*
+* llib little C library
+* BSD licence
+* Copyright Steve Donovan, 2013
+*/
+
 #include <string.h>
 #include "obj.h"
 
@@ -21,6 +27,7 @@ static void insert_remove(void *sp, int pos, void *ins, int sz) {
 
     if (ins) {  // make some room!    
         seq_resize(s, on + sz);
+        P = (char*)s->arr;
     }
     
     pos *= mlen;
@@ -47,3 +54,16 @@ void seq_insert(void *sp, int pos, void *src, int sz) {
         insert_remove(sp,pos,src,sz);
 }
 
+void seq_adda(void *sp, void *buff, int sz) {
+    Seq *s = (Seq *)sp;
+    ObjHeader *pr = obj_header_(s->arr);
+    ObjType *t = obj_type_(pr);   
+    int la = pr->_len, mlem = t->mlem;
+    int lss = sz==-1 ? array_len(buff) : sz;
+    int lass = la + lss;
+    if (lass > s->cap) {
+        seq_resize(s,lass);
+    }
+    memcpy((char*)s->arr + la*mlem, buff, lss*mlem);
+    array_len(s->arr) = lass; 
+}

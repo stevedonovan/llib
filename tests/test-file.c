@@ -10,7 +10,7 @@ typedef char *Str;
 
 void reading_lines(Str file)
 {
-    FILE *f = fopen_or_die(file,"r");
+    FILE *f = fopen(file,"r");
     printf("size was %d bytes\n",file_size(file));
     Str *lines = file_getlines(f);
     printf("no of lines %d \n",array_len(lines));

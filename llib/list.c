@@ -11,7 +11,7 @@ Doubly-linked lists.
 `ListEntry` nodes as the `data` field, or the objects themselves are nodes (declared with
 LIST_HEADER up front in the struct).
 
-The nodes of a container list are not ref-counted and are simply freed.
+oThe nodes of a container list are not ref-counted and are simply freed.
 The contained values may be ref-counted and will then be unref'd when the
 container is disposed.
 

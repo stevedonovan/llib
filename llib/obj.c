@@ -34,8 +34,7 @@ array can always be accessed with `*s`.
 
 #define MAX_PTRS 10000
 
-#define out(x) fprintf(stderr,"%s = %x\n",#x,(intptr)x);
-
+// number of created 'live' objects -- access with obj_kount()
 static int kount = 0;
 
 #ifdef LLIB_PTR_LIST
@@ -258,19 +257,18 @@ bool obj_is_instance(const void *P, const char *name) {
 // If they are arrays of refcounted objects, then
 // this has to unref those objects. For structs,
 // there may be an explicit destructor.
-
 static void obj_free_(ObjHeader *h, const void *P) {
     OTP t = obj_type_(h);
     if (h->is_array) { // arrays may be reference containers
         if (h->is_ref_container) {
-            void **arr = (void**)P;
-            for (int i = 0, n = h->_len; i < n; i++) {
+          void **arr = (void**)P;
+          for (int i = 0, n = h->_len; i < n; i++) {
                 obj_unref(arr[i]);
-            }
+          }
         }
     } else { // otherwise there may be a custom dispose operation for the type
         if (t->dtor)
-            t->dtor((void*)P);
+          t->dtor((void*)P);
     }
 
     remove_our_ptr(h);
@@ -309,6 +307,9 @@ void obj_incr_(const void *P) {
 void obj_unref(const void *P) {
     if (P == NULL) return;
     ObjHeader *h = obj_header_(P);
+#ifdef DEBUG
+    assert(our_ptr(h));
+#endif
     --(h->_ref);
     if (h->_ref == 0)
         obj_free_(h,P);
@@ -357,21 +358,30 @@ void obj_dump_types(bool all) {
     printf("+++\n");
 }
 
-void obj_type_name(void *P, char *buff) {
-    buff += sprintf(buff,"(%s*)",obj_type(P)->name);
+const char *obj_type_name(void *P) {
+    static char buff[256];
+    char *b = buff;
+    b += sprintf(buff,"(%s*)",obj_type(P)->name);
     if (obj_is_array(P))
-        sprintf(buff,"[%d]",array_len(P));
+        sprintf(b,"[%d]",array_len(P));
+    return buff;
+}
+
+void obj_dump_ptr(void *P) {
+    int c = obj_refcount(P);
+    if (c != -1)
+        printf("%p ref %d type %s\n",P,c,obj_type_name(P));
+    else
+        printf("not one of ours\n");
 }
 
 #ifdef LLIB_PTR_LIST
 void obj_dump_pointers() {
-    char name[128];
     printf("+++ llib objects\n");
     FOR(i,max_p) {
         if (our_ptrs[i] != NULL) {
             void *P = (void*)((ObjHeader*)our_ptrs[i] + 1);
-            obj_type_name(P,name);
-            printf("%p ref %d type %s\n",P,obj_refcount(P),name);
+            obj_dump_ptr(P);            
         }
     }
     printf("+++\n");
@@ -385,7 +395,6 @@ void obj_dump_all() {
 #endif
 }
 #endif
-
 
 typedef unsigned char byte;
 
