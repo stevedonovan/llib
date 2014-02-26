@@ -101,6 +101,7 @@ typedef int intptr;
 
 #ifdef DEBUG
 void obj_dump_types(bool all);
+const char *obj_type_name(void *P);
 #ifdef LLIB_PTR_LIST
 void obj_dump_pointers();
 #endif

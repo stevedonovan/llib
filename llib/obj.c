@@ -358,6 +358,11 @@ void obj_dump_types(bool all) {
     printf("+++\n");
 }
 
+// these non-macro versions are useful when in a debugger such as GDB
+int a_len(void *a) { return array_len(a); }
+ObjHeader* o_hdr(void *a) { return obj_header_(a); }
+ObjType *o_type(void *a) { return obj_type(a); }
+
 const char *obj_type_name(void *P) {
     static char buff[256];
     char *b = buff;

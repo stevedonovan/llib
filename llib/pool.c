@@ -92,5 +92,5 @@ void *obj_pool() {
 
 // this is a helper for the magic 'scoped' macro
 void __auto_unref(void *p)  {
-    return obj_unref(*(void**)p);
+    obj_unref(*(void**)p);
 }
