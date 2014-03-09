@@ -5,7 +5,7 @@
 */
 
 /***
-A lexical scanner.
+### A lexical scanner.
 
 Lexical scanners are a smarter and cleaner alternative to the primitive `strtok` function.
 Each time you call `scan_next`, the scanner finds the next _token_,

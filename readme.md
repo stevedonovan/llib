@@ -693,8 +693,6 @@ sampled with a delta.
 The result is indeed good-looking (the meaning of 'flot' in Danish) and by default
 a legend is generated.
 
-[image]
-
 This Flot API is designed to correspond as closely as possible with the original
 API.  According to [Customizing the Data Series](https://github.com/flot/flot/blob/v0.8.2/API.md#customizing-the-data-series)
 the option to fill the area between the line and the axis is `series:{lines:{fill:A}}`
@@ -711,9 +709,9 @@ the Flot plot object. These options consist of a key followed by its data; the k
 may be dotted to express the nested maps which are natural in JavaScript but
 awkward to express in C. The data needs to be escaped explicitly as a `value_float`.
 
-The result continues to be good-looking!
+The result is particularly good-looking:
 
-[image]
+![llib Flot](http://stevedonovan.github.io/files/llib-flot.png)
 
 When using statically-declared data, you must make a llib array - the `farr_copy` macro is
 useful here. Note that series also have options; when specifying a fill, note
@@ -750,8 +748,6 @@ option.
 
 Again, you can look at the [grid options](https://github.com/flot/flot/blob/v0.8.2/API.md#customizing-the-grid)
 when specifying grid options; same for legend options.
-
-[image]
 
 If the Y data is NULL, then it's assumed that the X data array has both x and y
 values, as even and odd entries respectively. This is particularly convenient
@@ -793,10 +789,11 @@ void read_dates_and_values(const char *file, farr_t *dates, farr_t *values) {
 These helpers create slices-with-steps of arrays (there's also `farr_sample` for
 working with `double*` arrays.) and work like Python slices; -1 means "the last element".
 
-With this function....
-
 In summary, this example C implementation of a JavaScript API is intended to
 make it easier for C programmers to make decent plots of their data for
 _casual_ consumption. For publication-ready output, you need another solution, but
-this allows you to quickly see what your calculations look like.
+this allows you to quickly see what your calculations look like and avoids the tedious
+need for preparing data for another tool. It shows that C is _quite_ capable of operating
+with dynamic data, if certain simple rules are followed.
+
 

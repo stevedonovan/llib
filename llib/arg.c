@@ -4,6 +4,34 @@
 * Copyright Steve Donovan, 2013
 */
 
+/***
+### Command-line Argument Parser
+
+This allows you to bind variables to command-line arguments, providing
+the flag name/type, a shortcut, a pointer to the variable, and some help text.
+
+```C
+int lines;
+FILE *file;
+bool verbose, print_lines;
+
+ArgFlags args[] = {
+    {"int lines=10",'n',&lines,"number of lines to print"},
+    {"bool verbose=false",'v',&verbose,"controls verbosity"},
+    {"bool lineno",'l',&print_lines,"output line numbers"},
+    {"infile #1=stdin",0,&file,"file to dump"},
+    {NULL,0,NULL,NULL}
+};
+
+```
+
+If you now call `args_command_line(args,argv)` these variables will be
+bound; note how both type and optional default value are specified.
+
+If a conversion is not possible (not a integer, file cannot be opened, etc)
+then the program will exit.
+*/
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdarg.h>

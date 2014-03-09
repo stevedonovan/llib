@@ -1,6 +1,18 @@
-/* This demonstrates a simple 'variant' type for containing semi-arbitrary
-*   values, and how they can be streamed out in JSON format.
+/*
+* llib little C library
+* BSD licence
+* Copyright Steve Donovan, 2013
 */
+
+/***
+### Generating and Reading JSON
+
+`json_parse_string` will return an llib object, with maps as
+'simple maps' (arrays where a string key is followed by a value)s
+
+
+*/
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdarg.h>
