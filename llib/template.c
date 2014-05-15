@@ -360,7 +360,7 @@ static StrLookup get_lookup(void *item) {
     if (map_object(item)) {
         return (StrLookup)map_get;
     } else
-    if (obj_refcount(item) != -1 && obj_elem_size(item) == sizeof(char*) && array_len(item) > 0) {
+    if (obj_refcount(item) != -1 && /*obj_elem_size(item) == sizeof(char*) &&*/ array_len(item) > 0) {
         return (StrLookup)str_lookup; //  'simple map'
     } else {
         return (StrLookup)null_lookup; // default : cannot lookup
