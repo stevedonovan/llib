@@ -13,9 +13,9 @@ char *str_lookup(SMap substs, const char *name) {
 
 char*** smap_new(bool ref) {
     if (ref)
-        return seq_new(char*);
-    else
         return seq_new_ref(char*);
+    else
+        return seq_new(char*);
 }
 
 void smap_put(char*** smap, const char *name, void *data) {
