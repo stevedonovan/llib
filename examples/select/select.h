@@ -7,7 +7,7 @@ typedef int (*SelectReadProc)(const char *line,...);
 typedef struct Select_ Select;
 typedef struct SelectTimer_ SelectTimer;
 typedef struct SelectFile_ SelectFile;
-typedef struct SelectChan_ SelectChan;
+typedef struct Pipe_ Pipe;
 
 enum {
     SelectRead = 1,
@@ -24,7 +24,7 @@ SelectFile *select_add_read(Select *s, int fd);
 int select_open(Select *s, const char *str, int flags);
 bool select_remove_read(Select *s, int fd);
 bool select_can_read(Select *s, int fd);
-bool select_can_read_chan(Select *s, SelectChan *chan);
+bool select_can_read_pipe(Select *s, Pipe *pipe);
 int *select_read_fds(Select *s);
 
 void select_add_reader(Select *s, int fd, bool close, SelectReadProc reader, void *data);
@@ -34,9 +34,9 @@ SelectTimer *select_add_timer(Select *s, int secs, SelectTimerProc callback, voi
 bool select_do_later(Select *s, int msec, SelectTimerProc callback, void *data);
 int select_select(Select *s);
 
-SelectChan *new_chan();
-int chan_write(SelectChan *chan, void *buff, int sz);
-int chan_read(SelectChan *chan, void *buff, int sz);
+Pipe *pipe_new();
+int pipe_write(Pipe *pipe, void *buff, int sz);
+int pipe_read(Pipe *pipe, void *buff, int sz);
 
 #endif
 

@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include <unistd.h>
 #include <sys/select.h>
 #include <signal.h>
@@ -13,7 +14,7 @@
 
 typedef unsigned char byte;
 
-struct SelectChan_ {
+struct Pipe_ {
     int twrite;
     int tread;
 };
@@ -26,7 +27,7 @@ struct Select_ {
     List *fds;  // (SelectFile) we are waiting on these for reading
     bool error;
     // timer support
-    SelectChan *tchan;
+    Pipe *tpipe;
     List *timers; //(SelectTimer)
     // once-off millisecond timer
     struct SelectTimer_ *milli_timer;
@@ -36,7 +37,7 @@ struct Select_ {
 struct SelectTimer_ {
     SelectTimerProc callback;
     void *data;
-    SelectChan *tchan;
+    Pipe *tpipe;
     byte id;
     int secs;
     int pid;
@@ -56,6 +57,7 @@ int select_thread(SelectTimerProc callback, void *data) {
     pid_t pid = fork();
     if (pid == 0) { // child
         callback(data);
+        _exit(0);
     } // parent...
     return pid;
 }
@@ -70,18 +72,18 @@ void select_sleep(int msec) {
 static void timer_thread(SelectTimer *st) {
     while (1) {
         sleep(st->secs);
-        chan_write(st->tchan,&st->id,1);
+        pipe_write(st->tpipe,&st->id,1);
     }
 }
 
-static SelectChan *timer_chan(Select *s) {
-    return s->tchan;
+static Pipe *timer_pipe(Select *s) {
+    return s->tpipe;
 }
 
 static void Select_dispose(Select *s) {
     obj_unref(s->fds);
     if (s->timers) {
-        obj_unref(timer_chan(s));
+        obj_unref(timer_pipe(s));
         // this stops the timers from removing themselves from the list!
         List *timers = s->timers;
         s->timers = NULL;
@@ -210,49 +212,49 @@ void select_timer_kill(SelectTimer *st) {
     obj_unref(st);
 }
 
-static void Chan_dispose(SelectChan *chan) {
-    close(chan->tread);
-    close(chan->twrite);
+static void Chan_dispose(Pipe *pipe) {
+    close(pipe->tread);
+    close(pipe->twrite);
 }
 
-SelectChan *chan_new() {
+Pipe *pipe_new() {
      int pipefd[2];
      int res = pipe(pipefd);
     if (res != 0)
         return NULL;
-    SelectChan *chan = obj_new(SelectChan,Chan_dispose);
-    chan->tread = pipefd[0];
-    chan->twrite = pipefd[1];
-    return chan;    
+    Pipe *pipe = obj_new(Pipe,Chan_dispose);
+    pipe->tread = pipefd[0];
+    pipe->twrite = pipefd[1];
+    return pipe;    
 }
 
-int chan_write(SelectChan *chan, void *buff, int sz) {
-    int n = write(chan->twrite,buff,sz);
+int pipe_write(Pipe *pipe, void *buff, int sz) {
+    int n = write(pipe->twrite,buff,sz);
     if (n != 1) {
         fprintf(stderr,"wanted to write %d, wrote %d\n",sz,n);
     }
     return n;
 }
 
-int chan_read(SelectChan *chan, void *buff, int sz) {
-    return read(chan->tread,buff,sz);
+int pipe_read(Pipe *pipe, void *buff, int sz) {
+    return read(pipe->tread,buff,sz);
 }
 
 /// fire a timer `callback` every `secs` seconds, passing it `data`.
 SelectTimer *select_add_timer(Select *s, int secs, SelectTimerProc callback, void *data) {
-    SelectChan *chan;
+    Pipe *pipe;
     if (s->timers == NULL) { 
-        chan = chan_new(); // timers need a channel
-        if (chan == NULL) {
+        pipe = pipe_new(); // timers need a pipenel
+        if (pipe == NULL) {
             perror("timer setup");
             return NULL;
         }
          // and we will watch the read end...
-        select_add_read(s,chan->tread);        
+        select_add_read(s,pipe->tread);        
         s->timers = list_new_ref();
-        s->tchan = chan;
-    } else { // timers share the same channel
-        chan = timer_chan(s);
+        s->tpipe = pipe;
+    } else { // timers share the same pipenel
+        pipe = timer_pipe(s);
     }
            
     SelectTimer *st = obj_new(SelectTimer,SelectTimer_dispose);
@@ -260,7 +262,7 @@ SelectTimer *select_add_timer(Select *s, int secs, SelectTimerProc callback, voi
     st->callback = callback;
     st->data = data;
     st->secs = secs;
-    st->tchan = chan;
+    st->tpipe = pipe;
     st->id = list_size(s->timers);
     st->pid = select_thread((SelectTimerProc)timer_thread,st);
     list_add(s->timers,st);
@@ -340,10 +342,10 @@ top:
         }
     }
     
-    if (s->timers && list_size(s->timers) > 0 && select_can_read_chan(s,s->tchan)) {
+    if (s->timers && list_size(s->timers) > 0 && select_can_read_pipe(s,s->tpipe)) {
         byte id;
         SelectTimer *finis = NULL;
-        chan_read(s->tchan,&id,1);
+        pipe_read(s->tpipe,&id,1);
         FOR_LIST(item,s->timers) {
             SelectTimer *st = (SelectTimer*)item->data;
             if (id == st->id) {
@@ -358,8 +360,43 @@ top:
     return res;
 }
 
-bool select_can_read_chan(Select *s, SelectChan *chan) {
-    return select_can_read(s,chan->tread);
+bool select_can_read_pipe(Select *s, Pipe *pipe) {
+    return select_can_read(s,pipe->tread);
 }
 
+int pipe_puts(Pipe *p, const char *str) {
+    return pipe_write(p,str,strlen(str)+1);
+}
+
+#define LINE_SIZE 256
+static char buff[LINE_SIZE];
+
+bool callback(Pipe *P) {
+    close(P->twrite);
+    for (int i = 0;  i < 2; ++i) {
+        int n = pipe_read(P,buff,LINE_SIZE);
+        printf("got '%s' (%d)\n",buff,n);
+    }
+    return true;
+}
+
+int main()
+{
+    Pipe *P = pipe_new();
+   
+    int pid =  select_thread((SelectTimerProc)callback,P);
+    
+    close(P->tread);
+    
+    printf("here we go\n");
+    pipe_puts(P,"hello there!");
+    sleep(0);
+    pipe_puts(P,"from us all");
+    
+    wait(pid);
+    
+    return 0;
+    
+        
+}
 

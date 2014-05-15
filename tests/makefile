@@ -4,7 +4,9 @@ LIB=../llib/libllib.a
 CFLAGS=-std=c99  -O2 -Wall -I..
 LFLAGS=-Wl,-s -L../llib -lllib
 
-EXES=test-obj test-list test-map test-seq test-file test-scan test-str test-template test-json test-xml test-table
+EXES=test-obj test-list test-map test-seq test-file \
+	test-scan test-str test-template \
+	test-json test-xml test-table
 
 all: $(EXES)
 	./test-obj > test-obj-output
