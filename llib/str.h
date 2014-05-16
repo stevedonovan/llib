@@ -11,7 +11,7 @@
 
 #define str_eq(s1,s2) (strcmp((s1),(s2))==0)
 
-typedef const char **SMap;
+typedef char **SMap;
 
 char*** smap_new(bool ref);
 void smap_put(char*** smap, const char *name, void *data);
