@@ -25,12 +25,12 @@ char*** smap_new(bool ref) {
         return seq_new(char*);
 }
 
-void smap_add(char*** smap, const char *name, void *data) {
+void smap_add(char*** smap, const char *name, const void *data) {
     seq_add(smap,(char*)name);
     seq_add(smap,(char*)data);
 }
 
-void smap_put(char*** smap, const char *name, void *data) {
+void smap_put(char*** smap, const char *name, const void *data) {
     char **ps = *smap;
     char **pref = str_lookup_ptr(ps,name);
     if (pref) {

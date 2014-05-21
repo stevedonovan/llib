@@ -72,7 +72,7 @@ struct FlagEntry_ {
 #define arg_set_used(fe) ((fe)->flags |= FlagUsed)
 
 #define C (char*)
-const char *typenames[] = {
+char *typenames[] = {
    "int",C ValueInt,
     "float",C ValueFloat,
     "string",C ValueString,
@@ -85,7 +85,7 @@ const char *typenames[] = {
 
 static ValueType parse_type(const char *name)
 {
-    return (ValueType)(int)str_lookup(typenames,(char*)name);
+    return (ValueType)(int)str_lookup(typenames,name);
 }
 
 static void *value_parse_ex(const char *s, int type) {

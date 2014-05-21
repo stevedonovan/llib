@@ -39,7 +39,7 @@ char **strbuf_new(void) {
 // @function strbuf_add
 
 /// append a string to a string buffer.
-void strbuf_adds(char **sp, const char *ss) {
+void strbuf_adds(char **sp, str_t ss) {
     Seq *s = (Seq *)sp;
     int la = array_len(s->arr) , lss = strlen(ss);
     int lass = la + lss;
@@ -51,7 +51,7 @@ void strbuf_adds(char **sp, const char *ss) {
 }
 
 /// append formatted results to a string buffer.
-void strbuf_addf(char **sp, const char *fmt, ...) {
+void strbuf_addf(char **sp, str_t fmt, ...) {
     va_list ap;
     char buff[BUFSZ];
     va_start(ap, fmt);
@@ -63,7 +63,7 @@ void strbuf_addf(char **sp, const char *fmt, ...) {
 /// insert a string into a string buffer at `pos`.
 // May specify the number of characters to be copied `sz`; if this is -1
 // then use the ordinary length of the string.
-char *strbuf_insert_at(char **sp, int pos, const char *src, int sz) {
+char *strbuf_insert_at(char **sp, int pos, str_t src, int sz) {
     Seq *s = (Seq *)sp;
     int on = array_len(s->arr), len = sz==-1 ? strlen(src) : sz;
     // make some room!
@@ -87,12 +87,12 @@ char *strbuf_erase(char **sp, int pos, int len) {
 }
 
 /// replace `len` chars from `pos` with the string `s`.
-char *strbuf_replace(char **sp, int pos, int len, const char *s) {
+char *strbuf_replace(char **sp, int pos, int len, str_t s) {
     strbuf_erase(sp,pos,len);
     return strbuf_insert_at(sp,pos,s,-1);
 }
 
-static int offset_str(const char *P, const char *Q) {
+static int offset_str(str_t P, str_t Q) {
     if (P == NULL)
         return -1;
     return (intptr)P - (intptr)Q;
@@ -102,7 +102,7 @@ static int offset_str(const char *P, const char *Q) {
 // @section strings
 
 /// safe verson of `sprintf` which returns an allocated string.
-char *str_fmt(const char *fmt,...) {
+char *str_fmt(str_t fmt,...) {
     va_list ap;
     int size;
     char *str;
@@ -120,7 +120,7 @@ char *str_fmt(const char *fmt,...) {
     return str;
 }
 
-static const char *whitespace = " \t\r\n";
+static str_t whitespace = " \t\r\n";
 
 /// trim a string in-inplace
 void str_trim(char *s) {
@@ -134,7 +134,7 @@ void str_trim(char *s) {
 }
 
 /// does a string only consist of blank characters?
-bool str_is_blank(const char *s) {
+bool str_is_blank(str_t s) {
     return strspn(s,whitespace) == strlen(s);
 }
 
@@ -142,37 +142,37 @@ bool str_is_blank(const char *s) {
 // @section finding
 
 /// find substring `sub` in the string.
-int str_findstr(const char *s, const char *sub) {
-    const char *P = strstr(s,sub);
+int str_findstr(str_t s, str_t sub) {
+    str_t P = strstr(s,sub);
     return offset_str(P,s);
 }
 
 /// find character `ch` in the string.
-int str_findch(const char *s, char ch) {
-    const char *P = strchr(s,ch);
+int str_findch(str_t s, char ch) {
+    str_t P = strchr(s,ch);
     return offset_str(P,s);
 }
 
 /// does the string start with this prefix?
-bool str_starts_with(const char *s, const char *prefix) {
+bool str_starts_with(str_t s, str_t prefix) {
     return strncmp(s,prefix,strlen(prefix)) == 0;
 }
 
 /// does the string end with this postfix?
-bool str_ends_with(const char *s, const char *postfix) {
-    const char *P = strstr(s,postfix);
+bool str_ends_with(str_t s, str_t postfix) {
+    str_t P = strstr(s,postfix);
     if (! P)
         return false;
     return str_eq(P,postfix);
 }
 
 /// find first character that is in the string `ps`
-int str_find_first_of(const char *s, const char *ps) {
+int str_find_first_of(str_t s, str_t ps) {
     return offset_str(strpbrk(s,ps),s);
 }
 
 /// find first character that is _not_ in the string `ps`
-int str_find_first_not_of(const char *s, const char *ps) {
+int str_find_first_not_of(str_t s, str_t ps) {
     int sz = strspn(s,ps);
     if (sz == 0)
         return -1;
@@ -185,7 +185,7 @@ int str_find_first_not_of(const char *s, const char *ps) {
 #define strtok_r strtok_s
 #else
 // see http://stackoverflow.com/questions/12975022/strtok-r-for-mingw
-static char* strtok_r(char *str,const char *delim,char **nextp) {
+static char* strtok_r(char *str,str_t delim,char **nextp) {
     char *ret;
     if (str == NULL)  {
         str = *nextp;
@@ -207,7 +207,7 @@ static char* strtok_r(char *str,const char *delim,char **nextp) {
 
 /// split a string using a set of delimiters.
 // Returns a ref array of ref strings.
-char ** str_split(const char *s, const char *delim) {
+char ** str_split(str_t s, str_t delim) {
     char ***ss = seq_new_ref(char*);
     // make our own copy of the string...
     char *sc = str_new(s), *saveptr;
@@ -224,7 +224,7 @@ char ** str_split(const char *s, const char *delim) {
 
 /// concatenate an array of strings.
 // Asummes that the array is refcounted
-char *str_concat(char **ss, const char *delim) {
+char *str_concat(char **ss, str_t delim) {
     int sz = 0, nm1, n = array_len(ss), nd = delim ? strlen(delim) : 0;
     char *res, *q;
     int **ssizes = seq_new(int);

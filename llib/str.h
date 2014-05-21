@@ -9,40 +9,43 @@
 #include "obj.h"
 #include <string.h>
 
+// easier to type ;)
+typedef const char * str_t;
+
 #define str_eq(s1,s2) (strcmp((s1),(s2))==0)
 
 typedef char **SMap;
 
 char*** smap_new(bool ref);
-void smap_add(char*** smap, const char *name, void *data);
-void smap_put(char*** smap, const char *name, void *data);
-void *smap_get(char*** smap, const char *name);
+void smap_add(char*** smap, str_t name, const void *data);
+void smap_put(char*** smap, str_t name, const void *data);
+void *smap_get(char*** smap, str_t name);
 int smap_len(char*** smap);
 char** smap_close(char*** smap);
 
-char *str_fmt(const char *fmt,...);
-int str_findstr(const char *s, const char *sub);
-int str_findch(const char *s, char ch);
-bool str_starts_with(const char *s, const char *prefix);
-bool str_ends_with(const char *s, const char *postfix);
-int str_find_first_of(const char *s, const char *ps);
-int str_find_first_not_of(const char *s, const char *ps);
-bool str_is_blank(const char *s);
+char *str_fmt(str_t fmt,...);
+int str_findstr(str_t s, str_t sub);
+int str_findch(str_t s, char ch);
+bool str_starts_with(str_t s, str_t prefix);
+bool str_ends_with(str_t s, str_t postfix);
+int str_find_first_of(str_t s, str_t ps);
+int str_find_first_not_of(str_t s, str_t ps);
+bool str_is_blank(str_t s);
 void str_trim(char *s);
-char ** str_split(const char *s, const char *delim);
-char *str_concat(char **ss, const char *delim);
+char ** str_split(str_t s, str_t delim);
+char *str_concat(char **ss, str_t delim);
 char **str_strings(char *p,...);
 
-char **str_lookup_ptr(char** substs, const char *name);
-char *str_lookup(SMap substs, const char *name);
+char **str_lookup_ptr(char** substs, str_t name);
+char *str_lookup(SMap substs, str_t name);
 
 char **strbuf_new(void);
 #define strbuf_add seq_add
-void strbuf_adds(char **sp, const char *ss);
-void strbuf_addf(char **sp, const char *fmt, ...);
-char *strbuf_insert_at(char **sp, int pos, const char *src, int sz);
+void strbuf_adds(char **sp, str_t ss);
+void strbuf_addf(char **sp, str_t fmt, ...);
+char *strbuf_insert_at(char **sp, int pos, str_t src, int sz);
 char *strbuf_erase(char **sp, int pos, int len);
-char *strbuf_replace(char **sp, int pos, int len, const char *s);
+char *strbuf_replace(char **sp, int pos, int len, str_t s);
 #define strbuf_tostring(sp) (char*)seq_array_ref(sp)
 
 #endif
