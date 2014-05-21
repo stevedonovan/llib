@@ -372,15 +372,15 @@ ArgState *args_parse_spec(ArgFlags *flagspec)
         ppfd[i] = pfd;
 
         // update map of command names and their aliases
-        smap_put(cmds,pfd->name,pfd);
+        smap_add(cmds,pfd->name,pfd);
         if (cf->alias)
-            smap_put(cmds,str_fmt("%c",cf->alias),pfd);
+            smap_add(cmds,str_fmt("%c",cf->alias),pfd);
 
         // commands have arguments, which we also need to store here...
         if (pfd->args) {
             int karg = 1;
             for (FlagEntry **F = pfd->args; *F; ++F, ++karg) {
-                smap_put(cmds,str_fmt("%s#%d",pfd->name,karg), *F);
+                smap_add(cmds,str_fmt("%s#%d",pfd->name,karg), *F);
             }
             if (! (pfd->flags & FlagFunction))
                 res->has_commands = true;

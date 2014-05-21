@@ -461,15 +461,22 @@ void *array_new_copy_ (int mlen, const char *name, int len, int isref, void *P) 
 /// get a slice of an array.
 // @param P the array
 // @param i1 lower bound
-// @param i2 upper bound (can be -1 for the rest)
+// @param i2 upper bound (can be -ve; -1 is up to end, -2 is one less than end, etc)
 void * array_copy(void *P, int i1, int i2) {
     ObjHeader *pr = obj_header_(P);
     OTP t = obj_type_(pr);
     int mlem = t->mlem;
     int offs = i1*mlem;
-    int len = i2 == -1 ? pr->_len : i2-i1;
-    void *newp = array_new_(mlem,t->name,len,pr->is_ref_container);
-    memcpy(newp,(char*)P+offs,mlem*len);
+    int len = i2 < 0 ? pr->_len+i2+1 : i2-i1;
+    bool is_ref = pr->is_ref_container != 0;
+    void *newp = array_new_(mlem,t->name,len,is_ref);
+    if (is_ref) { // update reference counts if needed
+        void **ptr = (void**)P+offs, **op = (void**)newp;
+        FOR(i,len)
+            *op++ = obj_ref(*ptr++);
+    } else {
+        memcpy(newp,(char*)P+offs,mlem*len);
+    }
     return newp;
 }
 

@@ -85,7 +85,7 @@ typedef int intptr;
 #define FOR_PTRZ(T,var,expr) for(T *var = expr; *var; var++)
 #define FOR_ARR(T,p,arr) for(T *p=(arr),*e_=p+array_len(p); p!=e_; p++)
 
-#define str_sub (char*)array_copy
+#define str_sub(s,i1,i2) (char*)array_copy((void*)s,i1,i2)
 #define str_len array_len
 
 #define obj_scoped __attribute((cleanup(__auto_unref)))

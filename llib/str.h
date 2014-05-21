@@ -14,7 +14,10 @@
 typedef char **SMap;
 
 char*** smap_new(bool ref);
+void smap_add(char*** smap, const char *name, void *data);
 void smap_put(char*** smap, const char *name, void *data);
+void *smap_get(char*** smap, const char *name);
+int smap_len(char*** smap);
 char** smap_close(char*** smap);
 
 char *str_fmt(const char *fmt,...);
@@ -29,6 +32,8 @@ void str_trim(char *s);
 char ** str_split(const char *s, const char *delim);
 char *str_concat(char **ss, const char *delim);
 char **str_strings(char *p,...);
+
+char **str_lookup_ptr(char** substs, const char *name);
 char *str_lookup(SMap substs, const char *name);
 
 char **strbuf_new(void);

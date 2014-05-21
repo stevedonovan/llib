@@ -69,7 +69,7 @@ static PValue parse_xml(ScanState *ts, bool is_data) {
                 goto cleanup;
             }
             value = scan_get_str(ts);
-            smap_put(attribs, key,value);
+            smap_add(attribs, key,value);
             scan_next(ts);
             if (! (ts->type == '>' || ts->type == T_IDEN)) {
                 err = value_errorf("expected '>' or IDEN, got '%c'",ts->type);
