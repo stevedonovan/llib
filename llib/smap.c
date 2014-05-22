@@ -36,7 +36,7 @@ void smap_put(char*** smap, const char *name, const void *data) {
     if (pref) {
         if (obj_ref_array(ps))
             obj_unref(*ps);
-        *ps = data;
+        *ps = (char*)data;
     } else {
         smap_add(smap,name,data);
     }

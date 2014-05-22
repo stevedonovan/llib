@@ -120,6 +120,15 @@ char *str_fmt(str_t fmt,...) {
     return str;
 }
 
+/// extract a substring.
+char* str_sub(str_t s, int i1, int i2) {
+    int sz = strlen(s);
+    int len = i2 < 0 ? sz+i2+1 : i2 - i1;
+    char *res = str_new_size(len);
+    memcpy(res,s+i1,len);
+    return res;
+}
+
 static str_t whitespace = " \t\r\n";
 
 /// trim a string in-inplace

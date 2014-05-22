@@ -39,12 +39,10 @@ typedef char *Str;
 void test_string() {
     Str s = str_new("hello dolly");
     printf("s '%s' length %d\n",s,str_len(s));
-    Str s1 = str_sub(s,0,2), s2 = str_sub(s,2,-1);
-    printf("substr (0,2) '%s' (3,-1) '%s'\n",s1,s2);
     Str slong = str_new("hello dammit");
     FOR_PTRZ(char,p,slong) printf("%c ",*p);
     printf("\n");
-    discard(s,s1,s2,slong);
+    discard(s,slong);
 }
 
 void test_strings() {

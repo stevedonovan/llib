@@ -73,8 +73,15 @@ int main()
 
     s = str_new("  hello dolly ");
     str_trim(s);
-    printf("got '%s'\n",s);
-    unref(s);
+    assert(str_eq(s,"hello dolly"));
+    
+    Str s1 = str_sub(s,0,2), s2 = str_sub(s,2,-1);
+    //printf("substr (0,2) '%s' (3,-1) '%s'\n",s1,s2);
+    assert(str_eq(s1,"he"));
+    assert(str_eq(s2,"llo dolly"));
+    
+    dispose(s,s1,s2 );
+
     printf("kount %d\n",obj_kount());
     return 0;
 }
