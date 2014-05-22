@@ -12,6 +12,11 @@
 // easier to type ;)
 typedef const char * str_t;
 
+#ifndef STRLOOKUP_DEFINED
+typedef char *(*StrLookup) (void *obj, char *key);
+#define STRLOOKUP_DEFINED
+#endif
+
 #define str_eq(s1,s2) (strcmp((s1),(s2))==0)
 
 typedef char **SMap;

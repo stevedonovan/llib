@@ -11,7 +11,10 @@
 
 struct StrTempl_;
 typedef struct StrTempl_ *StrTempl;
+#ifndef STRLOOKUP_DEFINED
 typedef char *(*StrLookup) (void *obj, char *key);
+#define STRLOOKUP_DEFINED
+#endif
 
 StrTempl str_templ_new(const char *templ, const char *markers);
 char *str_templ_subst_using(StrTempl stl, StrLookup lookup, void *data);

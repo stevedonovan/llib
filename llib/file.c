@@ -122,12 +122,13 @@ static FILE *popen_out(const char *cmd) {
 }
 
 /// output of a command as text.
+// Will return "" if the command does not return anything
 // Only first line! Use file_command_lines for the rest!
 char *file_command(const char *cmd) {
     FILE *out = popen_out(cmd);
     Str text = file_getline(out);
     pclose(out);
-    return text;
+    return text ? text : str_new("");
 }
 
 /// output of a command as lines.
