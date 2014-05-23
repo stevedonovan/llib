@@ -71,7 +71,7 @@ This allows for objects to safely _share_ other objects without having to fully
 take ownership.  Reference counting cuts down on the amount of 'defensive copying'
 needed in typical code.
 
-Unless you specifically define `OBJ_REF_ABBREV`, the basic operations are named
+Unless you specifically define `OBJ_REF_ABBREV`, the basic operations are aliased as
 `ref` and `unref`; there is also an alias `dispose` for `obj_unref_v` which
 un-references multiple objects.
 
@@ -212,6 +212,9 @@ aliasing magic for us:
 They are declared as if they were seqs (pointers to arrays) and there's a way
 to iterate over typed values.
 
+Generally I've found that sequences are easier to use (and much more efficient to
+iterate over) unless there are many insertions in the middle.
+
 ## Maps
 
 Maps may have two kinds of keys; integer/pointer, and strings. Like string lists,
@@ -262,7 +265,11 @@ array can be generated using `map_to_array`:
     unref(pkv);
 ```
 
-llib also provides 'simple maps' which are arrays of strings where the even elements are the keys and the odd elements are the values;  `str_lookup` will look up these values by linear search, which is efficient enough for small arrays.
+llib also provides 'simple maps' which are arrays of strings where the even elements are
+the keys and the odd elements are the values;  `str_lookup` will look up these values 
+by linear search, which is efficient enough for small arrays. `smap_new` creates a sequence
+so that `smap_put` and `smap_get` do linear lookup; `smap_add` simply adds a pair
+which can be more efficient for bulk operations.
 
 ## Strings
 
@@ -482,7 +489,11 @@ floating-point numbers this way).
 
 ## XML
 
-This is a large and opinionated subject, so let me state that what most people need is 'pointy-bracket data language' (PBDL) rather than full-blown schemas-and-transforms (XML). In particular, it is a common configuration format.  When used in that way, we can simplify life by ignoring empty text elements and comments - since it is the structure of the _data_ that is important.  If test.xml is:
+This is a large and opinionated subject, so let me state that what most people need is
+'pointy-bracket data language' (PBDL) rather than full-blown schemas-and-transforms (XML).
+In particular, it is a common configuration format.  When used in that way, we can simplify life 
+by ignoring empty text elements and comments - since it is the structure of the _data_ that
+is important.  If test.xml is:
 
 ```xml
 <root>
@@ -491,7 +502,11 @@ This is a large and opinionated subject, so let me state that what most people n
 </root>
 ```
 
-then `xml_parse_file("test.xml",true)` will return a `root` element with two `item` child elements. The representation is a little unusual but straightforward; an element is an array of objects, with the first item being the tag name, the second (optional) item being an array of atributes (so-called 'simple map') and the remainder contains the child nodes - these are either strings or elements themselves.  So `test.xml` is completely equivalent to this data constructor:
+then `xml_parse_file("test.xml",true)` will return a `root` element with two `item` child elements. 
+The representation is a little unusual but straightforward; an element is an array of objects,
+with the first item being the tag name, the second (optional) item being an array of atributes
+(so-called 'simple map') and the remainder contains the child nodes - these are either strings or
+elements themselves.  So `test.xml` is completely equivalent to this data constructor:
 
 ```C
     v = VAS("root",
@@ -575,7 +590,10 @@ C API's `sqlite3_exec` function:
 
 ## Command-line Parsing
 
-There are standard ways of processing command-line arguments in POSIX, but they're fairly primitive and not available directly on Windows. The `arg` module gives a higher-level way of specifying arguments, which allows you to bind C variables to named flags and arguments. Here is a modified head-like utility:
+There are standard ways of processing command-line arguments in POSIX, but they're fairly
+primitive and not available directly on Windows. The `arg` module gives a higher-level way
+of specifying arguments, which allows you to bind C variables to named flags and arguments.
+Here is a modified head-like utility:
 
 ```C
 // cmd.c
@@ -611,7 +629,8 @@ int main(int argc,  const char **argv)
 }
 ```
 
-This was inspired by the [lapp](?) framework for Lua; one specifies the arguments in
+This was inspired by the [lapp](http://stevedonovan.github.io/Penlight/api/topics/08-additional.md.html#Command_line_Programs_with_Lapp) framework for Lua; 
+one specifies the arguments in
 a way that they can be used both for printing out help automatically and with enough
 type information that values can be parsed correctly.  So `cmd -l x` is an error
 because 'x' is not a valid integer; `cmd temp.txt` is an error if `temp.txt` cannot

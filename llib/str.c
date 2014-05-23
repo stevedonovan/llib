@@ -6,9 +6,13 @@
 
 ////  string manipulation.
 //
-// When building up strings use a strbuf, which is a sequence of chars;
-// the actual string is always `*S` but use `strbuf_tostring(S)` to properly clean up and
+// When building up strings use a _strbuf_, which is a sequence of chars; can add characters
+// and strings, formatted strings (like `str_fmt`) and also insert and remove substrings.
+// The actual string is always `*S` but use `strbuf_tostring(S)` to properly clean up and
 // dispose of the sequence.
+//
+// `str_split` creates a refcounted array of strings, splitting using a delimiter. `str_concat`
+// works the other way, joining an array of strings with a separator.
 //
 // Then there are searching operations which return a boolean or integer index.
 //
@@ -232,7 +236,7 @@ char ** str_split(str_t s, str_t delim) {
 }
 
 /// concatenate an array of strings.
-// Asummes that the array is refcounted
+// Assumes that the array is refcounted
 char *str_concat(char **ss, str_t delim) {
     int sz = 0, nm1, n = array_len(ss), nd = delim ? strlen(delim) : 0;
     char *res, *q;

@@ -26,7 +26,9 @@ ArgFlags args[] = {
 ```
 
 If you now call `args_command_line(args,argv)` these variables will be
-bound; note how both type and optional default value are specified.
+bound; note how both type and optional default value are specified. Names like '#1'
+refer to the first non-flag argument and so forth.  Both '--lines' and '-n' can be 
+used to set the integer variable `lines'.
 
 If a conversion is not possible (not a integer, file cannot be opened, etc)
 then the program will exit.
