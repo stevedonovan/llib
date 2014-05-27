@@ -60,6 +60,11 @@ void strbuf_addf(char **sp, str_t fmt, ...) {
     strbuf_adds(sp,buff);
 }
 
+/// append a range of chars from a string.
+void strbuf_addr(char **sp, str_t s, int i1, int i2) {
+    strbuf_addf(sp,"%.*s",i2-i1,s+i1);
+}
+
 /// insert a string into a string buffer at `pos`.
 // May specify the number of characters to be copied `sz`; if this is -1
 // then use the ordinary length of the string.

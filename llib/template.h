@@ -12,7 +12,7 @@
 struct StrTempl_;
 typedef struct StrTempl_ *StrTempl;
 #ifndef STRLOOKUP_DEFINED
-typedef char *(*StrLookup) (void *obj, char *key);
+typedef char *(*StrLookup) (void *obj, const char *key);
 #define STRLOOKUP_DEFINED
 #endif
 

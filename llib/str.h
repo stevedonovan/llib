@@ -13,7 +13,7 @@
 typedef const char * str_t;
 
 #ifndef STRLOOKUP_DEFINED
-typedef char *(*StrLookup) (void *obj, char *key);
+typedef char *(*StrLookup) (void *obj, const char *key);
 #define STRLOOKUP_DEFINED
 #endif
 
@@ -49,6 +49,7 @@ char **strbuf_new(void);
 #define strbuf_add seq_add
 void strbuf_adds(char **sp, str_t ss);
 void strbuf_addf(char **sp, str_t fmt, ...);
+void strbuf_addr(char **sp, str_t s, int i1, int i2);
 char *strbuf_insert_at(char **sp, int pos, str_t src, int sz);
 char *strbuf_erase(char **sp, int pos, int len);
 char *strbuf_replace(char **sp, int pos, int len, str_t s);
