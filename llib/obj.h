@@ -39,7 +39,7 @@ typedef struct ObjType_ {
     ObjAllocator *alloc;
     uint16 mlem;
     uint16 idx;
-#ifdef DEBUG
+#ifdef LLIB_DEBUG
     int instances;
 #endif
 } ObjType;
@@ -98,13 +98,14 @@ typedef int intptr;
 
 #define obj_pool_count(P) (array_len(**((void****)P) ))
 
-#ifdef DEBUG
+#ifdef LLIB_DEBUG
 void obj_dump_types(bool all);
 const char *obj_type_name(void *P);
 #ifdef LLIB_PTR_LIST
 void obj_dump_pointers();
 #endif
 void obj_dump_all();
+void obj_free_set(bool set);
 #endif
 int obj_kount();
 void *obj_pool();

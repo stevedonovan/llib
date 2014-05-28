@@ -102,8 +102,15 @@ static void remove_our_ptr(void *p) {
 
 int obj_kount() { return kount; }
 
+#ifdef LLIB_DEBUG
+static bool s_do_free=true;
+#endif
+
 static void s_free(void *p, void *obj) {
-    free(obj);
+#ifdef LLIB_DEBUG
+    if (s_do_free)
+#endif
+        free(obj);
 }
 
 static void *s_alloc(void *p, int size) {
@@ -124,7 +131,7 @@ static ObjHeader *new_obj(int size, ObjType *t) {
         obj = t->alloc->alloc(t->alloc,size);
     }
     add_our_ptr(obj);
-#ifdef DEBUG
+#ifdef LLIB_DEBUG
     ++t->instances;
 #endif
     return (ObjHeader *)obj;
@@ -273,7 +280,7 @@ static void obj_free_(ObjHeader *h, const void *P) {
 
     remove_our_ptr(h);
 
-#ifdef DEBUG
+#ifdef LLIB_DEBUG
     --t->instances;
 #endif
 
@@ -307,8 +314,17 @@ void obj_incr_(const void *P) {
 void obj_unref(const void *P) {
     if (P == NULL) return;
     ObjHeader *h = obj_header_(P);
-#ifdef DEBUG
-    assert(our_ptr(h));
+#ifdef LLIB_DEBUG
+    // this check is only really useful if LLIB_PTR_LIST is used
+    if (! our_ptr(h)) {
+        fprintf(stderr,"llib: unref of non ref-counted pointer\n");
+        abort();        
+    }
+    // catches already unreferenced pointers...
+    if (h->_ref == 0) {
+        fprintf(stderr,"llib: unref of dead pointer\n");
+        abort();
+    }
 #endif
     --(h->_ref);
     if (h->_ref == 0)
@@ -342,7 +358,7 @@ void obj_apply_varargs(void *o, PFun fn,...) {
     va_end(ap);
 }
 
-#ifdef DEBUG
+#ifdef LLIB_DEBUG
 void obj_dump_types(bool all) {
     printf("+++ llib types\n");
     FOR(i,obj_types_size) {
@@ -398,6 +414,10 @@ void obj_dump_all() {
 #ifdef LLIB_PTR_LIST
     obj_dump_pointers();
 #endif
+}
+
+void obj_free_set(bool set) {
+    s_do_free = set;
 }
 #endif
 

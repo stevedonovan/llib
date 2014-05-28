@@ -42,19 +42,24 @@ char **strbuf_new(void) {
 // @tparam char ch
 // @function strbuf_add
 
-/// append a string to a string buffer.
-void strbuf_adds(char **sp, str_t ss) {
+static void sb_adds(char **sp, str_t ss, int lss) {
     Seq *s = (Seq *)sp;
-    int la = array_len(s->arr) , lss = strlen(ss);
+    int la = array_len(s->arr);
     int lass = la + lss;
     if (lass > s->cap) {
         seq_resize(s,lass);
     }
-    memcpy((char*)s->arr + la, ss, lss+1);
+    memcpy((char*)s->arr + la, ss, lss);
     array_len(s->arr) = lass;
 }
 
+/// append a string to a string buffer.
+void strbuf_adds(char **sp, str_t ss) {
+    sb_adds(sp,ss,strlen(ss));
+}
+
 /// append formatted results to a string buffer.
+// note that the result must be less than BUFSZ (default 256)
 void strbuf_addf(char **sp, str_t fmt, ...) {
     va_list ap;
     char buff[BUFSZ];
@@ -66,7 +71,7 @@ void strbuf_addf(char **sp, str_t fmt, ...) {
 
 /// append a range of chars from a string.
 void strbuf_addr(char **sp, str_t s, int i1, int i2) {
-    strbuf_addf(sp,"%.*s",i2-i1,s+i1);
+    sb_adds(sp,s+i1,i2-i1);
 }
 
 /// insert a string into a string buffer at `pos`.
