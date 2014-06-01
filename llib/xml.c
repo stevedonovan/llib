@@ -175,10 +175,9 @@ char** xml_attribs(PValue* doc) {
 
 /// children nodes of an element; returns length in `plen`.
 PValue *xml_children(PValue* doc, int* plen) {
+    *plen = array_len(doc) - 1;
     PValue *res = doc + 1;
-    *plen = array_len(doc);
-    if (! res) return NULL;
-    if (value_is_simple_map(*res)) {
+    if (*res && value_is_simple_map(*res)) {
         ++res;
         --(*plen);
     }
