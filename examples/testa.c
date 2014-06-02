@@ -19,15 +19,22 @@ PValue test(PValue *args) {
 PValue two(PValue *args) {
     double x;
     char *name;
-    cmd_get_values(args,&x,&name);
+    arg_get_values(args,&x,&name);
     printf("x = %f, name = '%s'\n",x,name);
     return NULL;
+}
+
+PValue kount(PValue *args) {
+    return str_fmt("kount %d",obj_kount());
+    //printf("kount %d\n",obj_kount());
+    //return NULL;
 }
 
 ArgFlags args[] = {
     {"string include[]",'I',&incdirs,"include directory"},
     {"--test(int i=0)",'T',test,"test function flag"},
     {"--two(float x,string name)",'2',two,"test cmd_get_values"},
+    {"--kount()",'k',kount,"referenced object count"},
     {"int a=0",'a',&a,"flag value"},
     {"bool interactive=false",'i',&interactive,"interactive mode"},
     {"string #1[]",0,&string_args,"array of string args"},
@@ -36,7 +43,8 @@ ArgFlags args[] = {
 
 int main(int argc,  const char **argv)
 {
-    ArgState *state = args_command_line(args,argv);
+    ArgState *state = arg_command_line(args,argv);
+    arg_functions_as_commands(state);
     if (! interactive) {
         if (array_len(incdirs) > 0) {
             printf("the include paths\n");
@@ -50,14 +58,17 @@ int main(int argc,  const char **argv)
         }        
     } else {
         char *line;
-        arg_functions_as_commands(state);
+        
         printf("> ");
         while ((line = file_getline(stdin)) != NULL) {
             char **parts = str_split(line," ");
             // args_process assumes args start at second element, hence -1 here
-            PValue v = args_process(state,parts-1);
-            if (v != NULL)
+            PValue v = arg_process(state,parts-1);
+            if (v != NULL) {
                 printf("%s\n",value_tostring(v));
+                unref(v);
+            }
+            dispose(parts,line);
             printf("> ");
         }        
     }

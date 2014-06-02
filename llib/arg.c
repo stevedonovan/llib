@@ -25,7 +25,7 @@ ArgFlags args[] = {
 
 ```
 
-If you now call `args_command_line(args,argv)` these variables will be
+If you now call `arg_command_line(args,argv)` these variables will be
 bound; note how both type and optional default value are specified. Names like '#1'
 refer to the first non-flag argument and so forth.  Both '--lines' and '-n' can be 
 used to set the integer variable `lines'.
@@ -258,7 +258,7 @@ static void set_value(void *P, PValue v, bool use_value) {
 }
 
 /// extract raw values from args array.
-void cmd_get_values(PValue *vals,...) {
+void arg_get_values(PValue *vals,...) {
     va_list ap;
     va_start(ap,vals);
     for(int i = 1; i < array_len(vals); i++) { // args[0] is flag data...
@@ -347,12 +347,12 @@ static void *help(void **args) {
         if (arg_is_flag(*cmds))
             printf("\t--%s\t%s\n",(*cmds)->name, (*cmds)->arg_spec->help);
     }
-    return value_error("cancel");
+    return value_error("");
 }
 
 static ArgFlags help_spec =   {"--help()",'h',&help,"help on commands and flags"};
 
-ArgState *args_parse_spec(ArgFlags *flagspec)
+ArgState *arg_parse_spec(ArgFlags *flagspec)
 {
     ArgState *res = obj_new(ArgState,NULL);
     memset(res,0,sizeof(ArgState));
@@ -394,7 +394,7 @@ ArgState *args_parse_spec(ArgFlags *flagspec)
     return res;
 }
 
-PValue args_process(ArgState *cmds ,  const char **argv)
+PValue arg_process(ArgState *cmds ,  const char **argv)
 {
     PValue val;
     int flags;
@@ -498,22 +498,21 @@ PValue args_process(ArgState *cmds ,  const char **argv)
     return NULL; // meaning OK ....
 }
 
-ArgState *args_command_line(ArgFlags *argspec, const char **argv) {
-    ArgState *cmds = args_parse_spec(argspec);
+ArgState *arg_command_line(ArgFlags *argspec, const char **argv) {
+    ArgState *cmds = arg_parse_spec(argspec);
     if (cmds->error) {
         fprintf(stderr,"error: %s\n",cmds->error);
         exit(1);
     }
-    const char *res = (const char*)args_process(cmds,argv);
+    const char *res = (const char*)arg_process(cmds,argv);
     if (res) {
+        if (value_is_error(res)) {
+            if (*res)
+                fprintf(stderr,"error: %s\n",res);
+            exit(1);            
+        }
         if (str_eq(res,"ok")) {
             exit(0);
-        } else
-        if (str_eq(res,"cancel")) {
-            exit(1);
-        } else {
-            fprintf(stderr,"error: %s\n",res);
-            exit(1);
         }
     }
     return cmds;

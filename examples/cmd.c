@@ -18,7 +18,7 @@ ArgFlags args[] = {
 
 int main(int argc,  const char **argv)
 {
-    args_command_line(args,argv);
+    arg_command_line(args,argv);
     char buff[512];
     int i = 1;
     while (fgets(buff,sizeof(buff),file)) {

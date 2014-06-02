@@ -17,10 +17,10 @@ typedef struct ArgState_ {
     const char *error;
 } ArgState;
 
-ArgState *args_parse_spec(ArgFlags *flagspec);
+ArgState *arg_parse_spec(ArgFlags *flagspec);
 void arg_functions_as_commands(ArgState *cmds);
-void cmd_get_values(PValue *vals,...);
-PValue args_process(ArgState *cmds,  const char **argv);
-ArgState *args_command_line(ArgFlags *argspec, const char **argv);
+void arg_get_values(PValue *vals,...);
+PValue arg_process(ArgState *cmds,  const char **argv);
+ArgState *arg_command_line(ArgFlags *argspec, const char **argv);
 
 #endif
