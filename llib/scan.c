@@ -455,7 +455,7 @@ bool scan_scanf(ScanState* ts, const char *fmt,...)
                 break;
             case 'l': // rest of line
                 scan_get_line(ts,ts->sbuff,STRSIZE);
-                CAST(char*,P) = str_cpy(ts->sbuff);
+                CAST(char*,P) = str_new(ts->sbuff);
                 break;
             case 'q': // quoted string
                 if (scan_next(ts) != T_STRING)

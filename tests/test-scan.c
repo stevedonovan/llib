@@ -26,7 +26,6 @@ int main() {
     ScanState *ts;
     char buff[BUFSZ];
     double values[100];
-    int t;
     ts = scan_new_from_file("test1.dat");
     scan_numbers_fun(ts,dump,NULL);
     // scan_numbers goes over the whole stream;
@@ -96,7 +95,7 @@ int main() {
     dispose(tag);
     assert(ts->type == '>');
 
-    int n = scan_get_upto(ts,"<",buff,BUFSZ);
+    scan_get_upto(ts,"<",buff,BUFSZ);
     scan_advance(ts,-1);
     printf("got '%s' (%c)\n",buff,scan_getch(ts));
 
