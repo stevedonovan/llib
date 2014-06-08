@@ -45,7 +45,7 @@ bool value_is_simple_map(PValue v) {
     return obj_type_index(v) == OBJ_KEYVALUE_T;
 }
 
-void obj_set_type(void *P,int t) {
+static void obj_set_type(PValue P,int t) {
     ObjHeader* h = obj_header_(P);
     h->type = t;
 }

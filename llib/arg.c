@@ -504,7 +504,7 @@ ArgState *arg_command_line(ArgFlags *argspec, const char **argv) {
         fprintf(stderr,"error: %s\n",cmds->error);
         exit(1);
     }
-    const char *res = (const char*)arg_process(cmds,argv);
+    char *res = (char*)arg_process(cmds,argv);
     if (res) {
         if (value_is_error(res)) {
             if (*res)

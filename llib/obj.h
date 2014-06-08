@@ -88,7 +88,12 @@ typedef int intptr;
 #define str_len array_len
 
 #define obj_scoped __attribute((cleanup(__auto_unref)))
+
+#ifdef __cplusplus
+#define obj_scoped_pool ObjUnref P_ = obj_pool()
+#else
 #define obj_scoped_pool scoped void *P_ = obj_pool()
+#endif
 
 #ifndef OBJ_REF_ABBREV
 #define ref obj_ref
@@ -120,6 +125,14 @@ void obj_incr_(const void *P);
 void obj_unref(const void *P);
 void obj_apply_varargs(void *o, PFun fn,...);
 void __auto_unref(void *p) ;
+
+#ifdef __cplusplus
+struct ObjUnref {
+    void *_P;
+    ObjUnref(void *P) { _P = P; }
+    ~ObjUnref() { obj_unref(_P); }
+};
+#endif
 
 #define obj_apply(dest,s,src,g) obj_apply_(dest,(PFun)s,src,(PFun)g)
 void obj_apply_ (void *dest, PFun setter, void *src, PFun getter);
