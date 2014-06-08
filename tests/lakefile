@@ -23,5 +23,6 @@ default {
     test('test-json'),
     test('test-xml'),
     test('test-table'),
+    test('test-pool'),
 }
 

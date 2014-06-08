@@ -88,12 +88,14 @@ typedef int intptr;
 #define str_len array_len
 
 #define obj_scoped __attribute((cleanup(__auto_unref)))
+#define obj_scoped_pool scoped void *P_ = obj_pool()
 
 #ifndef OBJ_REF_ABBREV
 #define ref obj_ref
 #define unref obj_unref
 #define dispose obj_unref_v
 #define scoped obj_scoped
+#define scoped_pool obj_scoped_pool
 #endif
 
 #define obj_pool_count(P) (array_len(**((void****)P) ))

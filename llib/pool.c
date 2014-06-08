@@ -77,6 +77,8 @@ void *obj_pool() {
     if (! _pool_stack) {
         _pool_stack = seq_new(void*);
     }
+    _pool_cleaner = NULL;
+    _pool_filter = NULL;
     // push  the current pool on the stack (will always be NULL initially)
     seq_stack_push(_pool_stack,_obj_pool);
     _obj_pool = seq_new_ref(void*);
