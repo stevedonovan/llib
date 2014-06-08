@@ -87,7 +87,7 @@ char *typenames[] = {
 
 static ValueType parse_type(const char *name)
 {
-    return (ValueType)(int)str_lookup(typenames,name);
+    return (ValueType)(intptr)str_lookup(typenames,name);
 }
 
 static void *value_parse_ex(const char *s, int type) {
@@ -183,6 +183,7 @@ static FlagEntry *parse_spec(const char *spec)
             FlagEntry **A = pfd->args = array_new(FlagEntry*,array_len(fargs));
             for (char **F = fargs; *F; ++F, ++A) {
                 FlagEntry *afe = obj_new(FlagEntry,NULL);
+                afe->error = NULL;
                 *A = afe;
                 afe->flags |= FlagValue;
                 if (! parse_flag(*F,afe)) {
@@ -229,10 +230,7 @@ static PValue call_command(FlagEntry *pfd, PValue *args) {
                 return value_errorf("no argument #%d provided for '%s'\n",i,pfd->name);
         }
     }
-    PValue res = ((CmdFun)pfd->pflag) (args);
-    if (res == NULL)
-        res = value_int(0);
-    return res;
+    return ((CmdFun)pfd->pflag) (args);
 }
 
 #define CAST(T,P) *((T*)P)
@@ -493,7 +491,8 @@ PValue arg_process(ArgState *cmds ,  const char **argv)
         if (value_is_error(val))
             return val;
         if (! (cmd_fe->flags & FlagFunction) )
-            return "ok";
+            return value_error("ok");
+        return val;
     }
     return NULL; // meaning OK ....
 }
@@ -507,12 +506,12 @@ ArgState *arg_command_line(ArgFlags *argspec, const char **argv) {
     char *res = (char*)arg_process(cmds,argv);
     if (res) {
         if (value_is_error(res)) {
+            if (str_eq(res,"ok")) {
+                exit(0);
+            }        
             if (*res)
                 fprintf(stderr,"error: %s\n",res);
             exit(1);            
-        }
-        if (str_eq(res,"ok")) {
-            exit(0);
         }
     }
     return cmds;

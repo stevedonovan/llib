@@ -44,7 +44,6 @@ ArgFlags args[] = {
 int main(int argc,  const char **argv)
 {
     ArgState *state = arg_command_line(args,argv);
-    arg_functions_as_commands(state);
     if (! interactive) {
         if (array_len(incdirs) > 0) {
             printf("the include paths\n");
@@ -55,10 +54,11 @@ int main(int argc,  const char **argv)
             printf("the string args\n");
             FOR_ARR (char*,P,string_args)
                 printf("'%s'\n",*P);
-        }        
+        }
+        printf("flag a is %d\n",a);
     } else {
         char *line;
-        
+        arg_functions_as_commands(state);    
         printf("> ");
         while ((line = file_getline(stdin)) != NULL) {
             char **parts = str_split(line," ");
