@@ -107,10 +107,7 @@ static bool s_do_free=true;
 #endif
 
 static void s_free(void *p, void *obj) {
-#ifdef LLIB_DEBUG
-    if (s_do_free)
-#endif
-        free(obj);
+    free(obj);
 }
 
 static void *s_alloc(void *p, int size) {
@@ -292,7 +289,10 @@ static void obj_free_(ObjHeader *h, const void *P) {
     if (t->alloc) {
         t->alloc->free(t->alloc,h);
     } else {
-        free(h);
+#ifdef LLIB_DEBUG
+        if (s_do_free)
+#endif        
+            free(h);
     }
 }
 

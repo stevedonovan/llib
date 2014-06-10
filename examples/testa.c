@@ -6,15 +6,15 @@
 #include <llib/value.h>
 #include <llib/arg.h>
 
-static char **incdirs;
-static char **string_args;
+static const char **incdirs;
+static const char **string_args;
 static int a;
 static bool interactive;
 
 PValue test(PValue *args) {
     printf("gotcha! %d %d\n",value_as_int(args[1]),a);
     printf("the include paths\n");
-    FOR_ARR (char*,P,incdirs)
+    FOR_ARR (str_t,P,incdirs)
         printf("'%s'\n",*P);
     return NULL;
 }
@@ -60,12 +60,12 @@ int main(int argc,  const char **argv)
     if (! interactive) {
         if (array_len(incdirs) > 0) {
             printf("the include paths\n");
-            FOR_ARR (char*,P,incdirs)
+            FOR_ARR (str_t,P,incdirs)
                 printf("'%s'\n",*P);
         }
         if (array_len(string_args) > 0) {
             printf("the string args\n");
-            FOR_ARR (char*,P,string_args)
+            FOR_ARR (str_t,P,string_args)
                 printf("'%s'\n",*P);
         }
         printf("flag a is %d\n",a);

@@ -74,9 +74,10 @@ char** config_read(str_t file) {
 void test (str_t file) {
     scoped_pool;
     char **S = config_read(file);
-    for (char **P = S; *P; P+=2) {
-        printf("%s:'%s'\n",*P,*(P+1));
+    FOR_SMAP(key,val,S) {
+        printf("%s:'%s'\n",key,val);
     }    
+    
     printf("name %s\n",config_gets(S,"name","?"));
     printf("a %d\n",config_geti(S,"a",-1));
     

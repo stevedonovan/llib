@@ -27,6 +27,11 @@ void smap_put(char*** smap, str_t name, const void *data);
 void *smap_get(char*** smap, str_t name);
 int smap_len(char*** smap);
 char** smap_close(char*** smap);
+#define smap_add_ref(sm,name,data) smap_add(sm,str_ref(name),str_ref(data))
+#define smap_put_ref(sm,name,data) smap_put(sm,str_ref(name),str_ref(data))
+
+#define FOR_SMAP(k,v,sm) for(char **p_=(sm), *k=*p_,*v=*(p_+1); \
+ (v=*(p_+1),k=*p_); p_+=2)
 
 char *str_fmt(str_t fmt,...);
 int str_findstr(str_t s, str_t sub);
