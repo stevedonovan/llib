@@ -13,6 +13,9 @@ static bool interactive;
 
 PValue test(PValue *args) {
     printf("gotcha! %d %d\n",value_as_int(args[1]),a);
+    printf("the include paths\n");
+    FOR_ARR (char*,P,incdirs)
+        printf("'%s'\n",*P);
     return NULL;
 }
 
@@ -25,18 +28,28 @@ PValue two(PValue *args) {
 }
 
 PValue kount(PValue *args) {
-    return str_fmt("kount %d",obj_kount());
-    //printf("kount %d\n",obj_kount());
-    //return NULL;
+    //return str_fmt("kount %d",obj_kount());
+    printf("kount %d\n",obj_kount());
+    return NULL;
+}
+
+PValue flag(PValue *args) {
+    printf("flag %f\n",value_as_float(args[1]));
+    return NULL;
 }
 
 ArgFlags args[] = {
-    {"string include[]",'I',&incdirs,"include directory"},
-    {"--test(int i=0)",'T',test,"test function flag"},
-    {"--two(float x,string name)",'2',two,"test cmd_get_values"},
-    {"--kount()",'k',kount,"referenced object count"},
+    // commands
+    {"cmd test(int i=0)",'T',test,"test command"},
+    {"cmd two(float x,string name)",'2',two,"test cmd_get_values"},
+    // flags implemented with functions
+    {"void kount()",'k',kount,"referenced object count flag"},
+    {"float flag()",'f',flag,"function flag taking float.."},    
+    // regular bound flags
+    {"string include[]",'I',&incdirs,"include directory"},    
     {"int a=0",'a',&a,"flag value"},
     {"bool interactive=false",'i',&interactive,"interactive mode"},
+    // other arguments, as string array
     {"string #1[]",0,&string_args,"array of string args"},
     {NULL,0,NULL,NULL}
 };

@@ -49,10 +49,10 @@ enum {
 
 enum {
     FlagUsed = 1, // flag was explicitly referenced
-    FlagValue = 2, // user data is a value object, not rawa
+    FlagValue = 2, // user data is a value object, not raw
     FlagCommand = 4, // represents a command
     FlagFunction = 8, // this flag is implemented as a function
-    FlagNeedsArgument = 16, // flag is bool, or a function of no arguments
+    FlagNeedsArgument = 16, // flag is not bool or a function of no arguments
     FlagIsArray = 32 // variable is an array of values of this type
 };
 
@@ -81,6 +81,7 @@ char *typenames[] = {
     "bool",C ValueBool,
     "infile",C ValueFileIn,
     "outfile",C ValueFileOut,
+    "void",C ValuePointer,
     NULL
 };
 #undef C
@@ -118,7 +119,7 @@ static void *value_parse_ex(const char *s, int type) {
 }
 
 static bool arg_is_flag(FlagEntry *pfd) {
-    return pfd->args == NULL;
+    return pfd->args == NULL || (pfd->flags & FlagFunction);
 }
 
 // this gives us a name (optional) and a type, which may have a default value.
@@ -168,13 +169,17 @@ static FlagEntry *parse_spec(const char *spec)
     FlagEntry *pfd = obj_new(FlagEntry,NULL);
     pfd->flags = 0;
     pfd->error = NULL;
-    if (strchr(spec,')')) { // describes a function
-        char **parts = str_split(spec,"()");
+    if (strchr(spec,')')) { // describes a function flag or command
+        char **parts = str_split(spec,"()"); 
+        char **tname = str_split(parts[0]," ");
+        // we now have 'type', name and formal args
         pfd->flags |= FlagCommand;
-        pfd->name = parts[0];
-        if (str_starts_with(pfd->name,"--")) {
+        pfd->name = tname[1];
+        if (! str_eq(tname[0],"cmd")) {
             pfd->flags |= FlagFunction;
-            pfd->name += 2;
+            if (! str_eq(tname[0],"void"))
+                parts[1] = str_fmt("%s x",tname[0]);
+            // so int flag() -> flag(int x)
         }
         if (parts[1]) {
             char **fargs = str_split(parts[1],",");
@@ -185,7 +190,7 @@ static FlagEntry *parse_spec(const char *spec)
                 FlagEntry *afe = obj_new(FlagEntry,NULL);
                 afe->error = NULL;
                 *A = afe;
-                afe->flags |= FlagValue;
+                afe->flags = FlagValue;
                 if (! parse_flag(*F,afe)) {
                     pfd->error = afe->error;
                     break;
@@ -345,10 +350,15 @@ static void *help(void **args) {
         if (arg_is_flag(*cmds))
             printf("\t--%s\t%s\n",(*cmds)->name, (*cmds)->arg_spec->help);
     }
-    return value_error("");
+    return NULL; //value_error("ok");
 }
 
-static ArgFlags help_spec =   {"--help()",'h',&help,"help on commands and flags"};
+static ArgFlags help_spec =   {"void help()",'h',&help,"help on commands and flags"};
+
+// how command/flag arguments are encoded in the map
+static char *argument_name(str_t prefix, int karg) {
+    return str_fmt("%s#%d",prefix,karg);    
+}
 
 ArgState *arg_parse_spec(ArgFlags *flagspec)
 {
@@ -380,16 +390,27 @@ ArgState *arg_parse_spec(ArgFlags *flagspec)
         if (pfd->args) {
             int karg = 1;
             for (FlagEntry **F = pfd->args; *F; ++F, ++karg) {
-                smap_add(cmds,str_fmt("%s#%d",pfd->name,karg), *F);
+                smap_add(cmds,argument_name(pfd->name,karg), *F);
             }
             if (! (pfd->flags & FlagFunction))
                 res->has_commands = true;
         }
     }
 
-    res->cmd_map = (SMap)seq_array_ref(cmds);
+    res->cmd_map = smap_close(cmds);
     res->cmds = ppfd;
     return res;
+}
+
+// all function/free arguments are bound by their compound name
+static PValue bind_argument(ArgState *cmds, str_t name, int karg, str_t arg, FlagEntry **pfe) {
+    char *aname = argument_name(name, karg);
+    FlagEntry * fe = lookup(cmds,aname);
+    if (! fe)
+        return value_errorf("no argument %s",aname);
+    if (pfe)
+        *pfe = fe;
+    return bind_value(fe,arg);
 }
 
 PValue arg_process(ArgState *cmds ,  const char **argv)
@@ -403,7 +424,7 @@ PValue arg_process(ArgState *cmds ,  const char **argv)
     static char tmp[] = {0,0};
     int i = 1; // argv[0] is always program...
     int karg = 1;  // non-flag arguments
-    if (cmds->has_commands) {
+    if (cmds->has_commands && (argv[i] && *argv[i]  != '-')) {
         if (! argv[i])
             return value_error("expecting command");
         cmd_fe = lookup(cmds,argv[i]);
@@ -429,36 +450,37 @@ PValue arg_process(ArgState *cmds ,  const char **argv)
                 if (! fune)
                     return value_errorf("unknown flag '%s'",pname);
                 flags = fune->flags;
+                
+                bool needs_argument = flags & FlagNeedsArgument;
 
                 // a chain of short flags must end if one needs an argument... (-vo file)
-                if ((flags & FlagNeedsArgument) && ! long_flag) {
+                if (needs_argument && ! long_flag) {
                     long_flag = true;
                     if (arg[1]) // anything following the flag is its argument ( -n10 )
                         rest_arg = arg+1;
                 }
 
-                if (flags & FlagFunction) { // a function flag
-                    if (cmd_parms) { // already one pending., so call it
-                        val = call_command(cmd_fe,cmd_parms);
-                        if (value_is_error(val))
-                            return val;
+                if (needs_argument)  {
+                    if (rest_arg) { // don't need to advance to get argument!
+                        arg = rest_arg;
+                        rest_arg = NULL;
+                    } else {
+                        arg = (char*)argv[++i];
                     }
-                    karg = 1;
-                    cmd_fe = fune;
-                    prefix = cmd_fe->name;
-                    cmd_parms = allocate_args(cmd_fe,cmds);
-                } else { // flag is bound to a variable (bool flags toggle default value)
-                    if (flags & FlagNeedsArgument)  {
-                        if (rest_arg) { // don't need to advance to get argument!
-                            arg = rest_arg;
-                            rest_arg = NULL;
-                        } else
-                            arg = (char*)argv[++i];
-                    }
-                    val = bind_value(fune,arg);
-                    if (value_is_error(val))
-                        return val;
                 }
+                if (flags & FlagFunction) { // a function flag (may have argument)
+                    PValue *fun_args = allocate_args(fune,cmds);
+                    if (needs_argument) {
+                        val = bind_argument(cmds,fune->name,1,arg,NULL);
+                        if (value_is_error(val))
+                            return val;                        
+                    }
+                    val  = call_command(fune,fun_args);
+                } else { // flag is bound to a variable
+                    val = bind_value(fune,arg);
+                }
+                if (value_is_error(val))
+                    return val;                
                 fune->flags |= FlagUsed;
                 if (long_flag)
                     break;
@@ -466,11 +488,7 @@ PValue arg_process(ArgState *cmds ,  const char **argv)
                 *pname = *arg;
             }
         } else { // parameter or command
-            char *aname = str_fmt("%s#%d",prefix,karg);
-            fune = lookup(cmds,aname);
-            if (! fune)
-                return value_errorf("no argument %s",aname);
-            val = bind_value(fune,arg);
+            val = bind_argument(cmds,prefix,karg,arg,&fune);
             if (value_is_error(val))
                 return val;
             arg_set_used(fune);
@@ -486,7 +504,7 @@ PValue arg_process(ArgState *cmds ,  const char **argv)
             return val;
     }
 
-    if (cmd_parms) {
+    if (cmd_parms) { // was a command; we can now call it..
         val = call_command(cmd_fe,cmd_parms);
         if (value_is_error(val))
             return val;
@@ -494,24 +512,28 @@ PValue arg_process(ArgState *cmds ,  const char **argv)
             return value_error("ok");
         return val;
     }
-    return NULL; // meaning OK ....
+    return NULL; // meaning OK ....    
+}
+
+void arg_quit(ArgState *cmds, str_t msg) {
+    if (*msg)
+        fprintf(stderr,"error: %s\n",msg);
+    help((void**)&cmds);
+    exit(1);    
 }
 
 ArgState *arg_command_line(ArgFlags *argspec, const char **argv) {
     ArgState *cmds = arg_parse_spec(argspec);
     if (cmds->error) {
-        fprintf(stderr,"error: %s\n",cmds->error);
-        exit(1);
+        arg_quit(cmds,cmds->error);
     }
     char *res = (char*)arg_process(cmds,argv);
     if (res) {
         if (value_is_error(res)) {
             if (str_eq(res,"ok")) {
                 exit(0);
-            }        
-            if (*res)
-                fprintf(stderr,"error: %s\n",res);
-            exit(1);            
+            }
+            arg_quit(cmds,res);
         }
     }
     return cmds;
