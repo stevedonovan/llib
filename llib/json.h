@@ -21,7 +21,7 @@ char *json_tostring(PValue v);
 PValue json_parse_string(const char *str);
 PValue json_parse_file(const char *file);
 
-#ifdef LLIB_JSON_EASY
+#ifndef LLIB_NO_VALUE_ABBREV
 #define VM value_map_of_values
 #define VMS value_map_of_str
 #define VI value_int

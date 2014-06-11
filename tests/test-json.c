@@ -7,7 +7,6 @@
 #include <stdio.h>
 #include <llib/list.h>
 #include <llib/map.h>
-#define LLIB_JSON_EASY
 #include <llib/json.h>
 
 //const char *js = "{'one':[10,100], 'two':2, 'three':'hello'}";

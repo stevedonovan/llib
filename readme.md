@@ -71,7 +71,7 @@ This allows for objects to safely _share_ other objects without having to fully
 take ownership.  Reference counting cuts down on the amount of 'defensive copying'
 needed in typical code.
 
-Unless you specifically define `OBJ_REF_ABBREV`, the basic operations are aliased as
+Unless you specifically define `LLIB_NO_REF_ABBREV`, the basic operations are aliased as
 `ref` and `unref`; there is also an alias `dispose` for `obj_unref_v` which
 un-references multiple objects.
 
@@ -405,7 +405,7 @@ strength, due to the lack of runtime information, but llib objects do have hidde
 
 Here we exploit several known facts:
 
-  * `obj_refcount() will return a count greater than zero if it is one of our objects
+  * `obj_refcount()` will return a count greater than zero if it is one of our objects
   *  refcounted arrays know their size; otherwise we assume NULL-terminated
   *  `list_object` and `map_object` can identify their respective types
 
@@ -418,7 +418,7 @@ it just happens to be a bit more clumsy without built-in support.
 llib values have dynamic types since they have their type encoded in their headers.
 A value can be an array of ints, a string, or a map of other values, and so forth, and
 its type and structure can be inspected at run-time.
-To represent numbers we have to introduce wrappers for integer, float and boolean
+To represent numbers we have to introduce wrappers for integer, double and boolean
 types, rather as it is done in Java.  This being C, the programmer has to explicitly box floats
 (for example) using `value_float` and so forth, and unbox with `value_as_float`.
 
@@ -467,7 +467,9 @@ HTML template just discussed:
     );
 ```
 
-This uses llib's JSON support, which works very naturally with values. And JSON itself is a
+This uses llib's JSON support, which works very naturally with values. (If you find
+these shorthand macros clobbering your stuff, then define `LLIB_NO_VALUE_ABBREV`
+before including '<llib/json.h>'. )  JSON itself is a
 great notation to express dynamic data structures (although many people find the
 _ad-hoc_ part less of a solution and more of a problem):
 
@@ -604,11 +606,12 @@ int lines;
 FILE *file;
 bool print_lines;
 
-ArgFlags args[] = {
-    {"int lines=10",'n',&lines,"number of lines to print"},
-    {"bool lineno",'l',&print_lines,"output line numbers"},
-    {"infile #1=stdin",0,&file,"file to dump"},
-    {NULL,0,NULL,NULL}
+PValue args[] = {
+    "int lines=10; // -n number of lines to print",&lines,
+    "bool verbose=false; // -v controls verbosity",&verbose,
+    "bool lineno; // -l output line numbers",&print_lines,
+    "infile #1=stdin; // file to dump",&file,
+    NULL
 };
 
 int main(int argc,  const char **argv)
@@ -640,12 +643,20 @@ possible; note how the type and default value is specified using pseudo-C notati
 
 Otherwise, the flag parsing is GNU style, with long flags using '--' and short
 aliases with '-'. Short flags can be combined '-abc' and their values can follow
-immediately after '-I/usr/include/lua'.
+immediately after '-I/usr/include/lua'. The long flag name comes from the specified
+name, and the short flag is optionally specified after the start of the help comment.
+Names begining with '#' are special and refer to the non-flag arguments of a 
+program.
 
-A flag specifier like `string include[]` binds to an array of strings (`char**`) and
-a default cannot be specified; if the flag is not present the variable is
+A flag specifier like `string include[]` binds to an array of strings (`char**`); 
+repeated invocations will add to this array (e.g "-I/mylib -I.."). 
+A default cannot be specified; if the flag is not present the variable is
 initialized to a array of zero length. llib arrays know their size, so we don't have
 to track this separately.
+
+The understood types are `int`, `float` (means _double_), `string` (ref-counted `char*`),
+`bool`, `infile` and `outfile`.  The last two bind to `FILE*` and will try to open the file
+for you; their defaults can be `stdin` and `stdout` respectively.
 
 Flags can also be implemented by _functions_, which you can see in action in
 `examples/testa.c`. Unlike variable flags, these can take an indefinite number of

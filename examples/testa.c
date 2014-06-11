@@ -38,20 +38,20 @@ PValue flag(PValue *args) {
     return NULL;
 }
 
-ArgFlags args[] = {
+PValue args[] = {
     // commands
-    {"cmd test(int i=0)",'T',test,"test command"},
-    {"cmd two(float x,string name)",'2',two,"test cmd_get_values"},
+    "cmd test(int i=0); // -T test command",test,
+    "cmd two(float x,string name); // -2 test cmd_get_values",two,
     // flags implemented with functions
-    {"void kount()",'k',kount,"referenced object count flag"},
-    {"float flag()",'f',flag,"function flag taking float.."},    
+    "void kount(); // -k referenced object count flag",kount,
+    "float flag(); // -f function flag taking float..",flag,
     // regular bound flags
-    {"string include[]",'I',&incdirs,"include directory"},    
-    {"int a=0",'a',&a,"flag value"},
-    {"bool interactive=false",'i',&interactive,"interactive mode"},
+    "string include[]; // -I include directories", &incdirs,
+    "int a=0; // flag value",&a,
+    "bool interactive=false; // -i interactive mode",&interactive,
     // other arguments, as string array
-    {"string #1[]",0,&string_args,"array of string args"},
-    {NULL,0,NULL,NULL}
+    "string #1[]; // array of string args",&string_args,
+    NULL
 };
 
 int main(int argc,  const char **argv)
@@ -71,8 +71,7 @@ int main(int argc,  const char **argv)
         printf("flag a is %d\n",a);
     } else {
         char *line;
-        arg_functions_as_commands(state);    
-        printf("> ");
+            printf("> ");
         while ((line = file_getline(stdin)) != NULL) {
             char **parts = str_split(line," ");
             // args_process assumes args start at second element, hence -1 here

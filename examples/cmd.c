@@ -8,12 +8,12 @@ int lines;
 FILE *file;
 bool verbose, print_lines;
 
-ArgFlags args[] = {
-    {"int lines=10",'n',&lines,"number of lines to print"},
-    {"bool verbose=false",'v',&verbose,"controls verbosity"},
-    {"bool lineno",'l',&print_lines,"output line numbers"},
-    {"infile #1=stdin",0,&file,"file to dump"},
-    {NULL,0,NULL,NULL}
+PValue args[] = {
+    "int lines=10; // -n number of lines to print",&lines,
+    "bool verbose=false; // -v controls verbosity",&verbose,
+    "bool lineno; // -l output line numbers",&print_lines,
+    "infile #1=stdin; // file to dump",&file,
+    NULL
 };
 
 int main(int argc,  const char **argv)

@@ -10,7 +10,6 @@
 #include <llib/str.h>
 #include <llib/list.h>
 #include <llib/map.h>
-#define LLIB_JSON_EASY
 #include <llib/json.h>
 
 const char *tpl = "Hello $(P)$(name), how is $(home)?";

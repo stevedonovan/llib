@@ -9,18 +9,24 @@
 
 This allows you to bind variables to command-line arguments, providing
 the flag name/type, a shortcut, a pointer to the variable, and some help text.
+For this we write _specifications_ (which are strings containing pseudo-C declarations
+followed by a comment, which may specify a shortcut).
+
+The argument parser follows GNU conventions; long flags with double-hyphen,
+which may have short single-letter forms with a single-hyphen. Short flags may
+be combined ("-abc") and may be followed immediately by their value ("-n10").
 
 ```C
 int lines;
 FILE *file;
 bool verbose, print_lines;
 
-ArgFlags args[] = {
-    {"int lines=10",'n',&lines,"number of lines to print"},
-    {"bool verbose=false",'v',&verbose,"controls verbosity"},
-    {"bool lineno",'l',&print_lines,"output line numbers"},
-    {"infile #1=stdin",0,&file,"file to dump"},
-    {NULL,0,NULL,NULL}
+PValue args[] = {
+    "int lines=10; // -n number of lines to print",&lines,
+    "bool verbose=false; // -v controls verbosity",&verbose,
+    "bool lineno; // -l output line numbers",&print_lines,
+    {"infile #1=stdin; // file to dump",&file,
+    NULL
 };
 
 ```
@@ -28,10 +34,13 @@ ArgFlags args[] = {
 If you now call `arg_command_line(args,argv)` these variables will be
 bound; note how both type and optional default value are specified. Names like '#1'
 refer to the first non-flag argument and so forth.  Both '--lines' and '-n' can be 
-used to set the integer variable `lines'.
+used to set the integer variable `lines'.  If a flag has no default, then it is an error.
+Plain boolean flags have an implicit default of `false`.
+
+Help usage is automatically generated from these specifications.
 
 If a conversion is not possible (not a integer, file cannot be opened, etc)
-then the program will exit.
+then the program will exit, showing the help.
 */
 
 #include <stdio.h>
@@ -62,11 +71,13 @@ struct FlagEntry_ {
     void *pflag; // pointer to user data
     str_t name;
     ValueType type;
-    str_t help;
     PValue defval;    // default value, NULL otherwise
     str_t error;
     int flags;
     FlagEntry **args;  // array for parameters for _named command_
+    // fields mirroring the spec string
+    str_t help, tname, defname;
+    char alias;
 };
 
 #define arg_is_command(fe) ((fe)->flags & FlagCommand)
@@ -128,11 +139,13 @@ static bool parse_flag(str_t arg, FlagEntry *pfd)
     char **parts = str_split(arg," ");
 
     if (array_len(parts) > 1) { // type name ...
+        pfd->tname = parts[0];
         pfd->type = parse_type(parts[0]);
         if (pfd->type == 0) goto out;
         char *rest = parts[1];
         if (strchr(rest,'=')) { //  type name=default
             char **nparts = str_split(rest,"=");
+            pfd->defname = nparts[1];
             pfd->defval = value_parse_ex(nparts[1],pfd->type);
             pfd->name = ref(nparts[0]);
         } else { // type name ([]))
@@ -149,7 +162,7 @@ static bool parse_flag(str_t arg, FlagEntry *pfd)
                 pfd->defval = NULL;
             pfd->name = obj_ref(rest);
         }
-        obj_unref(parts);
+        //obj_unref(parts);
     } else { // must be just a type
         pfd->type = parse_type(arg);
         pfd->name = NULL;
@@ -161,14 +174,18 @@ out:
     return ! pfd->error;
 }
 
+static FlagEntry *new_flag_entry() {
+    FlagEntry *pfd = obj_new(FlagEntry,NULL);
+    memset(pfd,0,sizeof(FlagEntry));
+    return pfd;
+}
+
 // Representation of commands: these are a generalization of flags, which have an
 // args array of subflag entries. These are bound to an allocated array of values.
 
 static FlagEntry *parse_spec(str_t spec)
 {
-    FlagEntry *pfd = obj_new(FlagEntry,NULL);
-    pfd->flags = 0;
-    pfd->error = NULL;
+    FlagEntry *pfd = new_flag_entry();
     if (strchr(spec,')')) { // describes a function flag or command
         char **parts = str_split(spec,"()"); 
         char **tname = str_split(parts[0]," ");
@@ -187,8 +204,7 @@ static FlagEntry *parse_spec(str_t spec)
             // will be subflags for each argument to that function
             FlagEntry **A = pfd->args = array_new(FlagEntry*,array_len(fargs));
             for (char **F = fargs; *F; ++F, ++A) {
-                FlagEntry *afe = obj_new(FlagEntry,NULL);
-                afe->error = NULL;
+                FlagEntry *afe = new_flag_entry();
                 *A = afe;
                 afe->flags = FlagValue;
                 if (! parse_flag(*F,afe)) {
@@ -335,56 +351,123 @@ static FlagEntry *lookup(ArgState *cmds, str_t name)
     return (FlagEntry*)str_lookup(cmds->cmd_map,name);
 }
 
+static void print_type(FlagEntry *fe) {
+    if (fe->defname) {
+        printf("%s",fe->defname);
+    } else {
+        printf("%s",fe->tname);
+        if (fe->flags & FlagIsArray)
+            printf("...");
+    }    
+}
+
 static void *help(void **args) {
     ArgState *fd = (ArgState*)args[0];
-    FlagEntry **cmds = (FlagEntry**)fd->cmds;
+    FlagEntry **cmds = (FlagEntry**)fd->cmds, **pc;
     if (fd->has_commands) {
         printf("Commands:\n");
-        for (; *cmds; ++cmds) {
-            if (! arg_is_flag(*cmds))
-                printf("\t%s\t%s\n",(*cmds)->name, (*cmds)->help);
+        for (pc = cmds; *pc; ++pc) {
+            FlagEntry *fe = *pc;
+            if (! arg_is_flag(fe)) {
+                printf("\t%s (",fe->name);
+                for (FlagEntry **afe = fe->args; *afe; ++afe) {
+                    print_type(*afe);
+                    if (*(afe+1))
+                        printf(",");
+                }                
+                printf(")\t%s\n",fe->help);
+            }
         }
     }
     printf("Flags:\n");
-    for (cmds = (FlagEntry**)fd->cmds; *cmds; ++cmds) {
-        if (arg_is_flag(*cmds))
-            printf("\t--%s\t%s\n",(*cmds)->name, (*cmds)->help);
+    for (pc = cmds; *pc; ++pc) {
+        FlagEntry *fe = *pc;
+        if (arg_is_flag(fe)) {            
+            printf("\t--%s",fe->name);
+            if (fe->alias)
+                printf(",-%c",fe->alias);
+            if (fe->tname) {
+                printf(" (");
+                print_type(fe);
+                printf(")");
+            }
+            printf("\t%s\n",fe->help);
+        }
     }
     return NULL;
 }
-
-static ArgFlags help_spec =   {"void help()",'h',&help,"help on commands and flags"};
 
 // how command/flag arguments are encoded in the map
 static char *argument_name(str_t prefix, int karg) {
     return str_fmt("%s#%d",prefix,karg);    
 }
 
-ArgState *arg_parse_spec(ArgFlags *flagspec)
+static ArgState *parse_error(ArgState *res, str_t context, str_t msg) {
+    res->error = strfmt("'%s': %s",context,msg);
+    return res;
+}
+
+ArgState *arg_parse_spec(PValue *flagspec)
 {
     ArgState *res = obj_new(ArgState,NULL);
     memset(res,0,sizeof(ArgState));
+    
     int nspec = 0;
-    for (ArgFlags *cf = flagspec; cf->spec; ++cf)
+    for (PValue *cf = flagspec; *cf; ++cf)
         ++nspec;
-
+    char **specs = array_new(char*,nspec+2);
+    int k = 2;
+    specs[0] = str_new("void help(); // -h help on commands and flags");
+    specs[1] = (void*)help;
+    for (PValue *cf = flagspec; *cf; cf += 2, k += 2) {
+        specs[k] = str_new((char*)*cf);
+        specs[k+1] = *(cf+1);
+    }
+    nspec /= 2;
+    
     char ***cmds = smap_new(false);
-    FlagEntry **ppfd = array_new(FlagEntry*,nspec+1);
-    FOR(i,nspec+1) {
-        ArgFlags *cf = (i < nspec) ? &flagspec[i] : &help_spec;
-        FlagEntry *pfd = parse_spec(cf->spec);
+    FlagEntry **ppfd = array_new(FlagEntry*,nspec);
+    int i  = 0;
+    for (char **cf = specs; *cf; cf += 2) {
+        char *spec = (char*)*cf;
+        char *comment = strchr(spec,';');
+        if (! comment)
+            return parse_error(res,spec,"semi-colon required!");
+        *comment = '\0'; 
+        // cool, spec is now the variable specification
+        // now hunt for the comment
+        comment++;
+        comment = strstr(comment,"//");
+        if (! comment)
+            return parse_error(res,comment,"// comment expected");
+        comment += 2; // skip //
+        while (*comment && *comment == ' ')  // and any space
+            comment ++;
+        if (! *comment)
+            return parse_error(res,spec,"no help text");
+        
+        str_trim(spec);
+        FlagEntry *pfd = parse_spec(spec);
         if (pfd->error) {
             res->error = pfd->error;
             return res;
         }
-        pfd->help = cf->help;
-        pfd->pflag = cf->flagptr;
-        ppfd[i] = pfd;
+        
+        if (*comment == '-') {
+            ++comment;
+            if (*comment == '-')
+                return parse_error(res,comment,"single-dash shortcut expected");
+            pfd->alias = *comment;
+            comment += 2;  // skip flag and space
+        }
+        pfd->help = comment;
+        pfd->pflag = *(cf+1);
+        ppfd[i++] = pfd;
 
         // update map of command names and their aliases
         smap_add(cmds,pfd->name,pfd);
-        if (cf->alias)
-            smap_add(cmds,str_fmt("%c",cf->alias),pfd);
+        if (pfd->alias)
+            smap_add(cmds,str_fmt("%c",pfd->alias),pfd);
 
         // commands have arguments, which we also need to store here...
         if (pfd->args) {
@@ -396,7 +479,7 @@ ArgState *arg_parse_spec(ArgFlags *flagspec)
                 res->has_commands = true;
         }
     }
-
+    ppfd[i] = NULL;
     res->cmd_map = smap_close(cmds);
     res->cmds = ppfd;
     return res;
@@ -515,17 +598,18 @@ PValue arg_process(ArgState *cmds ,  str_t *argv)
     return NULL; // meaning OK ....    
 }
 
-void arg_quit(ArgState *cmds, str_t msg) {
+void arg_quit(ArgState *cmds, str_t msg, bool show_help) {
     if (*msg)
         fprintf(stderr,"error: %s\n",msg);
-    help((void**)&cmds);
+    if (show_help)
+        help((void**)&cmds);
     exit(1);    
 }
 
-ArgState *arg_command_line(ArgFlags *argspec, const char** argv) {
+ArgState *arg_command_line(PValue *argspec, const char** argv) {
     ArgState *cmds = arg_parse_spec(argspec);
     if (cmds->error) {
-        arg_quit(cmds,cmds->error);
+        arg_quit(cmds,cmds->error,false);
     }
     char *res = (char*)arg_process(cmds,argv);
     if (res) {
@@ -533,9 +617,8 @@ ArgState *arg_command_line(ArgFlags *argspec, const char** argv) {
             if (str_eq(res,"ok")) {
                 exit(0);
             }
-            arg_quit(cmds,res);
+            arg_quit(cmds,res,true);
         }
     }
     return cmds;
 }
-

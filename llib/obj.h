@@ -95,7 +95,7 @@ typedef int intptr;
 #define obj_scoped_pool scoped void *P_ = obj_pool()
 #endif
 
-#ifndef OBJ_REF_ABBREV
+#ifndef LLIB_NO_REF_ABBREV
 #define ref obj_ref
 #define unref obj_unref
 #define dispose obj_unref_v

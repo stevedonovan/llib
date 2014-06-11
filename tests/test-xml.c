@@ -1,5 +1,4 @@
 #include <stdio.h>
-#define LLIB_JSON_EASY
 #include <llib/json.h>
 
 #include <llib/xml.h>
