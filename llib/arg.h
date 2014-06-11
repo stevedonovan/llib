@@ -7,7 +7,7 @@ typedef struct ArgState_ {
     SMap cmd_map;
     void *cmds;
     bool has_commands;
-    const char *error;
+    str_t error, usage;
 } ArgState;
 
 ArgState *arg_parse_spec(PValue *flagspec);

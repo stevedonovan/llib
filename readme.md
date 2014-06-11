@@ -607,6 +607,7 @@ FILE *file;
 bool print_lines;
 
 PValue args[] = {
+    "// cmd: show n lines from top of a file",
     "int lines=10; // -n number of lines to print",&lines,
     "bool verbose=false; // -v controls verbosity",&verbose,
     "bool lineno; // -l output line numbers",&print_lines,
@@ -630,6 +631,18 @@ int main(int argc,  const char **argv)
     fclose(file);
     return 0;
 }
+```
+
+Default help output:
+
+```
+cmd: show n lines from top of a file
+Flags:
+	--help,-h	help on commands and flags
+	--lines,-n (10)	number of lines to print
+	--verbose,-v (false)	controls verbosity
+	--lineno,-l (false)	output line numbers
+	--#1 (stdin)	file to dump
 ```
 
 This was inspired by the [lapp](http://stevedonovan.github.io/Penlight/api/topics/08-additional.md.html#Command_line_Programs_with_Lapp) framework for Lua; 

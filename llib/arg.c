@@ -153,9 +153,10 @@ static bool parse_flag(str_t arg, FlagEntry *pfd)
                 pfd->flags |= FlagIsArray;
                 *strchr(rest,'[') = '\0';
             }
-            if (pfd->type == ValueBool) // bool has sensible default 'false'
+            if (pfd->type == ValueBool) { // bool has sensible default 'false'
                 pfd->defval = value_bool(false);
-            else
+                pfd->defname = "false";
+            } else
             if (pfd->flags & FlagIsArray)
                 pfd->defval = array_new(PValue,0);
             else
@@ -364,6 +365,9 @@ static void print_type(FlagEntry *fe) {
 static void *help(void **args) {
     ArgState *fd = (ArgState*)args[0];
     FlagEntry **cmds = (FlagEntry**)fd->cmds, **pc;
+    if (fd->usage) {
+        printf("%s\n",fd->usage);
+    }
     if (fd->has_commands) {
         printf("Commands:\n");
         for (pc = cmds; *pc; ++pc) {
@@ -394,7 +398,8 @@ static void *help(void **args) {
             printf("\t%s\n",fe->help);
         }
     }
-    return NULL;
+    // that is, we want to immediately bail out with no error condition...
+    return value_error("ok");
 }
 
 // how command/flag arguments are encoded in the map
@@ -403,8 +408,16 @@ static char *argument_name(str_t prefix, int karg) {
 }
 
 static ArgState *parse_error(ArgState *res, str_t context, str_t msg) {
-    res->error = strfmt("'%s': %s",context,msg);
+    res->error = str_fmt("'%s': %s",context,msg);
     return res;
+}
+
+static char* skip_ws(char *p) {
+    while (*p && *p == ' ')
+        ++p;
+    if (! *p)
+        return NULL;
+    return p;
 }
 
 ArgState *arg_parse_spec(PValue *flagspec)
@@ -413,6 +426,12 @@ ArgState *arg_parse_spec(PValue *flagspec)
     memset(res,0,sizeof(ArgState));
     
     int nspec = 0;
+    char* usage = (char*)*flagspec;
+    if (str_starts_with(usage,"//")) {
+        usage = skip_ws(usage+2);
+        res->usage = usage;
+        flagspec++;
+    }
     for (PValue *cf = flagspec; *cf; ++cf)
         ++nspec;
     char **specs = array_new(char*,nspec+2);
@@ -440,10 +459,8 @@ ArgState *arg_parse_spec(PValue *flagspec)
         comment = strstr(comment,"//");
         if (! comment)
             return parse_error(res,comment,"// comment expected");
-        comment += 2; // skip //
-        while (*comment && *comment == ' ')  // and any space
-            comment ++;
-        if (! *comment)
+        comment = skip_ws(comment + 2);
+        if (! comment)
             return parse_error(res,spec,"no help text");
         
         str_trim(spec);

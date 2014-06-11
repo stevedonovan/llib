@@ -9,6 +9,7 @@ FILE *file;
 bool verbose, print_lines;
 
 PValue args[] = {
+    "// cmd: show n lines from top of a file",
     "int lines=10; // -n number of lines to print",&lines,
     "bool verbose=false; // -v controls verbosity",&verbose,
     "bool lineno; // -l output line numbers",&print_lines,
