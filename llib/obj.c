@@ -118,12 +118,18 @@ ObjAllocator obj_default_allocator = {
   s_alloc, s_free, NULL
 };
 
+DisposeFn _pool_filter, _pool_cleaner;
+
+#define PTR_FROM_HEADER(h) ((void*)(((ObjHeader*)(h))+1))
+#define HEADER_FROM_PTR(P) ((ObjHeader*)P-1)
+
+// all llib objects are allocated here
 static ObjHeader *new_obj(int size, ObjType *t) {
     size += sizeof(ObjHeader);
     void *obj;
 
     if (! t->alloc) {
-        obj = malloc(size);
+        obj = malloc(size);        
     } else {
         obj = t->alloc->alloc(t->alloc,size);
     }
@@ -131,6 +137,8 @@ static ObjHeader *new_obj(int size, ObjType *t) {
 #ifdef LLIB_DEBUG
     ++t->instances;
 #endif
+    if (_pool_filter)
+        _pool_filter(PTR_FROM_HEADER(obj));
     return (ObjHeader *)obj;
 }
 
@@ -146,9 +154,6 @@ int obj_refcount (const void *p)
         return -1;
     }
 }
-
-#define PTR_FROM_HEADER(h) ((void*)(h+1))
-#define HEADER_FROM_PTR(P) ((ObjHeader*)P-1)
 
 // Type descripters are kept in an array
 #define LLIB_TYPE_MAX 4096
@@ -190,15 +195,6 @@ OTP obj_new_type(int size, const char *type, DisposeFn dtor) {
     return t;
 }
 
-DisposeFn _pool_filter, _pool_cleaner;
-
-static void *pin_ (ObjHeader *h) {
-    void *obj = PTR_FROM_HEADER(h);
-    if (_pool_filter)
-        _pool_filter(obj);
-    return obj;
-}
-
 // the type system needs to associate certain common types with fixed slots
 static bool initialized = false;
 
@@ -238,7 +234,11 @@ void *obj_new_(int size, const char *type, DisposeFn dtor) {
     h->is_array = 0;
     h->is_ref_container = 0;
     h->type = t->idx;
-    return pin_(h);
+    void *P = PTR_FROM_HEADER(h);
+#ifdef LLIB_DEBUG_VERBOSE
+    fprintf(stderr,"obj %s %p\n",type,P);
+#endif
+    return P;
 }
 
 // getting element size is now a little more indirect...
@@ -283,7 +283,7 @@ static void obj_free_(ObjHeader *h, const void *P) {
 
     // if the object pool is active, then remove our pointer from it!
     if (_pool_cleaner)
-        _pool_cleaner((void *)P);
+        _pool_cleaner((void*)P);
 
     // the object's type might have a custom allocator
     if (t->alloc) {
@@ -305,6 +305,13 @@ static void obj_free_(ObjHeader *h, const void *P) {
 
 void obj_incr_(const void *P) {
     ObjHeader *h = obj_header_(P);
+    // if the object pool is active, then remove our pointer from it!
+#ifdef LLIB_DEBUG_VERBOSE    
+    fprintf(stderr,"+ref %p\n",P);
+#endif
+    if (_pool_cleaner && h->_ref == 1) {
+        _pool_cleaner((void*)P);
+    }    
     ++(h->_ref);
 }
 
@@ -315,6 +322,9 @@ void obj_unref(const void *P) {
     if (P == NULL) return;
     ObjHeader *h = obj_header_(P);
 #ifdef LLIB_DEBUG
+#ifdef LLIB_DEBUG_VERBOSE
+    fprintf(stderr,"-ref %p\n",P);
+#endif
     // this check is only really useful if LLIB_PTR_LIST is used
     if (! our_ptr(h)) {
         fprintf(stderr,"llib: unref of non ref-counted pointer\n");
@@ -327,8 +337,12 @@ void obj_unref(const void *P) {
     }
 #endif
     --(h->_ref);
-    if (h->_ref == 0)
-        obj_free_(h,P);
+    if (h->_ref == 0) {
+#ifdef LLIB_DEBUG_VERBOSE    
+        fprintf(stderr,"freed %p\n",P);
+#endif
+        obj_free_(h,P);        
+    }
 }
 
 void obj_apply_v_varargs(void *o, PFun fn,va_list ap) {
@@ -441,12 +455,15 @@ void *array_new_(int mlen, const char *name, int len, int isref) {
     h->_ref = 1;
     h->is_array = 1;
     h->is_ref_container = isref;
-    P = (byte*)pin_(h);
+    P = (byte*)PTR_FROM_HEADER(h);
     if (isref) {  // ref arrays are fully zeroed out
         memset(P,0,mlen*(len+1));
     } else { // otherwise just the last element
         memset(P+mlen*len,0,mlen);
     }
+#ifdef LLIB_DEBUG_VERBOSE    
+    fprintf(stderr,"arr %s %p[%d] %d\n",name,P,len,isref);
+#endif    
     return P;
 }
 
@@ -661,8 +678,8 @@ void *seq_array_ref(void *sp) {
         s->arr = array_resize(s->arr, len);
     }
     void *arr = s->arr;
-    obj_incr_(arr);
-    obj_unref(sp);
+    s->arr = NULL;
+    obj_unref(s);
     return arr;
 }
 

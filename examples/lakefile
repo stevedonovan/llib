@@ -1,1 +1,1 @@
-c99.program{P,needs='llib'}
+c99.program{P,needs='llib',debug=true,defines='LLIB_DEBUG LLIB_PTR_LIST'}

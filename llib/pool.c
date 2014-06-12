@@ -5,6 +5,7 @@
 */
 #include <stdlib.h>
 #include "obj.h"
+#include <stdio.h>
 
 ////// Object Pool Support //////
 // An object pool is a ref seq containing all objects generated since the pool
@@ -49,6 +50,9 @@ static void pool_clean(void *P) {
     void **objs = *_obj_pool;
     FOR(i,array_len(objs)) {
         if (objs[i] == P) {
+#ifdef LLIB_DEBUG_VERBOSE        
+            fprintf(stderr,"clean %p\n",P);
+#endif
             objs[i] = NULL;
             break;
         }

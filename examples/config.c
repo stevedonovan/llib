@@ -74,6 +74,7 @@ char** config_read(str_t file) {
 void test (str_t file) {
     scoped_pool;
     char **S = config_read(file);
+//   /*
     FOR_SMAP(key,val,S) {
         printf("%s:'%s'\n",key,val);
     }    
@@ -84,12 +85,17 @@ void test (str_t file) {
     int* ids = config_geti_arr(S,"ids");
     FORA(ids,printf("%d ",_));
     printf("\n");    
+ //   */
+    fprintf(stderr,"cleanup********\n");
 }
 
 
 int main(int argc,  const char **argv)
 {
-    test(argv[1]);
+    obj_free_set(0);
+    test(argv[1] ? argv[1] : "test.cfg");
+//    obj_dump_types(false);
+//    obj_dump_pointers();
     printf("kount = %d\n",obj_kount());
     return 0;
 }

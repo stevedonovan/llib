@@ -576,6 +576,8 @@ PValue arg_process(ArgState *cmds ,  str_t *argv)
                             return val;                        
                     }
                     val  = call_command(fune,fun_args);
+                    fun_args[0] = NULL;
+                    obj_unref(fun_args);
                 } else { // flag is bound to a variable
                     val = bind_value(fune,arg);
                 }
@@ -606,6 +608,8 @@ PValue arg_process(ArgState *cmds ,  str_t *argv)
 
     if (cmd_parms) { // was a command; we can now call it..
         val = call_command(cmd_fe,cmd_parms);
+        cmd_parms[0] = NULL;        
+        obj_unref(cmd_parms);
         if (value_is_error(val))
             return val;
         if (! (cmd_fe->flags & FlagFunction) )
