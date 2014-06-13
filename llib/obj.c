@@ -388,6 +388,39 @@ void obj_dump_types(bool all) {
     printf("+++\n");
 }
 
+static int *snp;
+
+void obj_snapshot_create() {
+    if (snp)
+        free(snp);
+    snp = (int*)malloc(sizeof(int)*LLIB_TYPE_MAX);
+    FOR(i,LLIB_TYPE_MAX)
+        snp[i] = obj_types[i].instances;
+}
+
+void obj_snapshot_dump() {
+    if (! snp)
+        return;
+    printf("+++ new objects\n");
+    FOR(i,LLIB_TYPE_MAX) {
+        ObjType *T = &obj_types[i];
+        if (T->instances > 0 && snp[i] == 0)
+            printf("%3d (%s) %d\n",i,T->name,T->instances);
+    }
+    printf("+++ deleted objects\n");
+    FOR(i,LLIB_TYPE_MAX) {
+        ObjType *T = &obj_types[i];
+        if (T->instances == 0 && snp[i] > 0)
+            printf("%3d (%s) %d\n",i,T->name,T->instances);
+    }
+    printf("+++ changed objects\n");
+    FOR(i,LLIB_TYPE_MAX) {
+        ObjType *T = &obj_types[i];
+        if (T->instances > 0 && snp[i] > 0 && T->instances != snp[i])
+            printf("%3d (%s) %d -> %d\n",i,T->name,snp[i],T->instances);
+    }
+}
+
 // these non-macro versions are useful when in a debugger such as GDB
 int a_len(void *a) { return array_len(a); }
 ObjHeader* o_hdr(void *a) { return obj_header_(a); }
@@ -420,6 +453,27 @@ void obj_dump_pointers() {
         }
     }
     printf("+++\n");
+}
+
+static void **s_ptrs;
+
+void obj_snap_ptrs_create() {
+    if (s_ptrs)
+        free(s_ptrs);
+    s_ptrs = (void**)malloc(sizeof(void*)*MAX_PTRS);
+    FOR(i,MAX_PTRS)
+        s_ptrs[i] = our_ptrs[i];
+}
+
+void obj_snap_ptrs_dump() {
+    if (! s_ptrs)
+        return;
+    FOR(i,MAX_PTRS) {
+        if (our_ptrs[i] != NULL && s_ptrs[i] == NULL) {
+            void *P = (void*)((ObjHeader*)our_ptrs[i] + 1);
+            obj_dump_ptr(P);
+        }
+    }
 }
 #endif
 

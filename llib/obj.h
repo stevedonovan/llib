@@ -110,9 +110,13 @@ void obj_dump_types(bool all);
 const char *obj_type_name(void *P);
 #ifdef LLIB_PTR_LIST
 void obj_dump_pointers();
+void obj_snap_ptrs_create();
+void obj_snap_ptrs_dump();
 #endif
 void obj_dump_all();
 void obj_free_set(bool set);
+void obj_snapshot_dump();
+void obj_snapshot_create();
 #endif
 int obj_kount();
 void *obj_pool();

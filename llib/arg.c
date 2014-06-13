@@ -83,6 +83,10 @@ struct FlagEntry_ {
 #define arg_is_command(fe) ((fe)->flags & FlagCommand)
 #define arg_is_used(fe) ((fe)->flags & FlagUsed)
 #define arg_set_used(fe) ((fe)->flags |= FlagUsed)
+static void arg_set_unused(FlagEntry *fe) {
+    if (arg_is_used(fe))
+        fe->flags -= 1;
+}
 
 #define C (char*)
 char *typenames[] = {
@@ -247,7 +251,7 @@ static PValue call_command(FlagEntry *pfd, PValue *args) {
         for (int i = na; i < nf+1; ++i) {
             PValue def = pfd->args[i-1]->defval;
             if (def)
-                args[i] = def;
+                args[i] = obj_ref(def);
             else
                 return value_errorf("no argument #%d provided for '%s'\n",i,pfd->name);
         }
@@ -297,7 +301,7 @@ static PValue bind_value(FlagEntry *pfd, str_t arg) {
             arg = "true";
         v = value_parse_ex(arg,pfd->type);
     } else {
-        v = pfd->defval;
+        v = obj_ref(pfd->defval);
     }
 
     if (value_is_error(v))
@@ -510,6 +514,7 @@ static PValue bind_argument(ArgState *cmds, str_t name, int karg, str_t arg, Fla
         return value_errorf("no argument %s",aname);
     if (pfe)
         *pfe = fe;
+    obj_unref(aname);
     return bind_value(fe,arg);
 }
 
@@ -524,6 +529,11 @@ PValue arg_process(ArgState *cmds ,  str_t *argv)
     static char tmp[] = {0,0};
     int i = 1; // argv[0] is always program...
     int karg = 1;  // non-flag arguments
+    
+    for (FlagEntry **all = (FlagEntry **)cmds->cmds; *all; ++all) {
+        arg_set_unused (*all);
+    }
+    
     if (cmds->has_commands && (argv[i] && *argv[i]  != '-')) {
         if (! argv[i])
             return value_error("expecting command");
@@ -583,7 +593,7 @@ PValue arg_process(ArgState *cmds ,  str_t *argv)
                 }
                 if (value_is_error(val))
                     return val;                
-                fune->flags |= FlagUsed;
+                arg_set_used(fune);
                 if (long_flag)
                     break;
                 ++arg;  // next short flag

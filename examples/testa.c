@@ -28,8 +28,18 @@ PValue two(PValue *args) {
 }
 
 PValue kount(PValue *args) {
-    //return str_fmt("kount %d",obj_kount());
+    // the llib debug options
     printf("kount %d\n",obj_kount());
+#ifdef LLIB_DEBUG    
+    // this tells you what was created/destroyed by type and number
+    obj_snapshot_dump();
+    obj_snapshot_create();
+#endif
+#ifdef LLIB_PTR_LIST
+    // if llib is managing an explicit list of used pointers, can tell us exactly what they are
+    obj_snap_ptrs_dump();
+    obj_snap_ptrs_create();
+#endif
     return NULL;
 }
 
