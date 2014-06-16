@@ -489,6 +489,72 @@ but if they do result in a value, then `value_tostring` will be used. (The templ
 `$(i var)` will explicitly convert integers to strings, but it's hard to work with
 floating-point numbers this way).
 
+## Object Pools
+
+C++ users are fond of RAII - Resource Acquision Is Initialization. The 
+language guarantees that destructors of locally scoped objects will be called, however you
+exit from that scope.  So (for instance) a `ifstream` will be automatically closed when
+no longer needed.
+
+I've tried to escape from the shadow of C++ envy in llib, but this is indeed a convenient pattern.
+All llib objects can have a _dispose_ operation, which will be called when their ref count
+goes to zero.  In C++ terminology, llib objects have virtual destructors.  An alternative way 
+to open files is provided:
+
+```C
+FILE **pf = file_fopen(file,"r");
+if (value_is_error(pf)) {
+    fprintf(stderr,"can't open file %s\n",value_as_string(pf));
+    return false;
+}
+char *first = file_getline(*pf);
+....
+unref(pf);
+return true;
+```
+
+Here disposing of the file object closes the underlying stream. This by itself is not spectacular.
+If the function has several exit points, then we have to remember to unref the file each time
+(there's already a leaking error object when we can't open the file).  A common 
+strategy in C is to `goto` the end and do all the cleanup there.
+
+GCC provides a useful extension; the [cleanup attribute](?). You provide a function which
+will be _automatically_ called to clean up a variable marked with this attribute.  This
+extension continues to be supported by Clang and Intel, so it's not a bad
+option, if you can live outside the strict C99 standard.  llib hides this as _scoped_:
+
+```C
+void do_something (const char *file) {
+    scoped FILE **pf = file_fopen(file,"r");
+    ....
+    // magic disposal of pf!
+}
+```
+However you leave `do_something`, the file will be the closed.  The power of the approach
+comes from llib objects all knowing dynamically how to dispose themselves ("virtual destructors")
+
+The cool thing about llib reference counting semantics is that if a container is disposed,
+it will unref all the objects it contains.  Complicated dynamic data structures (read from
+a JSON or XML file, say) can be completely cleaned up, while allowing for sharing.  The key
+point is that every object needs a parent.  Orphan objects are bad news because they will
+never be unref'd.  _Object Pools_ define a default reference container for all objects
+created in their scope.
+
+```C
+{
+scoped void *P_ = obj_pool();
+// do whatever you like, create orphans;
+// they will all be automatically disposed!
+}
+```
+
+It's better to use the macro `scoped_pool`; it's shorter, and has an alternative C++
+implementation which llib uses to support that old elephant, MVSC.
+
+Object pools can be nested (implemented as a stack of resizable array ref containers).
+There is some overhead involved, but sometimes lazy is the best way;  in my experience
+it can take a fair amount of work to write leak-proof llib code.
+
 ## File Operations
 
 llib deals with a few irritations about `<stdio.h>` . For instance `file_gets` is like `fgets`
