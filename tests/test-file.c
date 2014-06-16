@@ -55,10 +55,9 @@ void path_manipulation(const char *path)
 
 int main(int argc, char **argv)
 {
-    char *files[] = {"Makefile","makefile",NULL};
     if (file_exists("test-file.c","r"))
         puts("file exists");
-    printf("makefile was '%s'\n",file_exists_any("r",files));
+    printf("makefile was '%s'\n",file_exists_any("r","Makefile","makefile"));
     text_from_file();
     reading_lines("test-file.c");
     getting_files("*.c");

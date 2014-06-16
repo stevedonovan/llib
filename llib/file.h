@@ -10,7 +10,8 @@
 #include "obj.h"
 
 bool file_exists(const char *path, const char *rw);
-const char *file_exists_any(const char *rw, char **files);
+const char *file_exists_any_(const char *rw, ...);
+#define file_exists_any(rw,...) file_exists_any_(rw,__VA_ARGS__)
 char *file_gets(FILE *f, char *buff, int bufsize);
 char *file_getline(FILE *f);
 char *file_read_all(const char *file, bool text);

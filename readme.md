@@ -489,6 +489,29 @@ but if they do result in a value, then `value_tostring` will be used. (The templ
 `$(i var)` will explicitly convert integers to strings, but it's hard to work with
 floating-point numbers this way).
 
+## File Operations
+
+llib deals with a few irritations about `<stdio.h>` . For instance `file_gets` is like `fgets`
+except that it strips off any offending end-of-line characters ("\n" or "\r\n").  With
+`file_getline` you get a refcounted string allocated (up to `LINESIZE` which is defined as 512
+characters).  `file_getlines` will return the whole of a stream as an array of strings.  Or you
+can just use `file_read_all` to grab the contents of a file path.
+
+Calling commands and collecting the result is a common operation, and `file_command` will
+grab the first line of output.  Standard error is redirected, so you can check any error messages.
+`file_command_lines` gets _all_ of a command's output as an array of strings.
+
+There is `file_exists` (true or false) and the interesting `file_exists_any`, where the
+_first_ file that's accessible is returned, `NULL` otherwise.  This compensates for the lack
+of an or-operation which returns non-boolean results, which is so useful in languages
+like Perl and Lua.
+
+There are a set of functions for manipulating file paths, that don't have the gotchas of 
+the POSIX functions; they can be split using `file_basename`, `file_dirname` and 
+`file_extension`;  `file_replace_extension` is often useful, and `file_expand_user` will
+conviently replace an initial '~' with the user's home directory.  All of these functions
+return properly ref-counted objects.
+
 ## XML
 
 This is a large and opinionated subject, so let me state that what most people need is
@@ -663,17 +686,21 @@ program.
 
 A flag specifier like `string include[]` binds to an array of strings (`char**`); 
 repeated invocations will add to this array (e.g "-I/mylib -I.."). 
-A default cannot be specified; if the flag is not present the variable is
+ However, if specified like so "int arr[]=,", then the flag takes a single
+argument which is a list of integers separated by ','.  You can use any delimiter, but
+remember that some characters have special meaning in the shell, so '|' and ';' are not a 
+good idea.
+
+A default for an array flag cannot be specified; if the flag is not present the variable is
 initialized to a array of zero length. llib arrays know their size, so we don't have
-to track this separately.
+to track this separately. 
 
 The understood types are `int`, `float` (means _double_), `string` (ref-counted `char*`),
 `bool`, `infile` and `outfile`.  The last two bind to `FILE*` and will try to open the file
 for you; their defaults can be `stdin` and `stdout` respectively.
 
 Flags can also be implemented by _functions_, which you can see in action in
-`examples/testa.c`. Unlike variable flags, these can take an indefinite number of
-arguments. _Commands_ are related, where a program exposes its functionality with
+`examples/testa.c`. _Commands_ are related, where a program exposes its functionality with
 subcommands. for instance 'git status'.  `testa` shows how a simple but effective
 interactive prompt can be produced by spliting the line and parsing it explicitly.
 

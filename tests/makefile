@@ -19,8 +19,8 @@ all: $(EXES)
 	./test-json > test-json-output
 	./test-xml > test-xml-output
 	./test-table > test-table-output
-    ./test-pool > test-pool-output
-    ./test-config > test-config-output
+	./test-pool > test-pool-output
+	./test-config > test-config-output
 	ls -l $(EXES)
 
 test-obj: test-obj.c $(LIB)

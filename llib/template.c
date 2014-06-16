@@ -9,6 +9,9 @@ In their simplest form they allow substitution of placeholders like
 `$(var)` with the value of `var` determined by a lookup, which is
 defined as a function plus an object. The placeholders can be changed
 if the default clashes with the target language syntax.
+
+When expanding a template you pass a map-like object, either an actual `Map`
+or an array of key/value pairs (a _simple map_).
 */
 
 #include <assert.h>
@@ -291,13 +294,14 @@ char *str_templ_subst_using(StrTempl stl, StrLookup lookup, void *data) {
 }
 
 /// substitute the variables using an array of keys and pairs.
+// That is, a _simple map_.
 char *str_templ_subst(StrTempl stl, char **substs) {
     return str_templ_subst_using(stl,(StrLookup)str_lookup,substs);
 }
 
 /// substitute using boxed values.
 // The value `v` can either represent a `Map` or be a simple
-// pair array.
+// map.
 char *str_templ_subst_values(StrTempl st, PValue v) {
     StrLookup lookup;
     if (value_is_map(v))

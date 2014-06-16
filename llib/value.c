@@ -4,6 +4,21 @@
 * Copyright Steve Donovan, 2013
 */
 
+/***
+All llib objects are by defiintion _values_;  primitive types like ints (`long long`) ,
+floats (`double`) and bools must be _boxed_ first.  Boxed types are pointers-to-primitive,`
+which are not arrays; `value_is_box` becomes true.  To box a value use `value_int`,
+`value_float` and `value_bool`;  to check the type use the equivalent `value_is_*`
+functions, and to extract the value use `value_as_*`.
+
+Error values are strings with a distinct type, so we have `value_error` and  `value_is_error`.
+
+`value_parse` converts strings to values using a known value type; `value_tostring` will
+convert a value to a default string representation.  More complicated value types like arrays
+don't have a unique representation as strings, so see `json_tostring` and `xml_tostring`.
+
+*/
+
 #include "value.h"
 #include <stdio.h>
 #include <stdlib.h>
@@ -13,6 +28,7 @@
 #define snprintf _snprintf
 #endif
 
+/// is this a boxed value?
 bool value_is_box(PValue v) {
     return v!=NULL && array_len(v)==1 && ! obj_is_array(v);
 }
@@ -21,26 +37,32 @@ static bool check_type(PValue v, int ttype) {
     return value_is_box(v) && obj_type_index(v) == ttype;
 }
 
+/// is this value a string?
 bool value_is_string(PValue v) {
     return v!=NULL && obj_is_array(v) && obj_type_index(v) == OBJ_CHAR_T;
 }
 
+/// is this value an error string?
 bool value_is_error(PValue v) {
     return v!=NULL && obj_is_array(v) && obj_type_index(v) == OBJ_ECHAR_T;
 }
 
+/// does this value contain a `double`?
 bool value_is_float(PValue v) {
     return check_type(v,OBJ_DOUBLE_T);
 }
 
+/// does this value contain a `long long`?
 bool value_is_int(PValue v) {
     return check_type(v,OBJ_LLONG_T);
-}
+}.
 
+/// does this value contain a `bool`?
 bool value_is_bool(PValue v) {
     return check_type(v,OBJ_BOOL_T);
 }
 
+/// does this value represent a _simple map_?
 bool value_is_simple_map(PValue v) {
     return v!=NULL && obj_type_index(v) == OBJ_KEYVALUE_T;
 }
@@ -50,12 +72,14 @@ static void obj_set_type(PValue P,int t) {
     h->type = t;
 }
 
+/// make a error value.
 PValue value_error (const char *msg) {
     PValue v = str_new(msg);
     obj_set_type(v,OBJ_ECHAR_T);
     return v;
 }
 
+/// box a `double`.
 PValue value_float (double x) {
     double *px = array_new(double,1);
     *px = x;
@@ -63,6 +87,7 @@ PValue value_float (double x) {
     return (PValue)px;
 }
 
+/// box a `long long`.
 PValue value_int (long long i) {
     long long *px = array_new(long long,1);
     *px = i;
@@ -70,6 +95,7 @@ PValue value_int (long long i) {
     return (PValue)px;
 }
 
+/// box a `bool`.
 PValue value_bool (bool i) {
     bool *px = array_new(bool,1);
     *px = i;
@@ -85,7 +111,7 @@ static PValue conversion_error(const char *s, const char *t) {
     return value_error(buff);
 }
 
-//. convert a string into a value of the desired type.
+/// convert a string into a value of the desired type.
 PValue value_parse(const char *str, ValueType type) {
     long long ival;
     double fval;

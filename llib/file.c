@@ -37,6 +37,7 @@ and disposing this file object will close the underlying stream.
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <stdarg.h>
 #include "file.h"
 
 #define LINESIZE 512
@@ -66,15 +67,24 @@ bool file_exists(const char *path, const char *rw) {
     return access(path,mode) == 0;
 }
 
-// does any of these paths exist?
+// do any of these paths exist?
 // Like `file_exists`, except that it returns the first existing file,
 // `NULL` otherwise.
-const char *file_exists_any(const char *rw, char **files) {
-    for (; *files; ++files) {
-        if (file_exists(*files,rw))
-            return *files;
+// @tparam char* rw
+// @param ...  files
+// @function file_exists_any
+const char *file_exists_any_(const char *rw, ...) {
+    const char *P, *res = NULL;
+    va_list ap;
+    va_start(ap,rw);    
+    while ((P = va_arg(ap,const char *)) != NULL)  {
+        if (file_exists(P,rw)) {
+            res = P;
+            break;
+        }
     }
-    return NULL;
+    va_end(ap);
+    return res;
 }
 
 /// like fgets, except trims (\r)\n.
