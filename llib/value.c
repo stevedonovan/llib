@@ -104,7 +104,7 @@ PValue value_parse(const char *str, ValueType type) {
             return conversion_error(endptr,"float");
         return value_float(fval);
     case ValueBool:
-        return value_bool(str_eq(str,"true"));
+        return value_bool(str_eq(str,"true") || str_eq(str,"1"));
     case ValueNull:
         if (! str_eq(str,"null"))
             return value_error("only 'null' allowed");

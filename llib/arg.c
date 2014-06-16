@@ -78,6 +78,7 @@ struct FlagEntry_ {
     // fields mirroring the spec string
     str_t help, tname, defname;
     char alias;
+    char arrsep;
 };
 
 #define arg_is_command(fe) ((fe)->flags & FlagCommand)
@@ -147,24 +148,30 @@ static bool parse_flag(str_t arg, FlagEntry *pfd)
         pfd->type = parse_type(parts[0]);
         if (pfd->type == 0) goto out;
         char *rest = parts[1];
-        if (strchr(rest,'=')) { //  type name=default
+        char *is_arr = strstr(rest,"[]");
+        if (strchr(rest,'=') && ! is_arr) { //  type name=default
             char **nparts = str_split(rest,"=");
             pfd->defname = nparts[1];
             pfd->defval = value_parse_ex(nparts[1],pfd->type);
             pfd->name = ref(nparts[0]);
         } else { // type name ([]))
-            if (str_ends_with(rest,"[]")) { // (type name[])
+            if (is_arr) { // type name[](=split)
                 pfd->flags |= FlagIsArray;
-                *strchr(rest,'[') = '\0';
+                *is_arr = '\0';
+                // array split by separator, not by using multiple flag values
+                is_arr += 2;
+                if (*is_arr == '=')
+                    pfd->arrsep = *(is_arr+1);
             }
+            if (pfd->flags & FlagIsArray) {
+                pfd->defval = array_new(PValue,0);
+            } else
             if (pfd->type == ValueBool) { // bool has sensible default 'false'
                 pfd->defval = value_bool(false);
                 pfd->defname = "false";
-            } else
-            if (pfd->flags & FlagIsArray)
-                pfd->defval = array_new(PValue,0);
-            else
+            } else {
                 pfd->defval = NULL;
+            }
             pfd->name = obj_ref(rest);
         }
         //obj_unref(parts);
@@ -223,7 +230,7 @@ static FlagEntry *parse_spec(str_t spec)
     } else { // a flag
         parse_flag(spec,pfd);
         pfd->args = NULL;
-        if (pfd->type != ValueBool)
+        if (pfd->type != ValueBool || (pfd->flags & FlagIsArray))
             pfd->flags |= FlagNeedsArgument;
     }
     return pfd;
@@ -295,8 +302,10 @@ void arg_get_values(PValue *vals,...) {
 static PValue bind_value(FlagEntry *pfd, str_t arg) {
     PValue v;
     int flags = pfd->flags;
+    bool is_array = (flags & FlagIsArray) != 0;
+    bool is_direct_array = is_array && pfd->arrsep;
 
-    if (arg) {
+    if (arg && ! is_direct_array) {
         if (pfd->type == ValueBool) // again, bools are special...
             arg = "true";
         v = value_parse_ex(arg,pfd->type);
@@ -307,16 +316,28 @@ static PValue bind_value(FlagEntry *pfd, str_t arg) {
     if (value_is_error(v))
         return v;
 
-    if (flags & FlagIsArray && arg) {
-        PValue **vseq;
-        if (! (flags & FlagUsed)) { // create a sequence initially
-            vseq = seq_new(PValue);
-            CAST(PValue,pfd->pflag) = vseq;
-        } else {
-            vseq = (PValue**)CAST(PValue,pfd->pflag);
+    if (is_array && arg) {
+        if (is_direct_array) {
+            char sep[2];
+            sep[0] = pfd->arrsep;
+            sep[1] = '\0';
+            char **parts = str_split(arg,sep);
+            PValue *varr = array_new(PValue,array_len(parts));
+            FOR(i,array_len(varr)) {
+                varr[i] = value_parse_ex(parts[i],pfd->type);
+            }
+            CAST(PValue,pfd->pflag) = varr;
+        } else { // each repeated flag adds a new value
+            PValue **vseq;
+            if (! (flags & FlagUsed)) { // create a sequence initially
+                vseq = seq_new(PValue);
+                CAST(PValue,pfd->pflag) = vseq;
+            } else {
+                vseq = (PValue**)CAST(PValue,pfd->pflag);
+            }
+            // and add each new value to that sequence!
+            seq_add(vseq,v);
         }
-        // and add each new value to that sequence!
-        seq_add(vseq,v);
     } else {
         set_value(pfd->pflag, v, flags & FlagValue);
     }
@@ -331,10 +352,37 @@ static PValue finish_off_entry(FlagEntry *fe) {
                     return value_errorf("'%s' is a required flag",fe->name);
                 else
                     return bind_value(fe,NULL);
-            } else  // finalize arrays - the sequence must become a proper array
+            } else  // finalize arrays 
             if (fe->flags & FlagIsArray) {
-                PValue **vseq = (PValue**)CAST(PValue,fe->pflag);
-                CAST(PValue,fe->pflag) = seq_array_ref(vseq);
+                PValue *varr;
+                if (fe->arrsep) {
+                    varr = CAST(PValue,fe->pflag);
+                } else {  // the sequence must become a proper array
+                    PValue **vseq = (PValue**)CAST(PValue,fe->pflag);
+                    varr = (PValue*)seq_array_ref(vseq);
+                }
+                int n = array_len(varr);
+                if (n > 0 && value_is_box(varr[0])) {
+                    PValue ptr;
+                    // boxed values get unpacked specially
+                    if (value_is_int(varr[0])) {
+                        int *res = array_new(int,n);
+                        FOR(i,n) res[i] = value_as_int(varr[i]);
+                        ptr = res;
+                    } else
+                    if (value_is_bool(varr[0])) {
+                        bool *res = array_new(bool,n);
+                        FOR(i,n) res[i] = value_as_bool(varr[i]);
+                        ptr = res;
+                    } else {
+                        double *res = array_new(double,n);
+                        FOR(i,n) res[i] = value_as_float(varr[i]);
+                        ptr = res;
+                    }
+                    CAST(PValue,fe->pflag) = ptr;
+                } else { // empty or array of objects
+                    CAST(PValue,fe->pflag) = varr;
+                }
             }
     }
     return NULL;
@@ -342,17 +390,7 @@ static PValue finish_off_entry(FlagEntry *fe) {
 
 #undef CAST
 
-void arg_functions_as_commands(ArgState *cmds) {
-    FlagEntry **F = (FlagEntry**)cmds->cmds;
-    cmds->has_commands = true;
-    for (; *F; ++F) {
-        if ((*F)->flags & FlagFunction)
-            (*F)->flags &= (FlagFunction|FlagCommand);
-    }
-}
-
-static FlagEntry *lookup(ArgState *cmds, str_t name)
-{
+static FlagEntry *lookup(ArgState *cmds, str_t name) {
     return (FlagEntry*)str_lookup(cmds->cmd_map,name);
 }
 
@@ -449,7 +487,7 @@ ArgState *arg_parse_spec(PValue *flagspec)
     nspec /= 2;
     
     char ***cmds = smap_new(false);
-    FlagEntry **ppfd = array_new(FlagEntry*,nspec);
+    FlagEntry **ppfd = array_new(FlagEntry*,nspec+1);
     int i  = 0;
     for (char **cf = specs; *cf; cf += 2) {
         char *spec = (char*)*cf;
@@ -518,6 +556,36 @@ static PValue bind_argument(ArgState *cmds, str_t name, int karg, str_t arg, Fla
     return bind_value(fe,arg);
 }
 
+static PValue finish_off_all_entries(ArgState *cmds) {
+    for (FlagEntry **all = (FlagEntry **)cmds->cmds; *all; ++all) {
+        PValue val = finish_off_entry(*all);
+        if (value_is_error(val))
+            return val;
+    }
+    return NULL;
+}
+
+/// Bind a set of variables to their values, using a simple map of name/value pairs.
+PValue arg_bind_values(ArgState *cmds, SMap sm) {
+    FOR_SMAP(key,val,sm) {
+        FlagEntry *fe = lookup(cmds,key);
+        if (! fe)
+            return value_errorf("no such value %s",key);
+        PValue res = bind_value(fe,val);
+        if (value_is_error(res))
+            return res;
+        arg_set_used(fe);
+    }
+    return finish_off_all_entries(cmds);
+}
+
+/// reset used state of flags, needed to reparse commands.
+void arg_reset_used(ArgState *cmds) {
+    for (FlagEntry **all = (FlagEntry **)cmds->cmds; *all; ++all) {
+        arg_set_unused (*all);
+    }
+}
+
 PValue arg_process(ArgState *cmds ,  str_t *argv)
 {
     PValue val;
@@ -529,10 +597,6 @@ PValue arg_process(ArgState *cmds ,  str_t *argv)
     static char tmp[] = {0,0};
     int i = 1; // argv[0] is always program...
     int karg = 1;  // non-flag arguments
-    
-    for (FlagEntry **all = (FlagEntry **)cmds->cmds; *all; ++all) {
-        arg_set_unused (*all);
-    }
     
     if (cmds->has_commands && (argv[i] && *argv[i]  != '-')) {
         if (! argv[i])
@@ -610,11 +674,9 @@ PValue arg_process(ArgState *cmds ,  str_t *argv)
         ++i;  // next argument
     }
 
-    for (FlagEntry **all = (FlagEntry **)cmds->cmds; *all; ++all) {
-        val = finish_off_entry(*all);
-        if (val && value_is_error(val))
-            return val;
-    }
+    val = finish_off_all_entries(cmds);
+    if (value_is_error(val))
+        return val;
 
     if (cmd_parms) { // was a command; we can now call it..
         val = call_command(cmd_fe,cmd_parms);

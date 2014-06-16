@@ -1,1 +1,6 @@
-c99.program{P,needs='llib',debug=true,defines='LLIB_DEBUG LLIB_PTR_LIST'}
+local defines
+if DBG then
+    defines = 'LLIB_DEBUG'
+    if WINDOWS then defines = defines .. ' LLIB_PTR_LIST' end
+end
+c99.program{P,needs='llib',debug=true,defines=defines}

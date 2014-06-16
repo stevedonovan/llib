@@ -11,8 +11,9 @@ typedef struct ArgState_ {
 } ArgState;
 
 ArgState *arg_parse_spec(PValue *flagspec);
-void arg_functions_as_commands(ArgState *cmds);
 void arg_get_values(PValue *vals,...);
+void arg_reset_used(ArgState *cmds);
+PValue arg_bind_values(ArgState *cmds, SMap sm);
 PValue arg_process(ArgState *cmds,  const char **argv);
 ArgState *arg_command_line(PValue *argspec, const char **argv);
 

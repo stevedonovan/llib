@@ -92,6 +92,7 @@ int main(int argc,  const char **argv)
             }
             dispose(parts,line);
             printf("> ");
+            arg_reset_used(state);
         }        
     }
     return 0;

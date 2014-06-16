@@ -6,7 +6,7 @@ LFLAGS=-Wl,-s -L../llib -lllib
 
 EXES=test-obj test-list test-map test-seq test-file \
 	test-scan test-str test-template \
-	test-json test-xml test-table test-pool
+	test-json test-xml test-table test-pool test-config
 
 all: $(EXES)
 	./test-obj > test-obj-output
@@ -20,6 +20,7 @@ all: $(EXES)
 	./test-xml > test-xml-output
 	./test-table > test-table-output
     ./test-pool > test-pool-output
+    ./test-config > test-config-output
 	ls -l $(EXES)
 
 test-obj: test-obj.c $(LIB)
@@ -57,6 +58,9 @@ test-table: test-table.c $(LIB)
 
 test-pool: test-pool.c $(LIB)
 	$(CC) $(CFLAGS) test-pool.c -o test-pool $(LFLAGS)
+
+test-config: test-config.c $(LIB)
+	$(CC) $(CFLAGS) test-config.c -o test-config $(LFLAGS)
 
 clean:
 	rm $(EXES)

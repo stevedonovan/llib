@@ -24,5 +24,6 @@ default {
     test('test-xml'),
     test('test-table'),
     test('test-pool'),
+    test('test-config'),
 }
 
