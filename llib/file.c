@@ -31,6 +31,7 @@ and disposing this file object will close the underlying stream.
 // popen/pclose not part of C99 <stdio.h>
 #define DIR_SEP '/'
 #define _BSD_SOURCE
+#include <unistd.h>
 #endif
 
 #include <stdio.h>
@@ -48,6 +49,32 @@ static void strip_eol(char *buff) {
     --last;
     if (buff[last] == '\r')
         buff[last] = '\0';
+}
+
+/// does the path exist and is accessible?
+// `rw` is a string containing any of 'r', 'w' and 'x'
+bool file_exists(const char *path, const char *rw) {
+    int mode = 0;
+    while (*rw) {
+        switch(*rw) {
+        case 'r': mode |= R_OK; break;
+        case 'w': mode |= W_OK; break;
+        case 'x': mode |= X_OK; break;
+        }
+        ++rw;
+    }
+    return access(path,mode) == 0;
+}
+
+// does any of these paths exist?
+// Like `file_exists`, except that it returns the first existing file,
+// `NULL` otherwise.
+const char *file_exists_any(const char *rw, char **files) {
+    for (; *files; ++files) {
+        if (file_exists(*files,rw))
+            return *files;
+    }
+    return NULL;
 }
 
 /// like fgets, except trims (\r)\n.
@@ -117,7 +144,7 @@ char **file_getlines(FILE *f) {
 
 static FILE *popen_out(const char *cmd) {
     char buff[MAX_PATH];
-    sprintf(buff,"%s 2>&1",cmd);
+    snprintf(buff,MAX_PATH,"%s 2>&1",cmd);
     return popen(buff,"r");
 }
 
@@ -144,9 +171,9 @@ char **file_command_lines(const char *cmd) {
 char **file_files_in_dir(const char *mask, int abs) {
     char buff[MAX_PATH];
     if (abs) {
-        sprintf(buff,"%s %s%s",DIR,PWD,mask);
+        snprintf(buff,MAX_PATH,"%s %s%s",DIR,PWD,mask);
     } else {
-        sprintf(buff,"%s %s",DIR,mask);
+        snprintf(buff,MAX_PATH,"%s %s",DIR,mask);
     }
     Str *lines = file_command_lines(buff); //--->????
     if (array_len(lines) == 1 && strstr(lines[0],"No such file") != NULL) {
@@ -171,7 +198,7 @@ static const char *after_dirsep(const char *path) {
 /// file part of a path.
 // E.g. '/my/path/bonzo.dog' => 'bonzo.dog'
 char *file_basename(const char *path) {
-    return str_cpy(after_dirsep(path));
+    return str_new(after_dirsep(path));
 }
 
 /// file part of a path.
@@ -190,9 +217,9 @@ char *file_extension(const char *path) {
     const char *p = after_dirsep(path);
     p = strchr(p,'.');
     if (p)
-        return str_cpy(p);
+        return str_new(p);
     else
-        return str_cpy("");
+        return str_new("");
 }
 
 /// replace existing extension of path.
@@ -214,3 +241,19 @@ char *file_replace_extension(const char *path, const char *ext) {
     return res;
 }
 
+/// expand initial tilde into user's home directory.
+// Always returns a ref-counted string, even if path doesn't
+// begin with '~'
+char *file_expand_user(const char *path) {
+    if (*path != '~')
+        return (char*)str_ref(path);
+    const char *home;
+#ifdef _WIN32
+    home = getenv("USERPROFILE");
+#else
+    home = getenv("HOME");
+#endif
+    char buff[MAX_PATH];
+    snprintf(buff,MAX_PATH,"%s%s",home,path+1);
+    return str_new(buff);
+}

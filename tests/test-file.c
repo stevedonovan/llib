@@ -50,10 +50,15 @@ void path_manipulation(const char *path)
     DUMPS(file_dirname(path));
     DUMPS(file_extension(path));
     DUMPS(file_replace_extension(path,".tmp"));
+    DUMPS(file_expand_user("~/myfile"));
 }
 
 int main(int argc, char **argv)
 {
+    char *files[] = {"Makefile","makefile",NULL};
+    if (file_exists("test-file.c","r"))
+        puts("file exists");
+    printf("makefile was '%s'\n",file_exists_any("r",files));
     text_from_file();
     reading_lines("test-file.c");
     getting_files("*.c");
