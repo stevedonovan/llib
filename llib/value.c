@@ -55,7 +55,7 @@ bool value_is_float(PValue v) {
 /// does this value contain a `long long`?
 bool value_is_int(PValue v) {
     return check_type(v,OBJ_LLONG_T);
-}.
+}
 
 /// does this value contain a `bool`?
 bool value_is_bool(PValue v) {

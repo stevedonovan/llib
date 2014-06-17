@@ -25,6 +25,8 @@ and disposing this file object will close the underlying stream.
 #define popen _popen
 #define pclose _pclose
 #endif
+#include <io.h>
+#define access _access
 #else
 #define DIR "ls"
 #define PWD "$PWD/"
