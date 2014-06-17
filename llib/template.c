@@ -12,6 +12,13 @@ In their simplest form they allow substitution of placeholders like
 defined as a function plus an object. The placeholders can be changed
 if the default clashes with the target language syntax.
 
+Subtemplates can be defined; for instance this template generates an HTML list:
+
+    "<ul>$(for ls |<li>_</li>)</ul>"
+    
+The special `for` form iterates over a List or an array. The special variable `\_` means 
+"use each value of the array";  otherwise the _iterable_ must be a map-like object.
+
 When expanding a template you pass a map-like object, either an actual `Map`
 or an array of key/value pairs (a _simple map_).
 */

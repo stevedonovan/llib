@@ -13,6 +13,33 @@ arrays containing values.
 
 `json_tostring` will convert llib values into JSON format.
 
+This interface also defines convenient constructors for generating dynamic data
+in the correct form for conversion to JSON:
+
+    #ifndef LLIB_NO_VALUE_ABBREV
+    #define VM value_map_of_values
+    #define VMS value_map_of_str
+    #define VI value_int
+    #define VS str_ref
+    #define VF value_float
+    #define VB value_bool
+    #define VA value_array_of_values
+    #define VAS value_array_of_str
+    #endif
+
+This header brings in these abbreviations, unless you explicitly define `LLIB_NO_VALUE_ABBREV`.
+
+Constructing JSON data then is straightforward (note how primitive values need to be boxed):
+
+    PValue v = VM(
+        "one",VI(10),
+        "two",VM("float",VF(1.2)),
+        "three",VA(VI(1),VI(2),VI(3)),
+        "four",VB(true)
+    );
+
+@see value
+
 */
 
 #include <stdio.h>

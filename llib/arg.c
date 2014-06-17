@@ -43,10 +43,11 @@ then the program will exit, showing the help.
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdarg.h>
+#define INSIDE_ARG_C
 #include "arg.h"
 
 typedef char* Str;
-typedef const char* CStr;
+typedef const char* CStr; 
 
 enum {
     ValueFileIn = 0x200,
@@ -62,20 +63,17 @@ enum {
     FlagIsArray = 32 // variable is an array of values of this type
 };
 
-typedef struct FlagEntry_ FlagEntry;
-
 struct FlagEntry_ {
+    // fields mirroring the spec string (publically available)
+    str_t name, help, tname;
+    str_t defname;
+    char alias,arrsep;
     void *pflag; // pointer to user data
-    str_t name;
     ValueType type;
     PValue defval;    // default value, NULL otherwise
     str_t error;
     int flags;
     FlagEntry **args;  // array for parameters for _named command_
-    // fields mirroring the spec string
-    str_t help, tname, defname;
-    char alias;
-    char arrsep;
 };
 
 #define arg_is_command(fe) ((fe)->flags & FlagCommand)

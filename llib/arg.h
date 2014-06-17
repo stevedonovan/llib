@@ -3,9 +3,18 @@
 #include "str.h"
 #include "value.h"
 
+#ifdef INSIDE_ARG_C
+struct FlagEntry_;
+#else
+struct FlagEntry_ {
+    str_t name, help, tname;
+};
+#endif
+typedef struct FlagEntry_ FlagEntry;
+
 typedef struct ArgState_ {
     SMap cmd_map;
-    void *cmds;
+    FlagEntry **cmds;
     bool has_commands;
     str_t error, usage;
 } ArgState;

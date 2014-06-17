@@ -551,6 +551,9 @@ scoped void *P_ = obj_pool();
 It's better to use the macro `scoped_pool`; it's shorter, and has an alternative C++
 implementation which llib uses to support that old elephant, MVSC.
 
+The main rule is that any object _returned_ from a function must have its reference
+count incremented, so that pool cleanup doesn't dispose that object prematurely.
+
 Object pools can be nested (implemented as a stack of resizable array ref containers).
 There is some overhead involved, but sometimes lazy is the best way;  in my experience
 it can take a fair amount of work to write leak-proof llib code.
