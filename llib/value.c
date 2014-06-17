@@ -5,8 +5,10 @@
 */
 
 /***
+### Boxing and Unboxing Primitive Types.
+
 All llib objects are by defiintion _values_;  primitive types like ints (`long long`) ,
-floats (`double`) and bools must be _boxed_ first.  Boxed types are pointers-to-primitive,`
+floats (`double`) and bools must be _boxed_ first.  Boxed types are pointers-to-primitive,
 which are not arrays; `value_is_box` becomes true.  To box a value use `value_int`,
 `value_float` and `value_bool`;  to check the type use the equivalent `value_is_*`
 functions, and to extract the value use `value_as_*`.
@@ -27,6 +29,9 @@ don't have a unique representation as strings, so see `json_tostring` and `xml_t
 #define strtoll _strtoi64
 #define snprintf _snprintf
 #endif
+
+/// Querying Type
+// @section querying
 
 /// is this a boxed value?
 bool value_is_box(PValue v) {
@@ -72,6 +77,9 @@ static void obj_set_type(PValue P,int t) {
     h->type = t;
 }
 
+/// Boxing Values
+// @section Boxing
+
 /// make a error value.
 PValue value_error (const char *msg) {
     PValue v = str_new(msg);
@@ -102,6 +110,9 @@ PValue value_bool (bool i) {
     obj_is_array(px) = 0;
     return (PValue)px;
 }
+
+/// Converting to and from Strings
+// @section converting
 
 #define str_eq(s1,s2) (strcmp((s1),(s2))==0)
 

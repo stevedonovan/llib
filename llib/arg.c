@@ -5,7 +5,7 @@
 */
 
 /***
-### Command-line Argument Parser
+### Command-line Argument Parser.
 
 This allows you to bind variables to command-line arguments, providing
 the flag name/type, a shortcut, a pointer to the variable, and some help text.
@@ -16,20 +16,17 @@ The argument parser follows GNU conventions; long flags with double-hyphen,
 which may have short single-letter forms with a single-hyphen. Short flags may
 be combined ("-abc") and may be followed immediately by their value ("-n10").
 
-```C
-int lines;
-FILE *file;
-bool verbose, print_lines;
-
-PValue args[] = {
-    "int lines=10; // -n number of lines to print",&lines,
-    "bool verbose=false; // -v controls verbosity",&verbose,
-    "bool lineno; // -l output line numbers",&print_lines,
-    {"infile #1=stdin; // file to dump",&file,
-    NULL
-};
-
-```
+    int lines;
+    FILE *file;
+    bool verbose, print_lines;
+    
+    PValue args[] = {
+        "int lines=10; // -n number of lines to print",&lines,
+        "bool verbose=false; // -v controls verbosity",&verbose,
+        "bool lineno; // -l output line numbers",&print_lines,
+        {"infile #1=stdin; // file to dump",&file,
+        NULL
+    };
 
 If you now call `arg_command_line(args,argv)` these variables will be
 bound; note how both type and optional default value are specified. Names like '#1'
@@ -462,6 +459,7 @@ static char* skip_ws(char *p) {
     return p;
 }
 
+/// parse flag specification array.
 ArgState *arg_parse_spec(PValue *flagspec)
 {
     ArgState *res = obj_new(ArgState,NULL);
@@ -586,6 +584,8 @@ void arg_reset_used(ArgState *cmds) {
     }
 }
 
+/// parse the given command-line args, given the processed state.
+// Call `arg_parse_spec` first to call this directly.
 PValue arg_process(ArgState *cmds ,  str_t *argv)
 {
     PValue val;
@@ -691,6 +691,7 @@ PValue arg_process(ArgState *cmds ,  str_t *argv)
     return NULL; // meaning OK ....    
 }
 
+/// quit the application with a message, optionally showing help.
 void arg_quit(ArgState *cmds, str_t msg, bool show_help) {
     if (*msg)
         fprintf(stderr,"error: %s\n",msg);
@@ -699,6 +700,10 @@ void arg_quit(ArgState *cmds, str_t msg, bool show_help) {
     exit(1);    
 }
 
+/// parse command-line arguments, binding flags to their values.
+// It assumes that `argv` terminates in `NULL`, which is 
+// according to the C specification. Any error will cause the
+// application to quit, showing help.
 ArgState *arg_command_line(PValue *argspec, const char** argv) {
     ArgState *cmds = arg_parse_spec(argspec);
     if (cmds->error) {

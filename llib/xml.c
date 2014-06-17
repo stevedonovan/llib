@@ -4,7 +4,7 @@
 * Copyright Steve Donovan, 2013
 */
 
-/// a simple XML parser and pretty-printer.
+/// ### A simple XML Parser and Pretty-printer.
 // Intended as a small portable way to access common configuration file formats.
 // not for heavy lifting!
 

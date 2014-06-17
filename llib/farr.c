@@ -7,7 +7,9 @@
 #include "obj.h"
 #include "farr.h"
 
-/// Functions operating on arrays of floating-point values (hence 'farr').
+///
+// ### Functions operating on arrays of floating-point values.
+//
 // `farr_sample_int` and `farr_sample_float` can be used to convert
 // arrays of ints and floats to arrays of doubles.
 
@@ -32,7 +34,7 @@ double *farr_map(double *a, FarrMapFun f) {
     return b;
 }
 
-/// These functions sample arrays.
+/// Sampling Arrays.
 // @section sample
 
 static farr_t sample_helper(void *A, int i1, int istep, int *pi2) {

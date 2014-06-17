@@ -5,7 +5,7 @@
 */
 
 /***
-### A lexical scanner.
+### A Lexical Scanner.
 
 Lexical scanners are a smarter and cleaner alternative to the primitive `strtok` function.
 Each time you call `scan_next`, the scanner finds the next _token_,
@@ -98,7 +98,7 @@ ScanState* scan_create(ScanState *ts)
     return ts;
 }
 
-/// intialize the scanner with a text buffer.
+// intialize the scanner with a text buffer.
 void scan_set_str(ScanState* ts, const char *str)
 {
     ts->start =ts->start_P = str;
@@ -113,12 +113,15 @@ void scan_set_str(ScanState* ts, const char *str)
 //  - `C_STRING` parse C string escapes
 //  - `C_WSPACE` don't skip whitespace
 //
+// @within Configuration
+//
 void scan_set_flags(ScanState* ts, int flags)
 {
     ts->flags = flags;
 }
 
 /// line comment (either one or two characters).
+// @within Configuration
 void scan_set_line_comment(ScanState *ts, const char *cc) {
     ts->comment1 = cc[0];
     ts->comment2 = cc[1];
@@ -175,16 +178,19 @@ static ScanState *scan_new(const void *stream, ScanArgType type)
 }
 
 /// scanner from a string.
+// @within Constructing
 ScanState *scan_new_from_string(const char *str) {
     return scan_new(str,SCAN_STRING);
 }
 
 /// scanner from a file.
+// @within Constructing
 ScanState *scan_new_from_file(const char *fname) {
     return scan_new(fname,SCAN_FILENAME);
 }
 
 /// scanner from an existing file stream.
+// @within Constructing
 ScanState *scan_new_from_stream(FILE *stream) {
     return scan_new(stream,SCAN_STREAM);
 }
@@ -192,6 +198,7 @@ ScanState *scan_new_from_stream(FILE *stream) {
 /// fetch a new line from the stream, if defined.
 // Advances the line count - not used if the scanner has
 // been given a string directly.
+// @within Grabbing
 bool scan_fetch_line(ScanState* ts, int skipws)
 {
     do {
@@ -207,6 +214,7 @@ bool scan_fetch_line(ScanState* ts, int skipws)
 }
 
 /// get the next character.
+// @within Grabbing
 char scan_getch(ScanState* ts)
 {
     if (*ts->P == '\0') scan_fetch_line(ts,false);
@@ -214,18 +222,21 @@ char scan_getch(ScanState* ts)
 }
 
 /// Move the scan reader position directly with an offset.
+// @within Grabbing
 void scan_advance(ScanState* ts, int offs)
 {
     ts->P += offs;
 }
 
 /// look at character ahead
+// @within Grabbing
 char scan_peek(ScanState *ts, int offs) {
     return ts->P[offs];
 }
 
 /// grab a string upto (but not including) a final target string.
 // Advances the scanner (use `scan_advance` with negative offset to back off)
+// @within Grabbing
 int scan_get_upto(ScanState* ts, const char *target, char *buff, int bufsz)
 {
     int i = 0;
@@ -246,12 +257,14 @@ int scan_get_upto(ScanState* ts, const char *target, char *buff, int bufsz)
 }
 
 /// tell the scanner not to grab the next line automatically.
+// @within Configuration
 void scan_force_line_mode(ScanState* ts)
 {
     ts->inner_flags |= FORCE_LINE_MODE;
 }
 
 /// skip white space, reading new lines if necessary.
+// @within Skipping
 bool scan_skip_whitespace(ScanState* ts)
 {
 top:
@@ -268,6 +281,7 @@ top:
 }
 
 /// skip white space and single-line comments.
+// @within Skipping
 void scan_skip_space(ScanState* ts)
 {
     while(*ts->P && isspace(*ts->P)) ts->P++;
@@ -277,12 +291,14 @@ void scan_skip_space(ScanState* ts)
 }
 
 /// skip digits.
+// @within Skipping
 void scan_skip_digits(ScanState* ts)
 {
     while(isdigit(*ts->P)) ts->P++;
 }
 
 /// tell the scanner not to advance on following @{scan_next}.
+// @within Configuration
 void scan_push_back(ScanState* ts)
 {
     ts->inner_flags |= RETURN_OLD_VALUE;
@@ -290,6 +306,7 @@ void scan_push_back(ScanState* ts)
 
 /// advance to the next token.
 // Usually this skips whitespace, and single-line comments if defined.
+// @within Scanning
 ScanTokenType scan_next(ScanState* ts)
 {
     if (ts->inner_flags & RETURN_OLD_VALUE) {
@@ -399,6 +416,7 @@ ScanTokenType scan_next(ScanState* ts)
 }
 
 /// copy the current token to a buff.
+// @within Getting
 char *scan_get_tok(ScanState* ts, char *tok, int len)
 {
     copy_str(tok,len,ts->start_P,ts->end_P);
@@ -406,6 +424,7 @@ char *scan_get_tok(ScanState* ts, char *tok, int len)
 }
 
 /// get current token as string.
+// @within Getting
 char *scan_get_str(ScanState* ts)
 {
     char buff[STRSIZE];
@@ -415,6 +434,19 @@ char *scan_get_str(ScanState* ts)
 
 #define str_eq(s1,s2) (strcmp((s1),(s2))==0)
 
+/// Formatted reading from the scanner, like `scanf`.
+// Flags start with '%', and '%%' encodes a literal '%'.
+//
+//  * `v` value
+//  * `s` identifier
+//  * `l` rest of line
+//  * `q` quoted string
+//  * `i` int
+//  * `f` double
+//  * `c` char
+//  * `.` don't care!
+//
+// @within Getting
 bool scan_scanf(ScanState* ts, const char *fmt,...)
 {
     va_list ap;
@@ -506,6 +538,7 @@ bool scan_scanf(ScanState* ts, const char *fmt,...)
 
 /// get the rest of the current line.
 // This trims any leading whitespace.
+// @within Getting
 char *scan_get_line(ScanState *ts, char *buff, int len)
 {
     scan_skip_space(ts);
@@ -523,6 +556,7 @@ char *scan_get_line(ScanState *ts, char *buff, int len)
 
 /// fetch the next line and force line mode.
 // After this, the scanner will regard end-of-line as end of input.
+// @within Getting
 const char *scan_next_line(ScanState *ts)
 {
     if (! scan_fetch_line(ts,true)) return NULL;
@@ -531,6 +565,7 @@ const char *scan_next_line(ScanState *ts)
 }
 
 /// get the current token as a number.
+// @within Getting
 double scan_get_number(ScanState* ts)
 {
     char buff[60];
@@ -544,6 +579,7 @@ double scan_get_number(ScanState* ts)
 
 /// skip until a token is found with `type`.
 // May return `false` if the scanner ran out.
+// @within Skipping
 bool scan_skip_until(ScanState *ts, ScanTokenType type)
 {
     while (ts->type != type && ts->type != T_END) {
@@ -554,6 +590,7 @@ bool scan_skip_until(ScanState *ts, ScanTokenType type)
 }
 
 /// fetch the next number, skipping any other tokens.
+// @within Skipping
 bool scan_next_number(ScanState *ts, double *val)
 {
     if (! scan_skip_until(ts,T_NUMBER)) return false;
@@ -563,6 +600,7 @@ bool scan_next_number(ScanState *ts, double *val)
 }
 
 /// fetch the next word, skipping other tokens.
+// @within Skipping
 char *scan_next_iden(ScanState *ts, char *buff, int len)
 {
     char *res;
@@ -575,6 +613,7 @@ char *scan_next_iden(ScanState *ts, char *buff, int len)
 }
 
 /// fetch the next item, skipping other tokens.
+// @within Skipping
 bool scan_next_item(ScanState *ts, ScanTokenType type, char *buff, int sz)
 {
    if (! scan_skip_until(ts,type)) return false;
@@ -585,6 +624,7 @@ bool scan_next_item(ScanState *ts, ScanTokenType type, char *buff, int sz)
 
 /// grab up to `sz` numbers from the stream.
 // @{scan_next_line} can be used to limit this to the current line only.
+// @within Grabbing
 int scan_numbers(ScanState *ts, double *values, int sz)
 {
     int i = 0;

@@ -5,7 +5,7 @@
 */
 
 /***
-Doubly-linked lists.
+### Doubly-linked Lists.
 
  A list is either a container (has pointer or integer values) stored inside
 `ListEntry` nodes as the `data` field, or the objects themselves are nodes (declared with

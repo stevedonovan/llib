@@ -17,9 +17,9 @@ JSN=test-json.exe
 XML=test-xml.exe
 TBL=test-table.exe
 TPO=test-pool.exe
-CFG=test-config.exe
+# CFG=test-config.exe
 
-all: $(OBJ) $(LIST) $(MAP) $(SEQ) $(FILE) $(SCAN) $(STR) $(TPL) $(JSN) $(XML) $(TBL) $(TPO) $(CFG)
+all: $(OBJ) $(LIST) $(MAP) $(SEQ) $(FILE) $(SCAN) $(STR) $(TPL) $(JSN) $(XML) $(TBL) $(TPO)
 	test-obj > test-obj-output
 	test-list > test-list-output
 	test-seq > test-seq-output
@@ -30,8 +30,8 @@ all: $(OBJ) $(LIST) $(MAP) $(SEQ) $(FILE) $(SCAN) $(STR) $(TPL) $(JSN) $(XML) $(
 	test-json > test-json-output
 	test-xml > test-xml-output
 	test-table > test-table-output
-    test-pool > test-pool-output
-    test-config > test-config-output
+	test-pool > test-pool-output
+	# test-config > test-config-output
 
 $(OBJ): test-obj.c $(LIB)
 	$(CC) $(CFLAGS) test-obj.c -o test-obj $(LFLAGS)
@@ -69,8 +69,8 @@ $(TBL): test-table.c $(LIB)
 test-pool: test-pool.c $(LIB)
 	$(CC) $(CFLAGS) test-pool.c -o test-pool $(LFLAGS)
 
-test-config: test-config.c $(LIB)
-	$(CC) $(CFLAGS) test-config.c -o test-config $(LFLAGS)
+#test-config: test-config.c $(LIB)
+#	$(CC) $(CFLAGS) test-config.c -o test-config $(LFLAGS)
 
 
 

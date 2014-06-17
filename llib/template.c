@@ -4,7 +4,9 @@
 * Copyright Steve Donovan, 2013
 */
 
-/**** String templates.
+/**** 
+### String Templates.
+
 In their simplest form they allow substitution of placeholders like
 `$(var)` with the value of `var` determined by a lookup, which is
 defined as a function plus an object. The placeholders can be changed

@@ -6,7 +6,7 @@
 
 /****
 
-Associative arrays implemented as binary trees.
+### Maps Implemented as Binary Trees.
 
 Maps use the same basic structure as lists, since most of the requirements are similar:
 comparison functions (which are like `strcmp`) and key allocation. The nodes have the same

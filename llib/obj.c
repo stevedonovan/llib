@@ -5,7 +5,7 @@
 */
 
 /***
-Support for refcounted objects.
+### Support for Refcounted Objects.
 
 These are (currently) allocated with `malloc` and freed with `free`, but in addition always
 carry a refcount (see `obj_refcount`).  `obj_ref` increments this count, and `obj_unref`
@@ -15,11 +15,11 @@ has an associated dispose function specified in `obj_new`, then this will be cal
 Unless `OBJ_REF_ABBREV` is defined, these are also defined as `ref` and `unref`; there is
 a bulk `dispose` for multiple objects.
 
-_Arrays_ are refcounted _containers_;  if created with `array_new_ref`, they will unref
-their elements when disposed.  They carry their own size, accessible with `array_len`.
+_Arrays_ carry their own size, accessible with `array_len`; 
+if created with `array_new_ref`, they will unref their elements when disposed.
 
-_Sequences_ are a wrapper around arrays, and are resizeable. `seq_add` appends new values
-to a sequence. A sequence `s` has the type `T**`; it is a pointer to an array of T.  The underlying
+_Sequences_ are wrappers around arrays, and are resizeable. `seq_add` appends new values
+to a sequence. A sequence `s` is a pointer to an array of T.  The underlying
 array can always be accessed with `*s`.
 
 @module obj
@@ -144,6 +144,7 @@ static ObjHeader *new_obj(int size, ObjType *t) {
 
 /// refcount of an object.
 // Will return -1 if it isn't one of ours!
+// @within RTTI
 int obj_refcount (const void *p)
 {
     if (p == NULL) return -1;
@@ -154,6 +155,31 @@ int obj_refcount (const void *p)
         return -1;
     }
 }
+
+/// length of array.
+// @tparam void* arr
+// @treturn int
+// @function array_len
+// @within RTTI
+
+/// is this an array?.
+// @tparam void* arr
+// @treturn bool
+// @function obj_is_array
+// @within RTTI
+
+/// is this a reference container array?
+// @tparam void* arr
+// @treturn bool
+// @function obj_ref_array
+// @within RTTI
+
+/// type of object.
+// @tparam void* arr
+// @treturn ObjType*
+// @function obj_type
+// @within RTTI
+
 
 // Type descripters are kept in an array
 #define LLIB_TYPE_MAX 4096
@@ -219,6 +245,7 @@ static void initialize_types() {
 // @tparam DisposeFn optional destructior
 // @treturn T*
 // @function obj_new
+// @within New
 
 void *obj_new_(int size, const char *type, DisposeFn dtor) {
     if (! initialized) {
@@ -245,12 +272,14 @@ void *obj_new_(int size, const char *type, DisposeFn dtor) {
 
 /// size of this object.
 // For arrays, this is size of base type.
+// @within RTTI
 int obj_elem_size(void *P) {
     ObjHeader *h = obj_header_(P);
     return obj_type_(h)->mlem;
 }
 
-/// whether an object matches a type by name
+/// whether an object matches a type by name.
+// @within RTTI
 bool obj_is_instance(const void *P, const char *name) {
     if (obj_refcount(P) == -1)
         return false;
@@ -302,6 +331,7 @@ static void obj_free_(ObjHeader *h, const void *P) {
 // @tparam T object
 // @treturn T
 // @function obj_ref
+// @within References
 
 void obj_incr_(const void *P) {
     ObjHeader *h = obj_header_(P);
@@ -318,6 +348,7 @@ void obj_incr_(const void *P) {
 /// decrease reference count (`unref`).
 // When this goes to zero, free the object and call the
 // dispose function, if any.
+// @within References
 void obj_unref(const void *P) {
     if (P == NULL) return;
     ObjHeader *h = obj_header_(P);
@@ -357,14 +388,13 @@ void obj_apply_v_varargs(void *o, PFun fn,va_list ap) {
 
 /// decrease ref count for multiple values (`dispose`).
 // @param ... objects
+// @within References
 // @function obj_unref_v
 
 /// apply a function to all arguments.
 // If `o` is not `NULL`, then call `fn(o,arg)`, otherwise
 // call `fn(arg)`.
-// @param o optional object
-// @param fn
-// @param ... extra arguments, ending with `NULL`.
+// @within Utilities
 void obj_apply_varargs(void *o, PFun fn,...) {
     va_list ap;
     va_start(ap,fn);
@@ -526,22 +556,21 @@ void *array_new_(int mlen, const char *name, int len, int isref) {
 // @int sz size of array
 // @treturn T*
 // @function array_new
+// @within New
 
 /// new array of refcounted objects.
 // @tparam T type name of type
 // @int sz size of array
 // @treturn T*
 // @function array_new_ref
+// @within New
 
 /// new array from buffer.
 // @tparam T type name of type
 // @tparam T* buff
 // @int sz size of array
 // @function array_new_copy
-
-/// length of an array.
-// tparam type* array
-// @function array_len
+// @within New
 
 void *array_new_copy_ (int mlen, const char *name, int len, int isref, void *P) {
     void *arr = array_new_(mlen,name,len,isref);
@@ -553,6 +582,7 @@ void *array_new_copy_ (int mlen, const char *name, int len, int isref, void *P) 
 // @param P the array
 // @param i1 lower bound
 // @param i2 upper bound (can be -ve; -1 is up to end, -2 is one less than end, etc)
+// @within Array
 void * array_copy(void *P, int i1, int i2) {
     ObjHeader *pr = obj_header_(P);
     OTP t = obj_type_(pr);
@@ -574,6 +604,7 @@ void * array_copy(void *P, int i1, int i2) {
 /// resize an array.
 // @param P the array
 // @param newsz the new size
+// @within Array
 void * array_resize(void *P, int newsz) {
     ObjHeader *pr = obj_header_(P);
     OTP t = obj_type_(pr);
@@ -590,6 +621,7 @@ void * array_resize(void *P, int newsz) {
 // since they always have a trailing zero byte.
 
 /// create a refcounted string copy.
+// @within New
 char *str_new(const char *s) {
     int sz = strlen(s);
     char *ns = str_new_size(sz);
@@ -598,11 +630,13 @@ char *str_new(const char *s) {
 }
 
 /// create a refcounted string of given size
+// @within New
 char *str_new_size(int sz) {
     return array_new(char,sz);
 }
 
 /// increase the refcount of a string.
+// @within References
 const char *str_ref(const char *s) {
     int rc = obj_refcount(s);
     if (rc == -1)
@@ -612,6 +646,7 @@ const char *str_ref(const char *s) {
 }
 
 /// make a refcounted string from an arbitrary string.
+// @within New
 char *str_cpy(const char *s) {
     int rc = obj_refcount(s);
     if (rc == -1) {
@@ -626,18 +661,21 @@ char *str_cpy(const char *s) {
 // @int kind  either `ARRAY_INT` or `ARRAY_STR`
 // @int ofs offset into each item
 // @function array_sort
+// @within Array
 
 /// sort an array of structs by integer/pointer field
 // @tparam T* A the array
 // @tparam T type the struct
 // @param field the name of the struct field
 // @function array_sort_struct_ptr
+// @within Array
 
 /// sort an array of structs by string field
 // @tparam T* A the array
 // @tparam T type the struct
 // @param field the name of the struct field
 // @function array_sort_struct_str
+// @within Array
 
 /// get from a source and put to a destination.
 // @param dest destination object
@@ -645,6 +683,7 @@ char *str_cpy(const char *s) {
 // @param src source object
 // @param getter function of `src` to call repeatedly until it returns `NULL`
 // @function obj_apply
+// @within Utilities
 void obj_apply_ (void *dest, PFun setter, void *src, PFun getter)
 {
     void *p;
@@ -653,7 +692,8 @@ void obj_apply_ (void *dest, PFun setter, void *src, PFun getter)
     }
 }
 
-// sequences
+/// Sequences.
+// @section sequences
 
 const int INITIAL_CAP = 4, GROW_CAP = 2;
 
@@ -690,10 +730,36 @@ void seq_resize(Seq *s, int nsz) {
     s->cap = nsz;
 }
 
-/// add an arbitrary value to a sequence
+/// add a value to a sequence.
 // @param s the sequence
 // @param v the value
 // @function seq_add
+
+/// add arbitrary number of values to a sequence.
+// The values are implicitly terminated with `NULL`, so
+// this won't work for arbitrary integers.
+// @param s the sequence
+// @param .... the values
+// @function seq_add_items
+
+/// remove values from a sequence.
+// @param s the sequence
+// @int pos position
+// @int len number of values
+// @function seq_remove
+
+/// insert values into a sequence.
+// @param s the sequence
+// @int pos position
+// @param array of values
+// @int sz number of values (-1 means use `array_len`)
+// @function seq_insert
+
+/// extend sequence with array of values.
+// @param s the sequence
+// @param array of values
+// @int sz number of values (-1 means use `array_len`)
+// @function seq_adda
 
 int seq_next_(void *sp) {
     Seq *s = (Seq *)sp;
@@ -724,7 +790,6 @@ void seq_add_str(void *sp, const char *p) {
 /// get the array from a sequence.
 // (This will transfer ownership, shrink to fit,
 // and unref the sequence.)
-// @param sp the sequence
 void *seq_array_ref(void *sp) {
     Seq *s = (Seq *)sp;
     int len = array_len(s->arr);
@@ -737,6 +802,9 @@ void *seq_array_ref(void *sp) {
     return arr;
 }
 
+// end
+// @section end
+
 /// standard for-loop.
 // @param i loop variable.
 // @param n loop count.
@@ -748,3 +816,4 @@ void *seq_array_ref(void *sp) {
 // @tparam type* array
 // @macro FOR_ARR
 // @usage FOR_ARR(int,pi,arr) printf("%d ",*pi);
+

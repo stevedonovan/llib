@@ -4,7 +4,7 @@
 * Copyright Steve Donovan, 2013
 */
 
-////  string manipulation.
+////  ### String Manipulation.
 //
 // When building up strings use a _strbuf_, which is a sequence of chars; can add characters
 // and strings, formatted strings (like `str_fmt`) and also insert and remove substrings.
@@ -32,10 +32,15 @@
 // @section buffers
 
 /// new string buffer.
-// CUrrently, string buffers are just sequences of chars.
+// Currently, string buffers are just sequences of chars.
 char **strbuf_new(void) {
     return seq_new(char);
 }
+
+/// convert a string buffer to a string.
+// @tparam char** sp
+// @treturn char*
+// @function strbuf_tostring
 
 /// append a character to a string buffer.
 // @tparam char** sp
@@ -59,7 +64,7 @@ void strbuf_adds(char **sp, str_t ss) {
 }
 
 /// append formatted results to a string buffer.
-// note that the result must be less than BUFSZ (default 256)
+// Note that the result must be less than `BUFSZ` (default 256)
 void strbuf_addf(char **sp, str_t fmt, ...) {
     va_list ap;
     char buff[BUFSZ];
@@ -145,7 +150,7 @@ char* str_sub(str_t s, int i1, int i2) {
 
 static str_t whitespace = " \t\r\n";
 
-/// trim a string in-inplace
+/// trim a string in-place
 void str_trim(char *s) {
     int sz = strspn(s,whitespace);
     if (sz > 0)
@@ -156,25 +161,13 @@ void str_trim(char *s) {
     *(p+1) = 0;
 }
 
-/// does a string only consist of blank characters?
-bool str_is_blank(str_t s) {
-    return strspn(s,whitespace) == strlen(s);
-}
-
 /// Finding things in strings.
 // @section finding
 
-/// find substring `sub` in the string.
-int str_findstr(str_t s, str_t sub) {
-    str_t P = strstr(s,sub);
-    return offset_str(P,s);
-}
-
-/// find character `ch` in the string.
-int str_findch(str_t s, char ch) {
-    str_t P = strchr(s,ch);
-    return offset_str(P,s);
-}
+/// are these strings equal?
+// @tparam str_t a
+// @tparam str_t b
+// @function str_eq
 
 /// does the string start with this prefix?
 bool str_starts_with(str_t s, str_t prefix) {
@@ -187,6 +180,23 @@ bool str_ends_with(str_t s, str_t postfix) {
     if (! P)
         return false;
     return str_eq(P,postfix);
+}
+
+/// does a string only consist of blank characters?
+bool str_is_blank(str_t s) {
+    return strspn(s,whitespace) == strlen(s);
+}
+
+/// find substring `sub` in the string.
+int str_findstr(str_t s, str_t sub) {
+    str_t P = strstr(s,sub);
+    return offset_str(P,s);
+}
+
+/// find character `ch` in the string.
+int str_findch(str_t s, char ch) {
+    str_t P = strchr(s,ch);
+    return offset_str(P,s);
 }
 
 /// find first character that is in the string `ps`
@@ -279,7 +289,7 @@ char *str_concat(char **ss, str_t delim) {
     return res;
 }
 
-// useful function for making quick arrays of strings.
+/// Allocating a simple array of strings.
 // Note that this array is _not_ a ref container; the
 // string addresses are just copied over.
 char **str_strings(char *first,...) {
@@ -303,3 +313,7 @@ char **str_strings(char *first,...) {
     return res;
 }
 
+/// Simple Maps.
+// @section smap
+
+///

@@ -5,7 +5,7 @@
 */
 
 /****
-Extended file handling.
+### Extended file handling.
 
 Mostly wrappers around familar functions; `file_gets` is a `fgets` that strips the line feed;
 The other functions return a refcounted string, or array of strings (like with `file_getlines`)
@@ -153,6 +153,13 @@ char **file_getlines(FILE *f) {
     obj_apply(lines,seq_add_ptr,f,file_getline);
     return (Str*)seq_array_ref(lines);
 }
+
+/// Open a file, wrapping `FILE*` in an llib object.
+// On error, will return an error value, not `NULL`!
+// @tparam char* file the file path
+// @tparam char* how  same as `fopen`
+// @treturn FILE** a pointer to the stream
+// @function file_fopen
 
 static FILE *popen_out(const char *cmd) {
     char buff[MAX_PATH];

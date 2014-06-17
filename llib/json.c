@@ -5,11 +5,13 @@
 */
 
 /***
-### Generating and Reading JSON
+### Generating and Reading JSON.
 
-`json_parse_string` will return an llib object, with maps as
-'simple maps' (arrays where a string key is followed by a value)s
+`json_parse_string` and `json_parse_file` will return an llib object, with maps as
+'simple maps' (arrays where a string key is followed by a value), and
+arrays containing values.
 
+`json_tostring` will convert llib values into JSON format.
 
 */
 
@@ -120,8 +122,7 @@ static void dump_simple_map (SStr s, PValue vi)
     strbuf_add(s,'}');
 }
 
-static void dump_array(SStr s, PValue vl)
-{
+static void dump_array(SStr s, PValue vl) {
     char *aa = (char*)vl;
     strbuf_add(s,'[');
     int n = array_len(aa), ni = n - 1;
@@ -145,7 +146,7 @@ static void dump_array(SStr s, PValue vl)
                 switch (nelem) {
                 case 1:  ival = *(unsigned char*)P; break;
                 case 2: ival = *(short*)P; break;
-                case 4: ival = *(int*)P; break;
+                case sizeof(int): ival = *(int*)P; break;
                 case 8: ival = *(int64*)P; break;
                 default: ival = 0; break;  //??
                 }
@@ -161,7 +162,7 @@ static void dump_array(SStr s, PValue vl)
     strbuf_add(s,']');
 }
 
-// convert a Value rep of a JSON object to a string.
+/// convert an llib value rep into a JSON string.
 char *json_tostring(PValue v) {
     SStr s = strbuf_new();
     dump_value(s,v);
@@ -169,7 +170,7 @@ char *json_tostring(PValue v) {
 }
 
 // important thing to remember about this parser is that it assumes that
-// the token state has already been advanced with scan_next.
+// the token state has already been advanced with `scan_next`.
 static PValue json_parse(ScanState *ts) {
     char *key;
     PValue val, err = NULL;
@@ -258,7 +259,7 @@ static PValue json_parse(ScanState *ts) {
     }
 }
 
-// convert a string to JSON data.
+/// convert a string to JSON data.
 PValue json_parse_string(const char *str) {
     PValue res;
     ScanState *st = scan_new_from_string(str);
@@ -268,7 +269,7 @@ PValue json_parse_string(const char *str) {
     return res;
 }
 
-// convert a file to JSON data.
+/// convert a file to JSON data.
 PValue json_parse_file(const char *file) {
     PValue res;
     ScanState *st = scan_new_from_file(file);
