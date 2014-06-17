@@ -5,6 +5,7 @@
 */
 
 /// ### A simple XML Parser and Pretty-printer.
+//
 // Intended as a small portable way to access common configuration file formats.
 // not for heavy lifting!
 

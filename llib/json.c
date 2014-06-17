@@ -163,6 +163,8 @@ static void dump_array(SStr s, PValue vl) {
 }
 
 /// convert an llib value rep into a JSON string.
+// Lists, Maps, Simple Maps and Arrays are understood as containers.
+// Arrays of primitives are properly handled.
 char *json_tostring(PValue v) {
     SStr s = strbuf_new();
     dump_value(s,v);
@@ -260,6 +262,8 @@ static PValue json_parse(ScanState *ts) {
 }
 
 /// convert a string to JSON data.
+// As a special optimization, arrays consisting only of numbers
+// will be read in as primitive arrays of `double`.
 PValue json_parse_string(const char *str) {
     PValue res;
     ScanState *st = scan_new_from_string(str);
