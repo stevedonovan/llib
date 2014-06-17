@@ -23,6 +23,8 @@ PValue vars[] = {
 int main(int argc,  const char **argv)
 {
     char **S = config_read(argv[1] ? argv[1] : "test.cfg");
+    FOR_SMAP(k,v,S)
+        printf("%s: %s\n",k,v);
     ArgState *state = arg_parse_spec(vars);
     PValue err = arg_bind_values(state,S);
     if (err) {

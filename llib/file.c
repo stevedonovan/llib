@@ -27,6 +27,12 @@ and disposing this file object will close the underlying stream.
 #endif
 #include <io.h>
 #define access _access
+#ifdef _MSC_VER
+#define R_OK 04
+#define W_OK 02
+#define X_OK 00
+#define snprintf _snprintf
+#endif
 #else
 #define DIR "ls"
 #define PWD "$PWD/"

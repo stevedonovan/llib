@@ -85,7 +85,7 @@ int main(int argc,  const char **argv)
         while ((line = file_getline(stdin)) != NULL) {
             char **parts = str_split(line," ");
             // args_process assumes args start at second element, hence -1 here
-            PValue v = arg_process(state,parts-1);
+            PValue v = arg_process(state,(const char**)parts-1);
             if (v != NULL) {
                 printf("%s\n",value_tostring(v));
                 unref(v);

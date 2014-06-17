@@ -351,9 +351,9 @@ static PValue finish_off_entry(FlagEntry *fe) {
             if (fe->flags & FlagIsArray) {
                 PValue *varr;
                 if (fe->arrsep) {
-                    varr = CAST(PValue,fe->pflag);
+                    varr = (PValue*)fe->pflag;
                 } else {  // the sequence must become a proper array
-                    PValue **vseq = (PValue**)CAST(PValue,fe->pflag);
+                    PValue **vseq = (PValue**)fe->pflag;
                     varr = (PValue*)seq_array_ref(vseq);
                 }
                 int n = array_len(varr);
@@ -475,10 +475,10 @@ ArgState *arg_parse_spec(PValue *flagspec)
     char **specs = array_new(char*,nspec+2);
     int k = 2;
     specs[0] = str_new("void help(); // -h help on commands and flags");
-    specs[1] = (void*)help;
+    specs[1] = (char*)help;
     for (PValue *cf = flagspec; *cf; cf += 2, k += 2) {
         specs[k] = str_new((char*)*cf);
-        specs[k+1] = *(cf+1);
+        specs[k+1] = (char*) *(cf+1);
     }
     nspec /= 2;
     
@@ -584,7 +584,7 @@ void arg_reset_used(ArgState *cmds) {
 
 /// parse the given command-line args, given the processed state.
 // Call `arg_parse_spec` first to call this directly.
-PValue arg_process(ArgState *cmds ,  str_t *argv)
+PValue arg_process(ArgState *cmds ,  const char**argv)
 {
     PValue val;
     int flags;
@@ -702,7 +702,7 @@ void arg_quit(ArgState *cmds, str_t msg, bool show_help) {
 // It assumes that `argv` terminates in `NULL`, which is 
 // according to the C specification. Any error will cause the
 // application to quit, showing help.
-ArgState *arg_command_line(PValue *argspec, const char** argv) {
+ArgState *arg_command_line(void** argspec, const char** argv) {
     ArgState *cmds = arg_parse_spec(argspec);
     if (cmds->error) {
         arg_quit(cmds,cmds->error,false);

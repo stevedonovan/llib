@@ -25,6 +25,6 @@ void arg_reset_used(ArgState *cmds);
 PValue arg_bind_values(ArgState *cmds, SMap sm);
 PValue arg_process(ArgState *cmds,  const char **argv);
 void arg_quit(ArgState *cmds, str_t msg, bool show_help);
-ArgState *arg_command_line(PValue *argspec, const char **argv);
+ArgState *arg_command_line(void**argspec, const char **argv);
 
 #endif
