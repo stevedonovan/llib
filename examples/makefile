@@ -3,5 +3,5 @@ LIB=../llib/libllib.a
 CFLAGS=-std=c99  -O2 -Wall -I..
 LFLAGS=-L../llib -lllib
 
-$(PROG): $(PROG).c
+$(P): $(P).c
 	$(CC) $(CFLAGS) $< -o $@ $(LFLAGS)

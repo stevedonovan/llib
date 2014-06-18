@@ -7,25 +7,21 @@
 */
 #include <stdio.h>
 #include <stdlib.h>
-#include <llib/scan.h>
 #include <llib/map.h>
 
 int main(int argc, char **argv)
 {
     char word[100];
     const char *file = argv[1] ? argv[1] : "../readme.md";
-    ScanState *ts = scan_new_from_file(file);
-    if (ts == NULL) {
-        printf("could not open '%s'\n",file);
-        return 1;
-    }
+    FILE *in = fopen(file,"r");
 
     Map *m = map_new_str_ptr();
     int k = 0;
-    while (scan_next_iden(ts,word,sizeof(word))) {
+    while (fscanf(in,"%99s",word) == 1) {
         map_puti(m,word,  map_geti(m,word) + 1);
         ++k;
     }
+    fclose(in);
 
     MapKeyValue *pkv = map_to_array(m);
     int sz = array_len(pkv);
@@ -38,7 +34,7 @@ int main(int argc, char **argv)
         printf("%s\t%d\n",(char*)pkv[i].key,(intptr)pkv[i].value);
     }
 
-    dispose(m,ts,pkv);
+    dispose(m,pkv);
     printf("remaining %d\n",obj_kount());
     return 0;
 }
