@@ -18,6 +18,8 @@ Keys are always pointers, but like with string lists char pointers are a special
 If the keys aren't strings, then the comparison function is simply the less-than operator.
 This will work fine if simple equality defines a match, as with pointers and integers.
 
+See `test-map.c`.  `words.c` generates a map of word counts and then
+sorts the result, giving the ten most common words.
 @module map
 */
 
@@ -36,6 +38,17 @@ This will work fine if simple equality defines a match, as with pointers and int
 #define set_vtype(m,t) ((m)->last=(ListIter)t)
 
 #define key_data item_data
+
+/// for-statement for iterating over a map.
+// @tparam MapIter var the loop variable
+// @tparam m the map
+// @macro FOR_MAP
+
+/// for-statement for iterating over typed key/value pairs
+// @tparam K key the key variable
+// @tparam V value the value variable
+// @tparam m the map
+// @macro FOR_MAP_KEYVALUE
 
 enum MapType {
     MAP_KEY_POINTER = LIST_PTR, MAP_KEY_STRING = LIST_STRING
@@ -62,21 +75,11 @@ static void dispose_map_entries(Map *m, PEntry node) {
     }
 }
 
-void map_clear(Map *m) {
-    if (root(m) != NULL) {
-        map_visit(m,map_first(m),(MapCallback)dispose_map_entries,1);
-        root(m) = NULL;
-    }
-}
-
-bool map_object (void *obj) {
-    return obj_is_instance(obj,"Map");
-}
-
 // Current implementation of Map struct is exactly the same as the List struct,
 // although they are distinct types with distinct dispose functions.
 
 void list_init_(List *self, int flags);
+void map_clear(Map *m);
 
 Map *map_new(int ktype, enum MapValue vtype) {
     Map *m = obj_new(Map,(DisposeFn)map_clear);
@@ -130,6 +133,19 @@ Map *map_new_ptr_str() {
 
 /// Insertion, removal and retrieval
 // @section put
+
+/// clear all entries out of a Map.
+void map_clear(Map *m) {
+    if (root(m) != NULL) {
+        map_visit(m,map_first(m),(MapCallback)dispose_map_entries,1);
+        root(m) = NULL;
+    }
+}
+
+/// is this object a Map?
+bool map_object (void *obj) {
+    return obj_is_instance(obj,"Map");
+}
 
 /// get the data associated with this tree node.
 // if it's a container, then we return the node's data,
@@ -480,15 +496,4 @@ MapIter map_iter_next (MapIter iter) {
     }
     return iter;
 }
-
-/// for-statement for iterating over a map.
-// @tparam MapIter var the loop variable
-// @tparam m the map
-// @macro FOR_MAP
-
-/// for-statement for iterating over typed key/value pairs
-// @tparam K key the key variable
-// @tparam V value the value variable
-// @tparam m the map
-// @macro FOR_MAP_KEYVALUE
 

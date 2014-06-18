@@ -12,27 +12,7 @@
 //
 // `farr_sample_int` and `farr_sample_float` can be used to convert
 // arrays of ints and floats to arrays of doubles.
-
-/// an array generated between `x1` and `x2`, with delta `dx`.
-double *farr_range(double x1, double x2, double dx) {
-    int n = ceil((x2 - x1)/dx);
-    double *arr = array_new(double,n);
-    int i = 0;
-    for (double x = x1; x < x2; x += dx) {
-        arr[i++] = x;
-    }
-    return arr;
-}
-
-/// create a new array by applying a function to each value of  an array.
-double *farr_map(double *a, FarrMapFun f) {
-    int n = array_len(a);
-    double *b = array_new(double,n);
-    FOR(i,n) {
-        b[i] = f(a[i]);
-    }
-    return b;
-}
+// @module farr
 
 /// Sampling Arrays.
 // @section sample
@@ -68,6 +48,30 @@ double *farr_sample_int(int *A, int i1, int i2, int istep) {
     return res;
 }
 
+/// Creating and Transforming
+// @section create
+
+/// an array generated between `x1` and `x2`, with delta `dx`.
+double *farr_range(double x1, double x2, double dx) {
+    int n = ceil((x2 - x1)/dx);
+    double *arr = array_new(double,n);
+    int i = 0;
+    for (double x = x1; x < x2; x += dx) {
+        arr[i++] = x;
+    }
+    return arr;
+}
+
+/// create a new array by applying a function to each value of  an array.
+double *farr_map(double *a, FarrMapFun f) {
+    int n = array_len(a);
+    double *b = array_new(double,n);
+    FOR(i,n) {
+        b[i] = f(a[i]);
+    }
+    return b;
+}
+
 /// transform an array by multipying its values by `m` and adding `c`.
 void farr_scale(double *A, double m, double c) {
     FOR(i,array_len(A))
@@ -76,7 +80,6 @@ void farr_scale(double *A, double m, double c) {
 
 /// array of doubles from a sequence
 // @function farr_from_seq
-
 
 /// create dynanic array from a statically declared array of doubles.
 // @function farr_copy

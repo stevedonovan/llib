@@ -16,6 +16,7 @@
 //
 // Then there are searching operations which return a boolean or integer index.
 //
+// See `test-str.c`
 // @module str
 
 // for strtok_r
@@ -213,6 +214,9 @@ int str_find_first_not_of(str_t s, str_t ps) {
         return sz;
 }
 
+/// Splitting and Concatention
+// @section concat
+
 #ifdef _WIN32
 #ifdef _MSC_VER
 #define strtok_r strtok_s
@@ -313,7 +317,3 @@ char **str_strings(char *first,...) {
     return res;
 }
 
-/// Simple Maps.
-// @section smap
-
-///

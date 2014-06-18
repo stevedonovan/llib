@@ -9,12 +9,15 @@
 
 `config_read` will read a configuration file in so-called property format;
 Blank lines and comments beginning with '#' are ignored; otherwise lines
-are in the form "<key>=<value".  It returns the result as a simple map.
+are in the form "key=value".  It returns the result as a simple map.
 
 The various `config_gets*` functions will look up and convert values,
 returning a default if the key is not found.  The `_arr` variants will
 return an array, where values are delimited by commas; the default is
 the empty array.
+
+`test-config.c` shows the usage; `config.c` shows an alternative way
+using the `arg` module where variables are bound directly to properties.
 */
 
 #include <stdlib.h>

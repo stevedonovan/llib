@@ -8,6 +8,8 @@
 //
 // Intended as a small portable way to access common configuration file formats.
 // not for heavy lifting!
+//
+// See `test-xml.c`
 
 #include <stdio.h>
 #include "scan.h"

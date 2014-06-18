@@ -20,6 +20,7 @@ is set then we'll use `strcmp` for ordering and finding, otherwise simple orderi
 is used, which is also fine for integer values (up to intptr_t or uintptr_t in
  size)
 
+See `test-list.c`
 @module list
 */
 

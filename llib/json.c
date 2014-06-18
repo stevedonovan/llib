@@ -38,7 +38,7 @@ Constructing JSON data then is straightforward (note how primitive values need t
         "four",VB(true)
     );
 
-@see value
+Look at `value` for boxing support.  See `test-json.c`.
 
 */
 

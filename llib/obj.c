@@ -15,12 +15,39 @@ has an associated dispose function specified in `obj_new`, then this will be cal
 Unless `OBJ_REF_ABBREV` is defined, these are also defined as `ref` and `unref`; there is
 a bulk `dispose` for multiple objects.
 
+llib objects may specify a _dispose_ function:
+
+    typedef struct {
+        int age;
+        char *name;
+    } Person;
+    
+    static void Person_dispose(Person *p) {
+        obj_unref(p->name);
+    }
+    
+    Person *person_new(int age, char *name) {
+        Person *p = obj_new(Person,Person_dispose);
+        p->age = age;
+        p->name = str_ref(name);
+        return p;
+    }
+
+In this typical scenario, the dispose function decrements the reference
+count of the `name` field when the `Person` is disposed;  this will of course
+only dispose the string if it hasn't already been referenced elsewhere, which
+permits flexible sharing of data.  (We use `str_ref` specifically here because the
+argument `name` may not be already a ref-counted string.)
+
 _Arrays_ carry their own size, accessible with `array_len`; 
 if created with `array_new_ref`, they will unref their elements when disposed.
 
-_Sequences_ are wrappers around arrays, and are resizeable. `seq_add` appends new values
+_Sequences_ are resizeable arrays. `seq_add` appends a new value
 to a sequence. A sequence `s` is a pointer to an array of T.  The underlying
-array can always be accessed with `*s`.
+array can always be accessed with `*s`, and the array will be sized-to-fit when
+`seq_array_ref` is called.
+
+See `test-obj.c` and `test-seq.c`
 
 @module obj
 */
@@ -33,6 +60,18 @@ array can always be accessed with `*s`.
 #include <stdarg.h>
 
 #define MAX_PTRS 10000
+
+/// standard for-loop.
+// @param i loop variable.
+// @param n loop count.
+// @macro FOR
+
+/// for-loop over array.
+// @tparam type T base type
+// @tparam type* loop pointer
+// @tparam type* array
+// @macro FOR_ARR
+// @usage FOR_ARR(int,pi,arr) printf("%d ",*pi);
 
 // number of created 'live' objects -- access with obj_kount()
 static int kount = 0;
@@ -801,19 +840,4 @@ void *seq_array_ref(void *sp) {
     obj_unref(s);
     return arr;
 }
-
-// end
-// @section end
-
-/// standard for-loop.
-// @param i loop variable.
-// @param n loop count.
-// @macro FOR
-
-/// for-loop over array.
-// @tparam type T base type
-// @tparam type* loop pointer
-// @tparam type* array
-// @macro FOR_ARR
-// @usage FOR_ARR(int,pi,arr) printf("%d ",*pi);
 

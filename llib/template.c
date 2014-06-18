@@ -21,6 +21,8 @@ The special `for` form iterates over a List or an array. The special variable `\
 
 When expanding a template you pass a map-like object, either an actual `Map`
 or an array of key/value pairs (a _simple map_).
+
+See `test-template.c`
 */
 
 #include <assert.h>

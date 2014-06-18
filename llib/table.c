@@ -1,3 +1,58 @@
+/*
+* llib little C library
+* BSD licence
+* Copyright Steve Donovan, 2013
+*/
+
+/***
+## Reading CSV Files.
+
+This reads tab- or comma-delimited data, optionally treating the first row
+as a set of headers (`TableCsv` implies both commas and header row).
+The rows are then available as an array of string arrays.
+
+If `TableColumns` is also specified, it will additionally create columns,
+which will be converted into `float` arrays if they appear to be numbers.
+With `table_convert_cols` you can customize this conversion, and even
+provide your own conversion functions.  These look like this:
+
+    const char *int_convert(const char *str, void *res) {
+        \*((int*)res) = strtol(str,&endptr,10);
+        return *endptr ? endptr : NULL;
+    }
+
+That is, they set the value and return an _error_ if conversion is impossible.
+
+Given a simple CSV file like this:
+
+    Name,Age
+    Bonzo,12
+    Alice,16
+    Frodo,46
+    Bilbo,144
+    
+then the most straightforward way to read it would be:
+
+    Table *t = table_new_from_file("test.csv", TableCsv | TableAll);
+    if (t->error) { // note how you handle errors: file not found, conversion failed
+        fprintf(stderr,"%s\n",t->error);
+        return 1;
+    }
+    // printing out first row together with column names
+    char **R = t->rows[0];
+    for (char **P = t->col_names; *P; ++P,++R)
+        printf("'%s' (%s),",*P,*R);
+    printf("\n");
+    
+    // getting the second column with default conversion (float)
+    float *ages = (float*)t->cols[1];
+    
+See `test-table.c` for an example with custom conversions, and
+`test-sqlite3-table.c` for a case where the table is built up
+using `table_add_row` (which by design matches the required signature
+for `sqlite3_exec`.)
+*/
+
 #include <stdlib.h>
 #include <stdarg.h>
 #include "str.h"
@@ -11,6 +66,9 @@ static void Table_dispose(Table *t) {
 typedef char *Str;
 typedef char **Strings;
 
+/// create a new empty table.
+// `opts` are a set of flags:  `TableTab`, `TableComma`, `TableColumnNames`,
+// `TableCsv` (implying last two), `TableColumns` (create columns as well).
 Table *table_new(int opts) {
     Table *T = obj_new(Table,Table_dispose);
     memset(T,0,sizeof(Table));
@@ -36,6 +94,16 @@ const char *no_convert(const char *str, void *res) {
     return NULL;
 }
 
+/// custom conversion for table columns.
+// Normally, `table` attempts to convert numerical columns
+// to arrays of `float`. With this you can force the conversion
+// to `int` arrays or leave them as strings, etc
+//
+// Each entry is a zero-based column index, and a type, one of
+// `TableString`, `TableFloat`, `TableInt` and `TableCustom`. 
+// If it's a custom conversion, then follow `TableCustom` with
+// a `TableConvFun`.
+// The argument list ends with -1, which is an invalid column index.
 void table_convert_cols (Table *T,...) {
     int ncols = T->ncols;
     TableConvFun *conversions = array_new(TableConvFun,ncols);
@@ -61,6 +129,9 @@ void table_convert_cols (Table *T,...) {
     va_end(ap);
 }
 
+/// Explicitly create columns.
+// Only does this if the flags have `TableColumns` set.
+// This is implicitly called by `table_read_all` and `table_finish_rows`.
 bool table_generate_columns (Table *T) {
     // generate columns if requested!
     if (T->opts & TableColumns) {
@@ -118,6 +189,8 @@ bool table_generate_columns (Table *T) {
     return true;
 }
 
+/// Read all of a table into rows.
+// If flag has `TableColumns` set, create columns as well.
 bool table_read_all(Table *T) {
     int ncols = T->ncols;
     // read all the lines
@@ -169,6 +242,7 @@ static Strings strings_copy(Strings s, int n) {
     return res;
 }
 
+/// explicitly add new rows to a table.
 int table_add_row(void *d, int ncols, char **row, char **columns) {
     Table *T = (Table*)d;
     if (T->nrows == 0) {
@@ -182,12 +256,16 @@ int table_add_row(void *d, int ncols, char **row, char **columns) {
     return 0;
 }
 
+/// explicitly finish off a table created with `table_add_row`.
 bool table_finish_rows(Table *T) {
     Strings* rows = (Strings*)seq_array_ref(T->rows);
     T->rows = rows;
     return table_generate_columns(T);
 }
 
+/// Create a table from an opened file stream.
+// `opts` have same meaning as for `table_new`.
+// If unsuccesful, the table's `error` field will be non-NULL.
 Table* table_new_from_stream(FILE *in, int opts) {
     Table *T = table_new(opts);
     T->in = in;
@@ -195,6 +273,9 @@ Table* table_new_from_stream(FILE *in, int opts) {
     return T;
 }
 
+/// Create a table from a file path.
+// `opts` have same meaning as for `table_new`.
+// If unsuccesful, the table's `error` field will be non-NULL.
 Table* table_new_from_file(const char *fname, int opts) {
     Table *T = table_new(opts);
     FILE *in = fopen(fname,"r");

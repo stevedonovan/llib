@@ -15,6 +15,8 @@ of the libc equivalents.
 
 Finally, `file_fopen` provides a file wrapper `FILE**`. It returns an actual error string if it fails,
 and disposing this file object will close the underlying stream.
+
+See `test-file.c`
 */
 
 #ifdef _WIN32

@@ -3,6 +3,11 @@
 /// Simple Maps
 // @submodule str
 
+/// Iterate over a simple map
+// @param k variable for key
+// @param v variable for value
+// @macro FOR_SMAP
+
 /// Simple Maps.
 // These are arrays of strings where the odd entries are keys
 // and the even entries are values.
@@ -80,9 +85,4 @@ int smap_len(char*** smap) {
 // @tparam str_t data
 // @function smap_put_ref
 
-/// Iterate over a simple map
-// @param k variable for key
-// @param v variable for value
-// @macro FOR_SMAP
-// @within Macros
 

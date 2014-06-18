@@ -31,13 +31,19 @@ be combined ("-abc") and may be followed immediately by their value ("-n10").
 If you now call `arg_command_line(args,argv)` these variables will be
 bound; note how both type and optional default value are specified. Names like '#1'
 refer to the first non-flag argument and so forth.  Both '--lines' and '-n' can be 
-used to set the integer variable `lines'.  If a flag has no default, then it is an error.
+used to set the integer variable `lines`.  If a flag has no default, then it is an error.
 Plain boolean flags have an implicit default of `false`.
 
 Help usage is automatically generated from these specifications.
 
 If a conversion is not possible (not a integer, file cannot be opened, etc)
 then the program will exit, showing the help.
+
+@{cmd.c} is a basic example; @{testa.c} shows how to 
+define flags and commands as functions, as well as defining a simple REPL.
+
+`arg_bind_values` may be used directly to process an array of name/value
+pairs, for instance in `config.c`
 */
 
 #include <stdio.h>
@@ -284,6 +290,8 @@ static void set_value(void *P, PValue v, bool use_value) {
 }
 
 /// extract raw values from args array.
+// Convenient way to unpack the array of values passed to commands and function flags.
+// @usage PValue two(PValue *args) {  double x;  char *name;  arg_get_values(args,&x,&name); ...
 void arg_get_values(PValue *vals,...) {
     va_list ap;
     va_start(ap,vals);
@@ -695,7 +703,7 @@ void arg_quit(ArgState *cmds, str_t msg, bool show_help) {
         fprintf(stderr,"error: %s\n",msg);
     if (show_help)
         help((void**)&cmds);
-    exit(1);    
+    exit(1);
 }
 
 /// parse command-line arguments, binding flags to their values.

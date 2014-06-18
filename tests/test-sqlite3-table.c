@@ -5,7 +5,7 @@
 */
 
 #include <sqlite3.h>
-#include "table.h"
+#include <llib/table.h>
 #include <llib/dbg.h>
 
 typedef char *Str;
