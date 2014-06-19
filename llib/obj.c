@@ -23,13 +23,13 @@ llib objects may specify a _dispose_ function:
     } Person;
     
     static void Person_dispose(Person *p) {
-        obj_unref(p->name);
+        `obj_unref`(p->name);
     }
     
     Person *person_new(int age, char *name) {
-        Person *p = obj_new(Person,Person_dispose);
+        Person *p = `obj_new`(Person,Person_dispose);
         p->age = age;
-        p->name = str_ref(name);
+        p->name = `str_ref`(name);
         return p;
     }
 
@@ -675,6 +675,9 @@ char *str_new_size(int sz) {
 }
 
 /// increase the refcount of a string.
+// If this is _not_ one of "our strings", we
+// create a new refcounted string, otherwise
+// proceed as with `obj_ref`.
 // @within References
 const char *str_ref(const char *s) {
     int rc = obj_refcount(s);

@@ -16,17 +16,36 @@ The argument parser follows GNU conventions; long flags with double-hyphen,
 which may have short single-letter forms with a single-hyphen. Short flags may
 be combined ("-abc") and may be followed immediately by their value ("-n10").
 
+    #include <stdio.h>
+    #include <llib/arg.h>
+    
     int lines;
     FILE *file;
-    bool verbose, print_lines;
+    bool print_lines;
     
     PValue args[] = {
         "int lines=10; // -n number of lines to print",&lines,
-        "bool verbose=false; // -v controls verbosity",&verbose,
         "bool lineno; // -l output line numbers",&print_lines,
-        {"infile #1=stdin; // file to dump",&file,
+        "infile #1=stdin; // file to dump",&file,
         NULL
     };
+    
+    int main(int argc,  const char **argv)
+    {
+        `arg_command_line`(args,argv);
+        char buff[512];
+        int i = 1;
+        while (fgets(buff,sizeof(buff),file)) {
+            if (print_lines)
+                printf("%03d\t%s",i,buff);
+            else
+                printf("%s",buff);
+            if (i++ == lines)
+                break;
+        }
+        fclose(file);
+        return 0;
+    }    
 
 If you now call `arg_command_line(args,argv)` these variables will be
 bound; note how both type and optional default value are specified. Names like '#1'
@@ -52,8 +71,6 @@ pairs, for instance in `config.c`
 #define INSIDE_ARG_C
 #include "arg.h"
 
-typedef char* Str;
-typedef const char* CStr; 
 
 enum {
     ValueFileIn = 0x200,
@@ -274,7 +291,7 @@ static void set_value(void *P, PValue v, bool use_value) {
         CAST(PValue,P) = v;
     } else
     if (value_is_string(v)) {
-        CAST(CStr,P) = (CStr)v;
+        CAST(str_t,P) = (str_t)v;
     } else
     if (value_is_int(v)) {
         CAST(int,P) = value_as_int(v);

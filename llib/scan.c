@@ -10,15 +10,15 @@
 Lexical scanners are a smarter and cleaner alternative to the primitive `strtok` function.
 Each time you call `scan_next`, the scanner finds the next _token_,
 
-    ScanState *ts = scan_new_from_string("hello = (10,20,30)"));
-    scan_next(ts);
-    char *name = scan_get_str(ts);  // will be "hello"
-    char ch = scan_next(ts);  // will be '='
-    scan_next(ts);  // skip '('
-    scan_next(ts);
-    double val1 = scan_get_number(ts);  // 10
-    scan_next(ts); // skip ','
-    double val2 = scan_get_number(ts); // 20
+    ScanState *ts = `scan_new_from_string`("hello = (10,20,30)"));
+    `scan_next`(ts);
+    char *name = `scan_get_str`(ts);  // will be "hello"
+    char ch = `scan_next`(ts);  // will be '='
+    `scan_next`(ts);  // skip '('
+    `scan_next`(ts);
+    double val1 = `scan_get_number`(ts);  // 10
+    `scan_next`(ts); // skip ','
+    double val2 = `scan_get_number`(ts); // 20
     
 At any point, `ts->type` tells you the next available token.
 

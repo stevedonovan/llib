@@ -10,8 +10,8 @@
 All llib objects are by defiintion _values_;  primitive types like ints (`long long`) ,
 floats (`double`) and bools must be _boxed_ first.  Boxed types are pointers-to-primitive,
 which are not arrays; `value_is_box` becomes true.  To box a value use `value_int`,
-`value_float` and `value_bool`;  to check the type use the equivalent `value_is*`
-functions, and to extract the value use `value_as*`.
+`value_float` and `value_bool`;  to check the type use the equivalent `value_is_TYPE`
+functions, and to extract the value use `value_as_TYPE`.
 
 Error values are strings with a distinct type, so we have `value_error` and  `value_is_error`.
 

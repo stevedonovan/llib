@@ -12,6 +12,20 @@ In their simplest form they allow substitution of placeholders like
 defined as a function plus an object. The placeholders can be changed
 if the default clashes with the target language syntax.
 
+    StrTempl st = `str_templ_new`("Hello $(P)$(name), how is $(home)?",NULL);
+    // using an array of key/value pairs...(uses `str_lookup`)
+    char *tbl1[] = {"name","Dolly","home","here","P","X",NULL};
+    char *S = `str_templ_subst`(st,tbl1);
+    assert(`str_eq`(S,"Hello XDolly, how is here?"));
+    // using a map
+    Map *m = `map_new_str_str`();
+    `map_put`(m,"name","Monique");
+    `map_put`(m,"home","Paris");
+    `map_put`(m,"P","!");
+    S = `str_templ_subst_using`(st,(StrLookup)map_get,m);
+    assert(`str_eq`(S,"Hello !Monique, how is Paris?"));
+    
+
 Subtemplates can be defined; for instance this template generates an HTML list:
 
     "<ul>$(for ls |<li>_</li>)</ul>"

@@ -33,7 +33,7 @@ Given a simple CSV file like this:
     
 then the most straightforward way to read it would be:
 
-    Table *t = table_new_from_file("test.csv", TableCsv | TableAll);
+    Table *t = `table_new_from_file`("test.csv", TableCsv | TableAll);
     if (t->error) { // note how you handle errors: file not found, conversion failed
         fprintf(stderr,"%s\n",t->error);
         return 1;
