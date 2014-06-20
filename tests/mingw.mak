@@ -69,8 +69,8 @@ $(TBL): test-table.c $(LIB)
 test-pool: test-pool.c $(LIB)
 	$(CC) $(CFLAGS) test-pool.c -o test-pool $(LFLAGS)
 
-#test-config: test-config.c $(LIB)
-#	$(CC) $(CFLAGS) test-config.c -o test-config $(LFLAGS)
+test-config: test-config.c $(LIB)
+	$(CC) $(CFLAGS) test-config.c -o test-config $(LFLAGS)
 
 
 

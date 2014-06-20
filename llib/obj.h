@@ -60,11 +60,15 @@ typedef struct {
     void *value;
 } MapKeyValue;
 
+#ifdef _MSC_VER
 #if defined(_M_X64) || defined(__amd64__)
 #define LLIB_64_BITS
-typedef long long intptr;
+typedef long long intptr_t;
 #else
-typedef int intptr;
+typedef int intptr_t;
+#endif
+#else
+#include <stdint.h>
 #endif
 
 #define obj_header_(P) ((ObjHeader*)(P)-1)
@@ -158,7 +162,7 @@ typedef enum {
 
 void array_sort(void *P, ElemKind kind, bool desc, int offs) ;
 
-#define OBJ_STRUCT_OFFS(T,f) ( (intptr)(&((T*)0)->f) )
+#define OBJ_STRUCT_OFFS(T,f) ( (intptr_t)(&((T*)0)->f) )
 
 #define array_sort_struct_ptr(P,desc,T,fname) array_sort(P,ARRAY_INT,desc,OBJ_STRUCT_OFFS(T,fname))
 #define array_sort_struct_str(P,desc,T,fname) array_sort(P,ARRAY_STRING,desc,OBJ_STRUCT_OFFS(T,fname))

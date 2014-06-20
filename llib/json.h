@@ -9,7 +9,7 @@
 
 #include "value.h"
 
-PValue value_array_values_ (intptr sm,...);
+PValue value_array_values_ (intptr_t sm,...);
 
 #define value_map_of_values(...) value_array_values_(1,__VA_ARGS__,NULL)
 #define value_array_of_values(...) value_array_values_(0,__VA_ARGS__,NULL)

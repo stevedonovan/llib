@@ -115,7 +115,7 @@ char *strbuf_replace(char **sp, int pos, int len, str_t s) {
 static int offset_str(str_t P, str_t Q) {
     if (P == NULL)
         return -1;
-    return (intptr)P - (intptr)Q;
+    return (intptr_t)P - (intptr_t)Q;
 }
 
 /// Extra string functions.

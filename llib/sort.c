@@ -17,7 +17,7 @@
 // http://stackoverflow.com/questions/4300896/how-portable-is-the-re-entrant-qsort-r-function-compared-to-qsort
 // Fortunately, we only have to do this nonsense once.
 
-#define DEREF(P,offs)  *((intptr*)(P+offs))
+#define DEREF(P,offs)  *((intptr_t*)(P+offs))
 
 #ifndef __linux__
 typedef int (*CMPFN)( void *context, const void *m1, const void *m2);
@@ -32,19 +32,19 @@ void qsort_s(void *base, size_t num, size_t width, CMPFN compar, void *context);
 #define qsort_x qsort_r
 #endif
 
-static int plain_cmp(intptr offs, const char *m1, const char  *m2) {
+static int plain_cmp(intptr_t offs, const char *m1, const char  *m2) {
     return DEREF(m1,offs) - DEREF(m2,offs);
 }
 
-static int string_cmp(intptr offs, const char **m1, const char **m2) {
+static int string_cmp(intptr_t offs, const char **m1, const char **m2) {
     return strcmp(*(m1+offs),*(m2+offs));
 }
 
-static int plain_cmp_desc(intptr offs, const char *m1, const char  *m2) {
+static int plain_cmp_desc(intptr_t offs, const char *m1, const char  *m2) {
     return DEREF(m2,offs) - DEREF(m1,offs);
 }
 
-static int string_cmp_desc(intptr offs, const char **m1, const char **m2) {
+static int string_cmp_desc(intptr_t offs, const char **m1, const char **m2) {
     return strcmp(*(m2+offs),*(m1+offs));
 }
 #else
@@ -52,19 +52,19 @@ static int string_cmp_desc(intptr offs, const char **m1, const char **m2) {
 typedef int (*CMPFN)(const void *m1, const void *m2, void *context);
 #define qsort_x(base,nel,width,thunk,compar) qsort_r(base,nel,width,compar,thunk)
 
-static int plain_cmp(const char *m1, const char  *m2, intptr offs) {
+static int plain_cmp(const char *m1, const char  *m2, intptr_t offs) {
     return DEREF(m1,offs) - DEREF(m2,offs);
 }
 
-static int string_cmp(const char **m1, const char **m2, intptr offs) {
+static int string_cmp(const char **m1, const char **m2, intptr_t offs) {
     return strcmp(*(m1+offs),*(m2+offs));
 }
 
-static int plain_cmp_desc(const char *m1, const char  *m2, intptr offs) {
+static int plain_cmp_desc(const char *m1, const char  *m2, intptr_t offs) {
     return DEREF(m2,offs) - DEREF(m1,offs);
 }
 
-static int string_cmp_desc(const char **m1, const char **m2, intptr offs) {
+static int string_cmp_desc(const char **m1, const char **m2, intptr_t offs) {
     return strcmp(*(m2+offs),*(m1+offs));
 }
 

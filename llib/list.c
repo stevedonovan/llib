@@ -71,7 +71,7 @@ static void List_dispose(List *self) {
 }
 
 static int simple_pointer_compare(void *p1, void *p2) {
-    return (intptr)p1 - (intptr)p2;
+    return (intptr_t)p1 - (intptr_t)p2;
 }
 
 static int simple_pointer_equals(void *p1, void *p2) {

@@ -10,8 +10,16 @@
 Mostly wrappers around familar functions; `file_gets` is a `fgets` that strips the line feed;
 The other functions return a refcounted string, or array of strings (like with `file_getlines`)
 
+    FILE *f = fopen(file,"r");
+    printf("size was %d bytes\n",`file_size`(file));
+    Str *lines = `file_getlines(f);
+    printf("no of lines %d \n",array_len(lines));
+    fclose(f);
+
+
+
 There are functions that work with parts of filenames which don't have the limitations and gotchas
-of the libc equivalents.
+of the libc equivalents, like `file_basename`.
 
 Finally, `file_fopen` provides a file wrapper `FILE**`. It returns an actual error string if it fails,
 and disposing this file object will close the underlying stream.
@@ -232,7 +240,7 @@ char *file_basename(const char *path) {
 // E.g. '/my/path/bonzo.dog' => '/my/path'
 char *file_dirname(const char *path) {
     const char *p = after_dirsep(path);
-    int sz = p ? (intptr)p - (intptr)path : 0;
+    int sz = p ? (intptr_t)p - (intptr_t)path : 0;
     char *res = str_new_size(sz);
     strncpy(res,path,sz);
     return res;
@@ -258,7 +266,7 @@ char *file_replace_extension(const char *path, const char *ext) {
     int sz, next = strlen(ext);
     p = strchr(p,'.');
     if (p) { // we already have an extension
-        sz = (intptr)p - (intptr)path;
+        sz = (intptr_t)p - (intptr_t)path;
     } else {
         sz = strlen(path);
     }

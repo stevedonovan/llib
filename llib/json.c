@@ -66,7 +66,7 @@ static void dump_value(SStr s, PValue v)
         return;
     }
     if (obj_refcount(v) == -1)  { // not one of ours, treat as integer
-        strbuf_addf(s,"%d",(intptr)v);
+        strbuf_addf(s,"%d",(intptr_t)v);
         return;
     }
 

@@ -4,7 +4,7 @@
 
 // this will take varargs and either make an array or simple map
 // out of them. In addition, string arrays can be treated specially.
-PValue value_array_values_ (intptr sm,...) {
+PValue value_array_values_ (intptr_t sm,...) {
     int n = 0, i = 0;
     int ismap = sm & 0x1;
     int isstr = sm & 0x2;

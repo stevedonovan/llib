@@ -55,13 +55,13 @@ void test_person_list() {
 
 void compare_int_list(List *ls, int *arr) {
     int n;
-    FOR_LIST_T(intptr,n,ls)
+    FOR_LIST_T(intptr_t,n,ls)
         assert(n == *arr++);
 }
 
 void dump_int_list(List *ls) {
     int n;
-    FOR_LIST_T(intptr,n,ls)
+    FOR_LIST_T(intptr_t,n,ls)
         printf("%d ",(int)n);
     printf("\n");
 }
@@ -78,8 +78,8 @@ void test_int_list() {
     list_add_items(li,D 40,D 50,D 60);
 
     // indexing is slow in general, unless we're close to one of the ends
-    assert ( (intptr)list_get(li,-1) == 60 );
-    assert ( (intptr)list_get(li,1) == 20 );
+    assert ( (intptr_t)list_get(li,-1) == 60 );
+    assert ( (intptr_t)list_get(li,1) == 20 );
 
     int o1[] = {10,20,30,40,50,60};
     compare_int_list(li,o1);
@@ -124,8 +124,8 @@ void test_int_list() {
 
     // it's safe to remove items with this statement,
     // but you do need to know the magic 'p_' name of the iterator
-    intptr n;
-    FOR_LIST_T(intptr,n,s)
+    intptr_t n;
+    FOR_LIST_T(intptr_t,n,s)
         if (n == 3 || n == 6)
             list_delete(s,p_);
     dump_int_list(s);

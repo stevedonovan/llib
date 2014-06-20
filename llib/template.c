@@ -167,7 +167,7 @@ StrTempl str_templ_new(const char *templ, const char *markers) {
 typedef char *(*TemplateFun)(void *arg, StrTempl stl);
 
 static char *i_impl (void *arg, StrTempl stl) {
-    return str_fmt("%d", (intptr)arg);
+    return str_fmt("%d", (intptr_t)arg);
 }
 
 static StrLookup get_lookup(void *item);
@@ -210,7 +210,7 @@ static char *subst_using_parent(StrTempl stl) {
     return str_templ_subst_using(stl,pst->lookup,pst->data);
 }
 
-static intptr picked = false;
+static intptr_t picked = false;
 static List *if_stack = NULL;
 
 static char *if_impl (void *arg, StrTempl stl) {
@@ -229,7 +229,7 @@ static char *else_impl (void *arg, StrTempl stl) {
         return subst_using_parent(stl);
     else
         return str_new("");
-    picked = (intptr)list_pop(if_stack);
+    picked = (intptr_t)list_pop(if_stack);
 }
 
 #define C (char*)

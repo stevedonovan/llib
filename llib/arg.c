@@ -122,7 +122,7 @@ char *typenames[] = {
 
 static ValueType parse_type(str_t name)
 {
-    return (ValueType)(intptr)str_lookup(typenames,name);
+    return (ValueType)(intptr_t)str_lookup(typenames,name);
 }
 
 static void *value_parse_ex(str_t s, int type) {

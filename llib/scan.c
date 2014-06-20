@@ -65,7 +65,7 @@ See `test-scan.c` for examples of various uses.
 // a useful function for extracting a substring
 static const char *copy_str(char *tok, int len, const char *start, const char *end)
 {
-    size_t sz = (size_t)((intptr)end - (intptr)start);
+    size_t sz = (size_t)((intptr_t)end - (intptr_t)start);
     if (sz > len)
         sz = len;
     strncpy(tok,start,sz);

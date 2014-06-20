@@ -34,7 +34,7 @@ sorts the result, giving the ten most common words.
 // first becomes the tree root
 #define root(m) ((m)->first)
 // the pointer value type is put into the pointer value last
-#define vtype(m) ((intptr)(m)->last)
+#define vtype(m) ((intptr_t)(m)->last)
 #define set_vtype(m,t) ((m)->last=(ListIter)t)
 
 #define key_data item_data
@@ -59,7 +59,7 @@ enum MapValue {
 };
 
 static void dispose_map_entries(Map *m, PEntry node) {
-    intptr vt = vtype(m), kt = m->flags;
+    intptr_t vt = vtype(m), kt = m->flags;
     //printf("%d %d %p %d\n",vt,kt,node,node->data);
 
     // we are a container with string keys
