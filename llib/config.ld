@@ -5,8 +5,8 @@ full_description='Available at [Github](https://github.com/stevedonovan/llib)'
 file={'obj.c',  'str.c', 'smap.c','scan.c', 'template.c', 'list.c', 'map.c', 'file.c', 
     'value.c', 'json.c','xml.c','farr.c','array.h','table.c','config.c','arg.c'}
 parse_extra={C=true}
-dont_escape_underscore=true
-global_lookup=true
+-- dont_escape_underscore=true
+-- global_lookup=true
 local function ex(f) return '../examples/'..f..'.c' end
 examples={
 '../tests', ex'cmd',ex'testa',ex'config',ex'words'

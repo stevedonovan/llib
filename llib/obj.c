@@ -632,8 +632,9 @@ void * array_copy(void *P, int i1, int i2) {
     void *newp = array_new_(mlem,t->name,len,is_ref);
     if (is_ref) { // update reference counts if needed
         void **ptr = (void**)P+offs, **op = (void**)newp;
-        FOR(i,len)
-            *op++ = obj_ref(*ptr++);
+        FOR(i,len) {
+            op[i] = obj_ref(ptr[i]);
+        }
     } else {
         memcpy(newp,(char*)P+offs,mlem*len);
     }
@@ -757,6 +758,17 @@ void *seq_new_(int nlem, const char *name, int isref) {
     s->arr = array_new_(nlem,name,INITIAL_CAP,isref);
     s->cap = INITIAL_CAP;// our capacity
     array_len(s->arr) = 0;// our size
+    return (void*)s;
+}
+
+/// create a sequence from an existing array.
+void *seq_new_array (void *arr) {
+    Seq *s = obj_new(Seq,seq_dispose);
+    int n = array_len(arr);
+    s->arr = array_copy(arr,0,n);
+    s->cap = 0;// our capacity    
+    seq_resize(s,n);
+    array_len(s->arr) = n;
     return (void*)s;
 }
 
