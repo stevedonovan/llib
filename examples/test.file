@@ -1,0 +1,5 @@
+~/dev/llib/examples$ ./testa -I /bonzo -I /dog
+the include paths
+'/bonzo'
+'/dog'
+flag a is 0
