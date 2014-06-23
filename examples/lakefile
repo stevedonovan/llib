@@ -1,6 +1,9 @@
-local defines
-if DBG then
-    defines = 'LLIB_DEBUG'
-    if WINDOWS then defines = defines .. ' LLIB_PTR_LIST' end
+if DEBUG then
+  defines = 'LLIB_DEBUG'
 end
-c99.program{P,needs='llib',debug=true,defines=defines}
+if WINDOWS and CC=='gcc' then
+  defines = (defines or '')..' LLIB_PTR_LIST'
+end
+libs = choose(MSVC,'llib_static','llib')
+
+c99.program{P,incdir='..',libdir='../llib',libs=libs,defines=defines}

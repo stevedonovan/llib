@@ -376,9 +376,9 @@ static PValue finish_off_entry(FlagEntry *fe) {
             if (fe->flags & FlagIsArray) {
                 PValue *varr;
                 if (fe->arrsep) {
-                    varr = CAST(PValue,fe->pflag);
+                    varr = (PValue*)CAST(PValue,fe->pflag);
                 } else {  // the sequence must become a proper array
-                    PValue **vseq = (PValue**)fe->pflag;
+                    PValue **vseq = (PValue**)CAST(PValue,fe->pflag);
                     varr = (PValue*)seq_array_ref(vseq);
                 }
                 int n = array_len(varr);

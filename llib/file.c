@@ -121,28 +121,31 @@ char *file_getline(FILE *f) {
     return str_new(buff);
 }
 
-static int size_of_file(FILE *fp) {
-    int sz = fseek(fp, 0L, SEEK_END);
+/// size of an opened file sream.
+long file_size_stream(FILE *fp) {
+    long sz, here;
+    here = ftell(fp);
+    fseek(fp, 0L, SEEK_END);
     sz = ftell(fp);
-    fseek(fp, 0L, SEEK_SET);
+    fseek(fp, here, SEEK_SET);
     return sz;
 }
 
-/// size of a file.
+/// size of a file by name.
 // Will return -1 if the file cannot be opened for reading.
-int file_size(const char *file)
+long file_size(const char *file)
 {
     int sz;
     FILE *fp = fopen(file,"rb");
     if (! fp)
         return -1;
-    sz = size_of_file(fp);
+    sz = file_size_stream(fp);
     fclose(fp);
     return sz;
 }
 
 static char* read_all(FILE *fp, bool text) {
-    int sz = size_of_file(fp);
+    int sz = file_size_stream(fp);
     char *res = str_new_size(sz);
     fread(res,1,sz,fp);
     if (text) {
