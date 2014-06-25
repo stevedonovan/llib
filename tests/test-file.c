@@ -4,6 +4,8 @@
 * Copyright Steve Donovan, 2013
 */
 
+#include <assert.h>
+#include <string.h>
 #include <llib/file.h>
 
 typedef char *Str;
@@ -20,7 +22,7 @@ void reading_lines(Str file)
 
 void getting_files(char *ext)
 {
-    Str *lines = file_files_in_dir(ext,1);
+    Str *lines = file_files_in_dir(ext,false);
     FOR_ARR(Str,p,lines)
         printf("'%s'\n",*p);
     unref(lines);
@@ -38,19 +40,37 @@ void text_from_file()
 
 #define DUMPS(expr) printf("%s = '%s'\n",#expr,expr)
 
-void path_manipulation(const char *path)
-{
-    if (! path)
 #ifdef _WIN32
-        path = "c:\\users\\steve\\myfiles\\bonzo.txt";
+Str paths[] = {
+    "c:\\users\\steve\\myfiles\\bonzo.txt",
+    "bonzo.txt",
+    "c:\\users\\steve\\myfiles\\",
+    ".txt",
+    "c:\\users\\steve\\myfiles\\bonzo.tmp"    
+};
 #else
-        path = "/home/steve/myfiles/bonzo.txt";
+Str paths[] = {
+    "/home/steve/myfiles/bonzo.txt",
+    "bonzo.txt",
+    "/home/steve/myfiles/",
+    ".txt",
+    "/home/steve/myfiles/bonzo.tmp"    
+};
 #endif
-    DUMPS(file_basename(path));
-    DUMPS(file_dirname(path));
-    DUMPS(file_extension(path));
-    DUMPS(file_replace_extension(path,".tmp"));
-    DUMPS(file_expand_user("~/myfile"));
+
+int eq(const char *s1, const char *s2) {
+    //printf("'%s' == '%s'?\n",s1,s2);
+    return strcmp(s1,s2) == 0;
+}
+
+void path_manipulation()
+{
+    Str path = paths[0];
+    assert(eq(file_basename(path),paths[1]));
+    assert(eq(file_dirname(path),paths[2]));
+    assert(eq(file_extension(path),paths[3]));
+    assert(eq(file_replace_extension(path,".tmp"),paths[4]));
+    //DUMPS(file_expand_user("~/myfile"));
 }
 
 int main(int argc, char **argv)

@@ -1,66 +1,65 @@
 # building tests
-CC=gcc
+#CC=gcc
 LIB=../llib/libllib.a
 CFLAGS=-std=c99  -O2 -Wall -I..
 LFLAGS=-Wl,-s -L../llib -lllib
+CCC=$(CC) $(CFLAGS)
 
 EXES=test-obj test-list test-map test-seq test-file \
 	test-scan test-str test-template \
-	test-json test-xml test-table test-pool test-config
+	test-json test-xml test-table test-pool test-config testa testing
 
 all: $(EXES)
-	./test-obj > test-obj-output
-	./test-list > test-list-output
-	./test-seq > test-seq-output
-	./test-file > test-file-output
-	./test-scan > test-scan-output
-	./test-str > test-str-output
-	./test-template > test-template-output
-	./test-json > test-json-output
-	./test-xml > test-xml-output
-	./test-table > test-table-output
-	./test-pool > test-pool-output
-	./test-config > test-config-output
 	ls -l $(EXES)
+	./testing
+
+testing: testing.c $(LIB)
+	$(CCC) $< -o $@ $(LFLAGS)
 
 test-obj: test-obj.c $(LIB)
-	$(CC) $(CFLAGS) test-obj.c -o test-obj $(LFLAGS)
+	$(CCC) $< -o $@ $(LFLAGS)
 
 test-list: test-list.c $(LIB)
-	$(CC) $(CFLAGS) test-list.c -o test-list $(LFLAGS)
+	$(CCC) $< -o $@ $(LFLAGS)
 
 test-map: test-map.c $(LIB)
-	$(CC) $(CFLAGS) test-map.c -o test-map $(LFLAGS)
+	$(CCC) $< -o $@ $(LFLAGS)
 
 test-seq: test-seq.c $(LIB)
-	$(CC) $(CFLAGS) test-seq.c -o test-seq $(LFLAGS)
+	$(CCC) $< -o $@ $(LFLAGS)
 
 test-file: test-file.c $(LIB)
-	$(CC) $(CFLAGS) test-file.c -o test-file $(LFLAGS)
+	$(CCC) $< -o $@ $(LFLAGS)
 
 test-scan: test-scan.c $(LIB)
-	$(CC) $(CFLAGS) test-scan.c -o test-scan $(LFLAGS)
+	$(CCC) $< -o $@ $(LFLAGS)
 
 test-str: test-str.c $(LIB)
-	$(CC) $(CFLAGS) test-str.c -o test-str $(LFLAGS)
+	$(CCC) $< -o $@ $(LFLAGS)
 
 test-template: test-template.c $(LIB)
-	$(CC) $(CFLAGS) test-template.c -o test-template $(LFLAGS)
+	$(CCC) $< -o $@ $(LFLAGS)
 
 test-json: test-json.c $(LIB)
-	$(CC) $(CFLAGS) test-json.c -o test-json $(LFLAGS)
+	$(CCC) $< -o $@ $(LFLAGS)
 
 test-xml: test-xml.c $(LIB)
-	$(CC) $(CFLAGS) test-xml.c -o test-xml $(LFLAGS)
+	$(CCC) $< -o $@ $(LFLAGS)
 
 test-table: test-table.c $(LIB)
-	$(CC) $(CFLAGS) test-table.c -o test-table $(LFLAGS)
+	$(CCC) $< -o $@ $(LFLAGS)
 
 test-pool: test-pool.c $(LIB)
-	$(CC) $(CFLAGS) test-pool.c -o test-pool $(LFLAGS)
+	$(CCC) $< -o $@ $(LFLAGS)
 
 test-config: test-config.c $(LIB)
-	$(CC) $(CFLAGS) test-config.c -o test-config $(LFLAGS)
+	$(CCC) $< -o $@ $(LFLAGS)
+
+test-sqlite3-table: test-sqlite3-table.c $(LIB)
+	$(CCC) $< -o $@ $(LFLAGS) -lsqlite3
+
+testa: testa.c $(LIB)
+	$(CCC) $< -o $@ $(LFLAGS)
 
 clean:
 	rm $(EXES)

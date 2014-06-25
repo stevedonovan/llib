@@ -4,73 +4,63 @@ LIB=../llib/libllib.a
 EXT=.exe
 CFLAGS=-std=c99  -O2 -Wall -I..
 LFLAGS=-L../llib -lllib
+CCC=$(CC) $(CFLAGS)
 
-OBJ=test-obj.exe
-LIST=test-list.exe
-MAP=test-map.exe
-SEQ=test-seq.exe
-FILE=test-file.exe
-SCAN=test-scan.exe
-STR=test-str.exe
-TPL=test-template.exe
-JSN=test-json.exe
-XML=test-xml.exe
-TBL=test-table.exe
-TPO=test-pool.exe
-# CFG=test-config.exe
+EXES=test-obj.exe test-list.exe test-map.exe test-seq.exe test-file.exe \
+	test-scan.exe test-str.exe test-template.exe \
+	test-json.exe test-xml.exe test-table.exe test-pool.exe test-config.exe \
+	testa.exe testing.exe
 
-all: $(OBJ) $(LIST) $(MAP) $(SEQ) $(FILE) $(SCAN) $(STR) $(TPL) $(JSN) $(XML) $(TBL) $(TPO)
-	test-obj > test-obj-output
-	test-list > test-list-output
-	test-seq > test-seq-output
-	test-file > test-file-output
-	test-scan > test-scan-output
-	test-str > test-str-output
-	test-template > test-template-output
-	test-json > test-json-output
-	test-xml > test-xml-output
-	test-table > test-table-output
-	test-pool > test-pool-output
-	# test-config > test-config-output
+all: $(EXES)
+	dir $(EXES)
+	testing
 
-$(OBJ): test-obj.c $(LIB)
-	$(CC) $(CFLAGS) test-obj.c -o test-obj $(LFLAGS)
+testing.exe: testing.c $(LIB)
+	$(CCC) $< -o $@ $(LFLAGS)
 
-$(LIST): test-list.c $(LIB)
-	$(CC) $(CFLAGS) test-list.c -o test-list $(LFLAGS)
+test-ob.exe: test-obj.c $(LIB)
+	$(CCC) $< -o $@ $(LFLAGS)
 
-$(MAP): test-map.c $(LIB)
-	$(CC) $(CFLAGS) test-map.c -o test-map $(LFLAGS)
+test-list.exe: test-list.c $(LIB)
+	$(CCC) $< -o $@ $(LFLAGS)
 
-$(SEQ): test-seq.c $(LIB)
-	$(CC) $(CFLAGS) test-seq.c -o test-seq $(LFLAGS)
+test-map.exe: test-map.c $(LIB)
+	$(CCC) $< -o $@ $(LFLAGS)
 
-$(FILE): test-file.c $(LIB)
-	$(CC) $(CFLAGS) test-file.c -o test-file $(LFLAGS)
+test-seq.exe: test-seq.c $(LIB)
+	$(CCC) $< -o $@ $(LFLAGS)
 
-$(SCAN): test-scan.c $(LIB)
-	$(CC) $(CFLAGS) test-scan.c -o test-scan $(LFLAGS)
+test-file.exe: test-file.c $(LIB)
+	$(CCC) $< -o $@ $(LFLAGS)
 
-$(STR): test-str.c $(LIB)
-	$(CC) $(CFLAGS) test-str.c -o test-str $(LFLAGS)
+test-scan.exe: test-scan.c $(LIB)
+	$(CCC) $< -o $@ $(LFLAGS)
 
-$(TPL): test-template.c $(LIB)
-	$(CC) $(CFLAGS) test-template.c -o test-template $(LFLAGS)
+test-str.exe: test-str.c $(LIB)
+	$(CCC) $< -o $@ $(LFLAGS)
 
-$(JSN): test-json.c $(LIB)
-	$(CC) $(CFLAGS) test-json.c -o test-json $(LFLAGS)
+test-template.exe: test-template.c $(LIB)
+	$(CCC) $< -o $@ $(LFLAGS)
 
-$(XML): test-xml.c $(LIB)
-	$(CC) $(CFLAGS) test-xml.c -o test-xml $(LFLAGS)
+test-json.exe: test-json.c $(LIB)
+	$(CCC) $< -o $@ $(LFLAGS)
 
-$(TBL): test-table.c $(LIB)
-	$(CC) $(CFLAGS) test-table.c -o test-table $(LFLAGS)
+test-xml.exe: test-xml.c $(LIB)
+	$(CCC) $< -o $@ $(LFLAGS)
 
-test-pool: test-pool.c $(LIB)
-	$(CC) $(CFLAGS) test-pool.c -o test-pool $(LFLAGS)
+test-table.exe: test-table.c $(LIB)
+	$(CCC) $< -o $@ $(LFLAGS)
 
-test-config: test-config.c $(LIB)
-	$(CC) $(CFLAGS) test-config.c -o test-config $(LFLAGS)
+test-pool.exe: test-pool.c $(LIB)
+	$(CCC) $< -o $@ $(LFLAGS)
 
+test-config.exe: test-config.c $(LIB)
+	$(CCC) $< -o $@ $(LFLAGS)
+
+testa: testa.c $(LIB)
+	$(CCC) $< -o $@ $(LFLAGS)
+
+clean:
+	del $(EXES)
 
 

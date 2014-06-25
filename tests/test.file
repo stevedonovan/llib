@@ -1,0 +1,226 @@
+~/c/llib/tests$ ./test-map
+size was 4
+alice (21) female
+roger (40) male
+size was 3
+[alice]=21,[bob]=22,[liz]=16,
+[alice]=21,[bob]=22,
+data dispose 'alice'
+data dispose 'liz'
+data dispose 'bob'
+data dispose 'roger'
+[2]=2,[3]=3,[4]=4,[6]=6,[7]=7,[8]=8,[10]=10,[20]=20,
+alpha='A' beta='B' gamma='C' 
+kount 0
+~/c/llib/tests$ ./test-config
+a:'20'
+name:'bonzo'
+b:'2.3'
+ids:'10,11,15'
+name bonzo
+a 20
+10 11 15 
+kount = 0
+~/c/llib/tests$ ./test-str
+kount 0
+~/c/llib/tests$ ./test-obj
+2 5 6 10 11 
+len 10
+45 42
+disposing Bonzo
+s 'hello dolly' length 11
+h e l l o   d a m m i t 
+hello
+dolly
+so
+fine
+kount 0
+~/c/llib/tests$ ./test-xml
+<root>
+ <item name='age' type='int'>
+ 10
+ </item><item name='name' type='string'>
+ Bonzo
+ </item>
+ </root>
+<root><item name='age' type='int'>10</item><item name='name' type='string'>Bonzo</item></root>
+json ["root",["item",{"name":"age","type":"int"},"10"],["item",{"name":"name","type":"string"},"Bonzo"]]
+kount 30
+~/c/llib/tests$ ./test-json
+got '["hello dolly",4.2,["bonzo","dog"],[103,20],{"bilbo":112,"frodo":54},[10,20],[10,100,1000]]'
+here is an error: completely borked
+got '{"one":10,"two":{"float":1.2},"three":[1,2,3],"four":true}'
+count = 0
+[{"zwei":2,"twee":2},10,{"A":10,"B":[2,20]},[]]
+count = 0
+~/c/llib/tests$ ./test-pool
+hello dolly
+(char*)seq_array_ref(ss) = 'onetwo'
+obj_kount() = 0
+~/c/llib/tests$ ./test-table
+'Name' (Bonzo),'Age' (12),
+12 16 46 144 
+Bonzo Alice Frodo Bilbo 
+~/c/llib/tests$ ./test-list
+int lists
+1 2 5 10 
+Person lists
+person bill 20
+person jane 22
+bill 20 ?
+disposing bill
+disposing jane
+lists of references
+ref 1
+ref 1
+wrapper lists
+first 5.000000
+last 40.000000
+5.000000
+10.000000
+20.000000
+30.000000
+40.000000
+kount 0
+~/c/llib/tests$ ./test-template
+<h2>Pages</h2>
+<ul>
+<li><a src='index.html'>Home</a></li>
+<li><a src='catalog.html'>Links</a></li>
+</ul>
+
+<h2>Pages</h2>
+<ul>
+<li><a src='index.html'>Home</a></li>
+<li><a src='catalog.html'>Links</a></li>
+</ul>
+
+got 'home and dog'
+got 'Hello Dolly, how is here at 42 ?
+ =Dolly
+ hello vex hello hex
+ vex is here  hex is here  thanks!
+Hello here Dolly'
+kount = 0
+~/c/llib/tests$ ./test-scan
+1.300000
+2.000000
+5.000000
+2.300000
+5.000000
+2.000000
+4.000000
+6.000000
+0.100000
+1.300000 2.000000 5.000000 2.300000 
+5.000000 2.000000 4.000000 6.000000 0.100000 
+hello
+( 
+44 
+2 
+44 
+2 
+41 
+1 'here'
+7 'we go'
+1 'again'
+2 '10'
+string '%f\n'
+string '%f '
+string '\n'
+string 'test1.dat'
+string 'test1.dat'
+string 'hello = (10,20,30)'
+string '%c \n'
+string '('
+string '%d \n'
+string 'here 'we go' again 10 '
+string '%d '%s'\n'
+string 'test-scan.c'
+string 'string '%s'\n'
+string 'test.cfg'
+string '#'
+string 'key %s '
+string 'value '%s'\n'
+string '<boo a='woo' b='doll'>bonzo dog <(10,20,30),(1,2,3);'
+string '<%s'
+string '%s=%q'
+string 'tag '%s' attrib '%s' value '%s'\n'
+string '>'
+string '<'
+string 'got '%s' (%c)\n'
+string '(%d,%d,%d)%c'
+string ','
+string ';'
+string 'values %d %d %d\n'
+string ';'
+string 'A=cool stuff\nB=necessary nonsense\nC=10,20\n'
+string '%s=%l'
+string '%s='%s'\n'
+string 'alpha=1 beta=2 gamma=hello delta='frodo''
+string '%s=%v'
+string '%s='
+string ''%s'\n'
+string '%d\n'
+string 'kount = %d\n'
+key a value 'bee'
+key bonzo value 'dog'
+key str value 'hello there'
+tag 'boo' attrib 'a' value 'woo'
+tag 'boo' attrib 'b' value 'doll'
+got 'bonzo dog ' (<)
+values 10 20 30
+values 1 2 3
+A='cool stuff'
+B='necessary nonsense'
+C='10,20'
+alpha=1
+beta=2
+gamma='hello'
+delta='frodo'
+kount = 0
+~/c/llib/tests$ ./test-file
+file exists
+makefile was 'makefile'
+48 65 6C 6C 6F 2C 20 57 6F 72 6C 64 21 
+got 'Hello, World!'
+size was 2000 bytes
+no of lines 89 
+'testa.c'
+'test-config.c'
+'test-file.c'
+'testing.c'
+'test-json.c'
+'test-list.c'
+'test-map.c'
+'test-obj.c'
+'test-pool.c'
+'test-scan.c'
+'test-seq.c'
+'test-sqlite3-table.c'
+'test-str.c'
+'test-table.c'
+'test-template.c'
+'test-xml.c'
+remaining 0
+[]
+~/dev/llib/tests$ ./testa -I /bonzo -I /dog
+the include paths
+'/bonzo'
+'/dog'
+flag a is 0
+~/c/llib/tests$ ./testa -h
+Commands:
+	test (0)	test command
+	two (float,string)	test cmd_get_values
+Flags:
+	--help,-h	help on commands and flags
+	--kount,-k	referenced object count flag
+	--flag,-f	function flag taking float..
+	--include,-I (string...)	include directories
+	--a (0)	flag value
+	--interactive,-i (false)	interactive mode
+	--#1 (string...)	array of string args
+~/c/llib/tests$ ./testa test 22 -I/one
+gotcha! 22 0
+the include paths

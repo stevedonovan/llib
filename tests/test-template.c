@@ -3,6 +3,7 @@
 * BSD licence
 * Copyright Steve Donovan, 2013
 */
+#define _BSD_SOURCE
 #include <stdio.h>
 #include <stdlib.h>
 #include <assert.h>
@@ -42,7 +43,9 @@ static char *l_getenv (void *data, char *key) {
 
 void using_environment()
 {
-    StrTempl st = str_templ_new("@{ROME} and @{PATH}","@{}");
+    setenv("ROME","home",1);
+    setenv("PLAT","dog",1);
+    StrTempl st = str_templ_new("@{ROME} and @{PLAT}","@{}");
     char *S = str_templ_subst_using(st, (StrLookup)l_getenv, NULL);
     printf("got '%s'\n",S);
     dispose(st,S);

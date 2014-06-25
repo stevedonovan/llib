@@ -329,7 +329,7 @@ static PValue bind_value(FlagEntry *pfd, str_t arg) {
         if (pfd->type == ValueBool) // again, bools are special...
             arg = "true";
         v = value_parse_ex(arg,pfd->type);
-    } else {
+    } else  {
         v = obj_ref(pfd->defval);
     }
 
@@ -668,6 +668,8 @@ PValue arg_process(ArgState *cmds ,  const char**argv)
                 if (flags & FlagFunction) { // a function flag (may have argument)
                     PValue *fun_args = allocate_args(fune,cmds);
                     if (needs_argument) {
+                        if (! arg || *arg == '-')
+                            return value_errorf("flag '%s' expects a value",fune->name);
                         val = bind_argument(cmds,fune->name,1,arg,NULL);
                         if (value_is_error(val))
                             return val;                        
