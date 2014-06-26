@@ -25,8 +25,11 @@ int main(int argc, char **argv)
         char **out = file_command_lines(cmd);
         while (*out && file_gets(f,line,sizeof(line))) {
             L++;
+            if (*out)
+                str_trim(*out);
+            str_trim(line);
             if (! *out || ! str_eq(line,*out)) {
-                errorf("mismatch line %d\n\t%s\n\t%s\n",L,line,*out);
+                errorf("mismatch line %d\n\t{%s}\n\t{%s}\n",L,line,*out);
                 exit(1);
             }
             ++out;

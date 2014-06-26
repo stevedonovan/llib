@@ -41,6 +41,10 @@ static char *l_getenv (void *data, char *key) {
     return getenv(key);
 }
 
+#ifdef _WIN32
+#define setenv(k,v,o) _putenv_s(k,v)
+#endif
+
 void using_environment()
 {
     setenv("ROME","home",1);

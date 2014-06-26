@@ -23,6 +23,7 @@ void reading_lines(Str file)
 void getting_files(char *ext)
 {
     Str *lines = file_files_in_dir(ext,false);
+    array_sort(lines,ARRAY_STRING,false,0);
     FOR_ARR(Str,p,lines)
         printf("'%s'\n",*p);
     unref(lines);
@@ -46,7 +47,7 @@ Str paths[] = {
     "bonzo.txt",
     "c:\\users\\steve\\myfiles\\",
     ".txt",
-    "c:\\users\\steve\\myfiles\\bonzo.tmp"    
+    "c:\\users\\steve\\myfiles\\bonzo.tmp"
 };
 #else
 Str paths[] = {
@@ -54,7 +55,7 @@ Str paths[] = {
     "bonzo.txt",
     "/home/steve/myfiles/",
     ".txt",
-    "/home/steve/myfiles/bonzo.tmp"    
+    "/home/steve/myfiles/bonzo.tmp"
 };
 #endif
 
@@ -77,13 +78,13 @@ int main(int argc, char **argv)
 {
     if (file_exists("test-file.c","r"))
         puts("file exists");
-    printf("makefile was '%s'\n",file_exists_any("r","Makefile","makefile"));
+    printf("makefile was '%s'\n",file_exists_any("r","proj.mak","makefile"));
     text_from_file();
     reading_lines("test-file.c");
     getting_files("*.c");
     printf("remaining %d\n",obj_kount());
     path_manipulation(NULL);
-    char *res = file_command("which test-file.exe");
-    printf("[%s]\n",res);
+//    char *res = file_command("which test-file.exe");
+//    printf("[%s]\n",res);
     return 0;
 }

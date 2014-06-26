@@ -10,7 +10,7 @@ data dispose 'liz'
 data dispose 'bob'
 data dispose 'roger'
 [2]=2,[3]=3,[4]=4,[6]=6,[7]=7,[8]=8,[10]=10,[20]=20,
-alpha='A' beta='B' gamma='C' 
+alpha='A' beta='B' gamma='C'
 kount 0
 ~/c/llib/tests$ ./test-config
 a:'20'
@@ -19,30 +19,24 @@ b:'2.3'
 ids:'10,11,15'
 name bonzo
 a 20
-10 11 15 
+10 11 15
 kount = 0
 ~/c/llib/tests$ ./test-str
 kount 0
 ~/c/llib/tests$ ./test-obj
-2 5 6 10 11 
+2 5 6 10 11
 len 10
 45 42
 disposing Bonzo
 s 'hello dolly' length 11
-h e l l o   d a m m i t 
+h e l l o   d a m m i t
 hello
 dolly
 so
 fine
 kount 0
 ~/c/llib/tests$ ./test-xml
-<root>
- <item name='age' type='int'>
- 10
- </item><item name='name' type='string'>
- Bonzo
- </item>
- </root>
+<root><item name='age' type='int'>10</item><item name='name' type='string'>Bonzo</item></root>
 <root><item name='age' type='int'>10</item><item name='name' type='string'>Bonzo</item></root>
 json ["root",["item",{"name":"age","type":"int"},"10"],["item",{"name":"name","type":"string"},"Bonzo"]]
 kount 30
@@ -59,11 +53,11 @@ hello dolly
 obj_kount() = 0
 ~/c/llib/tests$ ./test-table
 'Name' (Bonzo),'Age' (12),
-12 16 46 144 
-Bonzo Alice Frodo Bilbo 
+12 16 46 144
+Bonzo Alice Frodo Bilbo
 ~/c/llib/tests$ ./test-list
 int lists
-1 2 5 10 
+1 2 5 10
 Person lists
 person bill 20
 person jane 22
@@ -112,15 +106,15 @@ kount = 0
 4.000000
 6.000000
 0.100000
-1.300000 2.000000 5.000000 2.300000 
-5.000000 2.000000 4.000000 6.000000 0.100000 
+1.300000 2.000000 5.000000 2.300000
+5.000000 2.000000 4.000000 6.000000 0.100000
 hello
-( 
-44 
-2 
-44 
-2 
-41 
+(
+44
+2
+44
+2
+41
 1 'here'
 7 'we go'
 1 'again'
@@ -182,14 +176,12 @@ kount = 0
 ~/c/llib/tests$ ./test-file
 file exists
 makefile was 'makefile'
-48 65 6C 6C 6F 2C 20 57 6F 72 6C 64 21 
+48 65 6C 6C 6F 2C 20 57 6F 72 6C 64 21
 got 'Hello, World!'
-size was 2000 bytes
-no of lines 89 
-'testa.c'
+size was 2040 bytes
+no of lines 90
 'test-config.c'
 'test-file.c'
-'testing.c'
 'test-json.c'
 'test-list.c'
 'test-map.c'
@@ -202,8 +194,9 @@ no of lines 89
 'test-table.c'
 'test-template.c'
 'test-xml.c'
+'testa.c'
+'testing.c'
 remaining 0
-[]
 ~/dev/llib/tests$ ./testa -I /bonzo -I /dog
 the include paths
 '/bonzo'

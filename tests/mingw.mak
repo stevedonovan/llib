@@ -12,7 +12,6 @@ EXES=test-obj.exe test-list.exe test-map.exe test-seq.exe test-file.exe \
 	testa.exe testing.exe
 
 all: $(EXES)
-	dir $(EXES)
 	testing
 
 testing.exe: testing.c $(LIB)
@@ -57,7 +56,7 @@ test-pool.exe: test-pool.c $(LIB)
 test-config.exe: test-config.c $(LIB)
 	$(CCC) $< -o $@ $(LFLAGS)
 
-testa: testa.c $(LIB)
+testa.exe: testa.c $(LIB)
 	$(CCC) $< -o $@ $(LFLAGS)
 
 clean:

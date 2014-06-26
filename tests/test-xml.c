@@ -15,10 +15,10 @@ int main(int argc, char**argv)
         return 1;
     }
     //char *s = json_tostring(v); // try this for kicks...
-    char *s = xml_tostring(v,2);
+    char *s = xml_tostring(v,0);
     printf("%s\n",s);
     obj_unref_v(v, s);
-    
+
     // the same notation used for building up JSON data works fine for XML docs
     v = VAS("root",
         VAS("item",VMS("name","age","type","int"),"10"),
