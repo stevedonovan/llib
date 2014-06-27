@@ -31,6 +31,6 @@ int main(int argc, char**argv)
     FOR(i,array_len(names))   printf("%s ",names[i]);
     printf("\n");
     unref(t);
-    
+    printf("kount = %d\n", obj_kount());
     return 0;
 }

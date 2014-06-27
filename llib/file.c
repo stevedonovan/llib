@@ -205,11 +205,22 @@ char **file_command_lines(const char *cmd) {
     return lines;
 }
 
+enum {
+    FILE_ABS = 1,
+    FILE_RECURSE = 2
+};
+
 /// all the files matching a mask.
-char **file_files_in_dir(const char *mask, int abs) {
+char **file_files_in_dir(const char *mask, int recursive) {
     char buff[MAX_PATH];
-    if (abs) {
-        snprintf(buff,MAX_PATH,"%s %s%s",DIR,PWD,mask);
+    //~ bool recursive = (flags & FILE_RECURSE) != 0;
+    //~ bool abs = (flags & FILE_ABS) != 0;
+    if (recursive) {
+#ifdef _WIN32        
+        snprintf(buff,MAX_PATH,"%s /s %s",DIR,mask);
+#else
+        snprintf(buff,MAX_PATH,"find $PWD -name '%s'",mask);
+#endif
     } else {
         snprintf(buff,MAX_PATH,"%s %s",DIR,mask);
     }
