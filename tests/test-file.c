@@ -83,7 +83,7 @@ int main(int argc, char **argv)
     reading_lines("test-file.c");
     getting_files("*.c");
     printf("remaining %d\n",obj_kount());
-    path_manipulation(NULL);
+    path_manipulation();
 //    char *res = file_command("which test-file.exe");
 //    printf("[%s]\n",res);
     return 0;

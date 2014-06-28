@@ -1,29 +1,38 @@
-libs = choose(MSVC,'llib_static','llib')
-function build(f)
-    return c99.program{f,incdir='..',libdir='../llib',
-	libs=libs,defines=choose(DEBUG,'DEBUG')
-    }
-end
-function test(f) return build(f):run() end
+c99.defaults {
+    incdir='..',libdir='../llib',
+	libs=choose(MSVC,'llib_static','llib'),
+    defines=choose(DEBUG,'DEBUG')
+}
+build = c99.program
+
+-- force rebuild of particular test!
 if P then
   local prog = P..EXE_EXT
   if path.exists(prog) then os.remove(prog) end
   default{ build(P) }
   return
 end
-default {
-    test('test-obj'),
-    test('test-list'),
-    test('test-file'),
-    test('test-scan'),
-    test('test-seq'),
-    test('test-map'),
-    test('test-str'),
-    test('test-template'),
-    test('test-json'),
-    test('test-xml'),
-    test('test-table'),
-    test('test-pool'),
-    test('test-config'),
+
+targets = {
+    build('test-obj'),
+    build('test-list'),
+    build('test-file'),
+    build('test-scan'),
+    build('test-seq'),
+    build('test-map'),
+    build('test-str'),
+    build('test-template'),
+    build('test-json'),
+    build('test-xml'),
+    build('test-table'),
+    build('test-pool'),
+    build('test-config'),
+    build('testing'),
+    build('testa'),
 }
+
+-- force this target to be on top;
+-- runs testing after everyone is updated
+target.all (targets,'testing',true)
+
 
