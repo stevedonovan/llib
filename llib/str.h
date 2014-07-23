@@ -36,6 +36,7 @@ char** smap_close(char*** smap);
 char *str_fmt(str_t fmt,...);
 int str_findstr(str_t s, str_t sub);
 int str_findch(str_t s, char ch);
+str_t str_end(str_t s);
 bool str_starts_with(str_t s, str_t prefix);
 bool str_ends_with(str_t s, str_t postfix);
 int str_find_first_of(str_t s, str_t ps);

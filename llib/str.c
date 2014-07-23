@@ -165,6 +165,15 @@ void str_trim(char *s) {
 /// Finding things in strings.
 // @section finding
 
+/// get pointer to last char of string.
+str_t str_end(str_t s) {
+    int len = strlen(s);
+    if (len == 0)
+        return s;
+    else
+        return s + len - 1;
+}
+
 /// are these strings equal?
 // @tparam str_t a
 // @tparam str_t b
@@ -177,10 +186,15 @@ bool str_starts_with(str_t s, str_t prefix) {
 
 /// does the string end with this postfix?
 bool str_ends_with(str_t s, str_t postfix) {
-    str_t P = strstr(s,postfix);
-    if (! P)
-        return false;
-    return str_eq(P,postfix);
+    str_t se = str_end(s);
+    str_t pe = str_end(postfix);
+    while (se != s && pe != postfix) {
+        if (*se != *pe)
+            return false;
+        --se;
+        --pe;
+    }
+    return pe == postfix;
 }
 
 /// does a string only consist of blank characters?

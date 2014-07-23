@@ -50,11 +50,15 @@ int main()
 
     char *s = str_fmt("we got '%s'",*ss);
     assert(str_eq(s,"we got 'hfoobarodolly the answer is 42'"));
+    unref(s);    
 
     test_concat();
 
     int p = str_findstr(*ss,"doll");
     assert(p == 8);
+    s = strbuf_tostring(ss);
+    unref(s);    
+    
     const char *S = "hello dolly";
     p = str_findch(S,'d');
     assert(p == 6);
@@ -64,10 +68,16 @@ int main()
     assert(str_starts_with(S,"hell"));
     assert(str_ends_with(S,"dolly"));
     assert(! str_starts_with(S,"llo"));
-    unref(s);
-    s = strbuf_tostring(ss);
-    unref(s);
-    //unref(ss);
+    assert(str_ends_with("02","2"));
+    assert(str_ends_with("22","2"));
+    assert(! str_ends_with("12445","44"));
+    assert(! str_ends_with("45","345"));
+    assert(str_ends_with(S,""));
+    
+    assert(str_find_first_of(S,"aeiou")==1);
+    
+    assert(*str_end(S) == 'y');
+    assert(*str_end("") == '\0'); 
 
     test_split();
 
@@ -75,12 +85,15 @@ int main()
     str_trim(s);
     assert(str_eq(s,"hello dolly"));
     
+    char *sp = str_new("     \t\n");
+    str_trim(sp);
+    assert(str_eq(sp,""));
+    
     Str s1 = str_sub(s,0,2), s2 = str_sub(s,2,-1);
-    //printf("substr (0,2) '%s' (3,-1) '%s'\n",s1,s2);
     assert(str_eq(s1,"he"));
     assert(str_eq(s2,"llo dolly"));
     
-    dispose(s,s1,s2 );
+    dispose(s,sp,s1,s2);
 
     printf("kount %d\n",obj_kount());
     return 0;
