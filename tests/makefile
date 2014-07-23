@@ -7,7 +7,8 @@ CCC=$(CC) $(CFLAGS)
 
 EXES=test-obj test-list test-map test-seq test-file \
 	test-scan test-str test-template \
-	test-json test-xml test-table test-pool test-config testa testing
+	test-json test-xml test-table test-pool test-config \
+    testa testing test-array
 
 all: $(EXES)
 	ls -l $(EXES)
@@ -60,7 +61,10 @@ test-sqlite3-table: test-sqlite3-table.c $(LIB)
 
 testa: testa.c $(LIB)
 	$(CCC) $< -o $@ $(LFLAGS)
-
+	
+test-array: test-array.c $(LIB)
+	$(CCC) $< -o $@ $(LFLAGS)
+	
 clean:
 	rm $(EXES)
 

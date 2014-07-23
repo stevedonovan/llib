@@ -180,6 +180,7 @@ makefile was 'makefile'
 got 'Hello, World!'
 size was 2036 bytes
 no of lines 90
+'test-array.c'
 'test-config.c'
 'test-file.c'
 'test-json.c'
@@ -217,3 +218,6 @@ Flags:
 ~/c/llib/tests$ ./testa test 22 -I/one
 gotcha! 22 0
 the include paths
+'/one'
+~/c/llib/tests$ ./test-array
+ok

@@ -9,7 +9,7 @@ CCC=$(CC) $(CFLAGS)
 EXES=test-obj.exe test-list.exe test-map.exe test-seq.exe test-file.exe \
 	test-scan.exe test-str.exe test-template.exe \
 	test-json.exe test-xml.exe test-table.exe test-pool.exe test-config.exe \
-	testa.exe testing.exe
+	testa.exe testing.exe test-array.exe
 
 all: $(EXES)
 	testing
@@ -57,6 +57,9 @@ test-config.exe: test-config.c $(LIB)
 	$(CCC) $< -o $@ $(LFLAGS)
 
 testa.exe: testa.c $(LIB)
+	$(CCC) $< -o $@ $(LFLAGS)
+
+test-array.exe: test-array.c $(LIB)
 	$(CCC) $< -o $@ $(LFLAGS)
 
 clean:

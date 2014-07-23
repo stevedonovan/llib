@@ -73,5 +73,41 @@ the given type, and create a reference-counted array if the name ends in 'R'.
  #define FILTAR(T_,v_,A_,E_) T_ *v_; {_T_(A_) a_ = A_; T_**s_ = seq_new_ref(T_); \
  FOR(i_,array_len(a_)) { _T_(*a_) _ = a_[i_]; if (E_) seq_add(s_,obj_ref(_)); } \
  v_ = (T_*)seq_array_ref(s_); }
+ 
+ /// Index into array where expression matches value.
+ // Declares a variable `v`, which will be -1 if no match is possible.
+ // @param v new index
+ // @param A the array
+ // @param istart where to start searching (usually 0)
+ // @param expr expression in `_`
+ // @macro FINDA
+#define FINDA(v_,A_,istart_,E_) \
+ int v_=-1; {_T_(A_) a_ = A_; \
+for (int i_=istart_,n_=array_len(a_); i_<n_; i_++) { \
+         _T_(*a_) _ = a_[i_]; if (E_) { v_=i_; break; } \
+}}
+
+/// Like `FINDA` but starts searching at end
+ // Declares a variable `v`, which will be -1 if no match is possible.
+ // @param v new index
+ // @param A the array
+ // @param istart where to start searching (-ve from end, +v is valid index)
+ // @param expr expression in `_`
+ // @macro RFINDA
+#define RFINDA(v_,A_,iend_,E_) \
+ int v_=-1; {_T_(A_) a_ = A_; \
+for (int i_= iend_<0 ? array_len(a_)+iend_: iend_; i_>=0; i_--) { \
+         _T_(*a_) _ = a_[i_]; if (E_) { v_=i_; break; } \
+}}
+
+ /// Like `FINDA` but assumes array ends with `NULL`
+ // Declares a variable `v`, which will be -1 if no match is possible.
+ // @param v new index
+ // @param A the array
+ // @param expr expression in `_`
+ // @macro FINDZ
+#define FINDZ(v_,A_,E_) \
+ int v_=-1; {_T_(*A_) *a_ = A_;  \
+ for (int i_=0; *a_; a_++,i_++) { _T_(*a_) _ = *a_; if (E_) { v_=i_; break; } }}
 
 #endif

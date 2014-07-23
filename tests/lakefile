@@ -29,10 +29,11 @@ targets = {
     build('test-config'),
     build('testing'),
     build('testa'),
+    build('test-array'),
 }
 
 -- force this target to be on top;
 -- runs testing after everyone is updated
-target.all (targets,'testing',true)
+target.all (targets,LOCAL_EXEC..'testing',true)
 
 
