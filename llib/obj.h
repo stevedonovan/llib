@@ -6,9 +6,6 @@
 
 #ifndef _LLIB_OBJ_H
 #define _LLIB_OBJ_H
-typedef unsigned int uint32;
-typedef unsigned short uint16;
-typedef long long int64;
 typedef void (*DisposeFn)(void*);
 typedef void (*PtrFun)(void*);
 typedef void *(*PFun)(void *,...);
@@ -53,9 +50,13 @@ typedef struct {
 #if defined(_M_X64) || defined(__amd64__)
 #define LLIB_64_BITS
 typedef long long intptr_t;
+typedef unsigned long long uintptr_t;
 #else
 typedef int intptr_t;
+typedef unsigned int uintptr_t;
 #endif
+typedef long long int64_t
+typedef unsigned long long uint64_t
 #else
 #include <stdint.h>
 #endif

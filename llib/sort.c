@@ -79,6 +79,6 @@ static CMPFN cmpfn(ElemKind kind, bool desc) {
 
 void array_sort(void *P, ElemKind kind, bool desc, int ofs) {
     int len = array_len(P), nelem = obj_elem_size(P);
-    qsort_x(P,len,nelem,(void*)ofs,cmpfn(kind,desc));
+    qsort_x(P,len,nelem,(void*)(intptr_t)ofs,cmpfn(kind,desc));
 }
 

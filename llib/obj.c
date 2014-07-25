@@ -159,6 +159,8 @@ ObjAllocator obj_default_allocator = {
 
 DisposeFn _pool_filter, _pool_cleaner;
 
+typedef unsigned short uint16;
+
 typedef struct ObjType_ {
     const char *name;
     DisposeFn dtor;

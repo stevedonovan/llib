@@ -86,7 +86,7 @@ static void dump_value(SStr s, PValue v)
     switch (typeslot) {
     #define addf(fmt,T) strbuf_addf(s,fmt,*((T*)v))
     case OBJ_LLONG_T:
-        addf("%d",int64);
+        addf("%d",int64_t);
         return;
     case OBJ_DOUBLE_T:
         addf("%0.16g",double);
@@ -174,7 +174,7 @@ static void dump_array(SStr s, PValue vl) {
                 case 1:  ival = *(unsigned char*)P; break;
                 case 2: ival = *(short*)P; break;
                 case sizeof(int): ival = *(int*)P; break;
-                case 8: ival = *(int64*)P; break;
+                case 8: ival = *(int64_t*)P; break;
                 default: ival = 0; break;  //??
                 }
                 strbuf_addf(s,"%d",ival);

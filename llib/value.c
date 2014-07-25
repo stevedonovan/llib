@@ -175,7 +175,7 @@ const char *value_tostring(PValue v) {
         switch(typeslot) {
         #define outf(fmt,T) snprintf(buff,sizeof(buff),fmt,*((T*)v))
         case OBJ_LLONG_T:
-            outf(LONG_LONG_FMT,int64);
+            outf(LONG_LONG_FMT,int64_t);
             break;
         case OBJ_DOUBLE_T:
             outf("%0.16g",double);

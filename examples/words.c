@@ -31,7 +31,7 @@ int main(int argc, char **argv)
     array_sort_struct_ptr (pkv,true,MapKeyValue,value);
 
     FOR(i,10) {
-        printf("%s\t%d\n",(char*)pkv[i].key,(intptr)pkv[i].value);
+        printf("%s\t%d\n",(char*)pkv[i].key,(intptr_t)pkv[i].value);
     }
 
     dispose(m,pkv);
