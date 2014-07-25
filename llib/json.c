@@ -103,7 +103,7 @@ static void dump_value(SStr s, PValue v)
     if (value_is_map(v)) {
         dump_map(s,v);
     } else {
-        strbuf_addf(s,"%s(%p)",obj_type(v)->name,v);
+        strbuf_addf(s,"%s(%p)",obj_typename(v),v);
     }
 }
 

@@ -159,6 +159,17 @@ ObjAllocator obj_default_allocator = {
 
 DisposeFn _pool_filter, _pool_cleaner;
 
+typedef struct ObjType_ {
+    const char *name;
+    DisposeFn dtor;
+    ObjAllocator *alloc;
+    uint16 mlem;
+    uint16 idx;
+#ifdef LLIB_DEBUG
+    int instances;
+#endif
+} ObjType;
+
 #define PTR_FROM_HEADER(h) ((void*)(((ObjHeader*)(h))+1))
 #define HEADER_FROM_PTR(P) ((ObjHeader*)P-1)
 
@@ -213,28 +224,23 @@ int obj_refcount (const void *p)
 // @function obj_ref_array
 // @within RTTI
 
-/// type of object.
-// @tparam void* arr
-// @treturn ObjType*
-// @function obj_type
-// @within RTTI
-
-
-// Type descripters are kept in an array
+// Type descriptors are kept in an array
 #define LLIB_TYPE_MAX 4096
 
-ObjType obj_types[LLIB_TYPE_MAX];
-const ObjType *obj_types_ptr = obj_types;
-
-int obj_types_size = 8;
+static ObjType obj_types[LLIB_TYPE_MAX];
+static int obj_types_size = 8;
 
 typedef ObjType *OTP;
 
-OTP obj_type_(ObjHeader *h) {
+static OTP obj_type_(ObjHeader *h) {
     return &obj_types[h->type];
 }
 
-OTP type_from_dtor(const char *name, DisposeFn dtor) {
+const char *obj_typename(const void *p) {
+    return obj_type_(obj_header_(p))->name;
+}
+
+static OTP type_from_dtor(const char *name, DisposeFn dtor) {
     if (dtor) {
         for(OTP pt = obj_types; pt->name; ++pt) {
             if (pt->dtor == dtor)
@@ -249,7 +255,7 @@ OTP type_from_dtor(const char *name, DisposeFn dtor) {
     return NULL;
 }
 
-OTP obj_new_type(int size, const char *type, DisposeFn dtor) {
+static OTP obj_new_type(int size, const char *type, DisposeFn dtor) {
     OTP t = &obj_types[obj_types_size];
     t->name = type;
     t->dtor = dtor;
@@ -322,7 +328,7 @@ int obj_elem_size(void *P) {
 bool obj_is_instance(const void *P, const char *name) {
     if (obj_refcount(P) == -1)
         return false;
-    return strcmp(obj_type(P)->name,name) == 0;
+    return strcmp(obj_typename(P),name) == 0;
 }
 
 // Ref counted objects are either arrays or structs.
@@ -493,12 +499,11 @@ void obj_snapshot_dump() {
 // these non-macro versions are useful when in a debugger such as GDB
 int a_len(void *a) { return array_len(a); }
 ObjHeader* o_hdr(void *a) { return obj_header_(a); }
-ObjType *o_type(void *a) { return obj_type(a); }
 
 const char *obj_type_name(void *P) {
     static char buff[256];
     char *b = buff;
-    b += sprintf(buff,"(%s*)",obj_type(P)->name);
+    b += sprintf(buff,"(%s*)",obj_typename(P));
     if (obj_is_array(P))
         sprintf(b,"[%d]",array_len(P));
     return buff;

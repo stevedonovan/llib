@@ -33,17 +33,6 @@ typedef struct ObjHeader_ {
     unsigned int _len:32;
 } ObjHeader;
 
-typedef struct ObjType_ {
-    const char *name;
-    DisposeFn dtor;
-    ObjAllocator *alloc;
-    uint16 mlem;
-    uint16 idx;
-#ifdef LLIB_DEBUG
-    int instances;
-#endif
-} ObjType;
-
 enum {
     OBJ_CHAR_T = 0,
     OBJ_ECHAR_T = 1,
@@ -76,7 +65,6 @@ typedef int intptr_t;
 #define obj_is_array(P) (obj_header_(P)->is_array)
 #define obj_ref_array(P) (obj_header_(P)->is_ref_container)
 #define obj_type_index(P) (obj_header_(P)->type)
-#define obj_type(P) obj_type_(obj_header_(P))
 
 #define obj_new(T,dtor) (T*)obj_new_(sizeof(T),#T,(DisposeFn)dtor)
 #define obj_ref(P) (obj_incr_(P), P)
@@ -122,10 +110,10 @@ void obj_free_set(bool set);
 void obj_snapshot_dump();
 void obj_snapshot_create();
 #endif
+
 int obj_kount();
 void *obj_pool();
-ObjType *obj_type_(ObjHeader *h);
-ObjType *obj_new_type(int size, const char *type, DisposeFn dtor);
+const char *obj_typename(const void *p);
 int obj_elem_size(void *P);
 void *obj_new_(int size, const char *type,DisposeFn dtor);
 bool obj_is_instance(const void *P, const char *name);

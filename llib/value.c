@@ -186,7 +186,7 @@ const char *value_tostring(PValue v) {
     } else if (typeslot == OBJ_CHAR_T || typeslot == OBJ_ECHAR_T) {
         return str_ref((char*)v);  // already a string object
     } else {
-        snprintf(buff,sizeof(buff),"%s(%p)",obj_type(v)->name,v);
+        snprintf(buff,sizeof(buff),"%s(%p)",obj_typename(v),v);
     }
     return S(buff);
 }

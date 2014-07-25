@@ -11,8 +11,7 @@ static void insert_remove(void *sp, int pos, void *ins, int sz) {
     Seq *s = (Seq *)sp;
     char *P = (char*)s->arr;
     ObjHeader *pr = obj_header_(P);
-    ObjType *t = obj_type_(pr);
-    int on = pr->_len, mlen = t->mlem;
+    int on = pr->_len, mlen = obj_elem_size(P);
     if (pos < 0) {
         pos = on + pos; 
         if (ins) // so that -1 means 'insert after last element'
@@ -57,8 +56,7 @@ void seq_insert(void *sp, int pos, void *src, int sz) {
 void seq_adda(void *sp, void *buff, int sz) {
     Seq *s = (Seq *)sp;
     ObjHeader *pr = obj_header_(s->arr);
-    ObjType *t = obj_type_(pr);   
-    int la = pr->_len, mlem = t->mlem;
+    int la = pr->_len, mlem = obj_elem_size(s->arr);
     int lss = sz==-1 ? array_len(buff) : sz;
     int lass = la + lss;
     if (lass > s->cap) {
