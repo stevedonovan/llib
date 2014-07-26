@@ -81,8 +81,13 @@ static void dispose_map_entries(Map *m, PEntry node) {
 void list_init_(List *self, int flags);
 void map_clear(Map *m);
 
+static int t_map;
+
 Map *map_new(int ktype, enum MapValue vtype) {
-    Map *m = obj_new(Map,(DisposeFn)map_clear);
+    if (! t_map) { // initialize
+        t_map = obj_new_type(Map,map_clear);    
+    }
+    Map *m = (Map*)obj_new_from_type(t_map);
     list_init_((List*)m,ktype);
     set_vtype(m,vtype);
     return m;
@@ -144,7 +149,7 @@ void map_clear(Map *m) {
 
 /// is this object a Map?
 bool map_object (void *obj) {
-    return obj_is_instance(obj,"Map");
+    return obj_type_index(obj) == t_map;
 }
 
 /// get the data associated with this tree node.

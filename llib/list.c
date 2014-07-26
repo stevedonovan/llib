@@ -82,8 +82,10 @@ static int string_equals(const char *s1, const char *s2) {
     return strcmp(s1,s2) == 0;
 }
 
+static int t_list;
+
 bool list_object (void *obj) {
-    return obj_is_instance(obj,"List");
+    return obj_type_index(obj) == t_list;
 }
 
 extern ObjAllocator obj_default_allocator;
@@ -118,7 +120,10 @@ void list_init_(List *self, int flags) {
 }
 
 List *list_new (int flags) {
-    List *self = obj_new(List,List_dispose);
+    if (! t_list) {
+        t_list = obj_new_type(List,List_dispose);
+    }
+    List *self = (List*)obj_new_from_type(t_list);
     list_init_(self,flags);
     return self;
 }

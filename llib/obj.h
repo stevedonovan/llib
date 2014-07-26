@@ -66,8 +66,10 @@ typedef unsigned long long uint64_t;
 #define obj_is_array(P) (obj_header_(P)->is_array)
 #define obj_ref_array(P) (obj_header_(P)->is_ref_container)
 #define obj_type_index(P) (obj_header_(P)->type)
+#define obj_cast(T,P) (obj_is_instance(P,#T) ? (T*)P : NULL)
 
 #define obj_new(T,dtor) (T*)obj_new_(sizeof(T),#T,(DisposeFn)dtor)
+#define obj_new_type(T,dtor) obj_new_type_(sizeof(T),#T,(DisposeFn)dtor)
 #define obj_ref(P) (obj_incr_(P), P)
 #define obj_unref_v(...) obj_apply_varargs(NULL,(PFun)obj_unref,__VA_ARGS__,NULL)
 #define array_new(T,sz) (T*)array_new_(sizeof(T),#T,sz,0)
@@ -114,8 +116,10 @@ void obj_snapshot_create();
 
 int obj_kount();
 void *obj_pool();
+int obj_new_type_(int size, const char *type, DisposeFn dtor);
 const char *obj_typename(const void *p);
 int obj_elem_size(void *P);
+void *obj_new_from_type(int ti);
 void *obj_new_(int size, const char *type,DisposeFn dtor);
 bool obj_is_instance(const void *P, const char *name);
 void obj_incr_(const void *P);

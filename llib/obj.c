@@ -258,7 +258,7 @@ static OTP type_from_dtor(const char *name, DisposeFn dtor) {
     return NULL;
 }
 
-static OTP obj_new_type(int size, const char *type, DisposeFn dtor) {
+static OTP new_type(int size, const char *type, DisposeFn dtor) {
     OTP t = &obj_types[obj_types_size];
     t->name = type;
     t->dtor = dtor;
@@ -267,6 +267,17 @@ static OTP obj_new_type(int size, const char *type, DisposeFn dtor) {
     // just in case...
     obj_types[obj_types_size].name = NULL;
     return t;
+}
+
+/// allocate a new type
+// @tparam type T
+// @tparam DisposeFn optional destructior
+// @treturn T*
+// @function obj_new_type
+// @within New
+
+int obj_new_type_(int size, const char *type, DisposeFn dtor) {
+    return new_type(size,type,dtor)->idx;
 }
 
 // the type system needs to associate certain common types with fixed slots
@@ -295,15 +306,8 @@ static void initialize_types() {
 // @function obj_new
 // @within New
 
-void *obj_new_(int size, const char *type, DisposeFn dtor) {
-    if (! initialized) {
-        initialize_types();
-    }
-    OTP t = type_from_dtor(type,dtor);
-    if (! t)
-        t = obj_new_type(size,type,dtor);
-
-    ObjHeader *h = new_obj(size,t);
+static void *obj_from_type(OTP t) {
+    ObjHeader *h = new_obj(t->mlem,t);
     h->_len = 0;
     h->_ref = 1;
     h->is_array = 0;
@@ -316,7 +320,25 @@ void *obj_new_(int size, const char *type, DisposeFn dtor) {
     return P;
 }
 
-// getting element size is now a little more indirect...
+void *obj_new_(int size, const char *type, DisposeFn dtor) {
+    if (! initialized) {
+        initialize_types();
+    }
+    OTP t = type_from_dtor(type,dtor);
+    if (! t)
+        t = new_type(size,type,dtor);
+    
+    return obj_from_type(t);
+}
+
+/// allocate a new object from type.
+// @within New
+void *obj_new_from_type(int ti) {
+    if (ti < 0 || ti >= obj_types_size)
+        return NULL;
+    OTP t = &obj_types[ti];
+    return obj_from_type(t);
+}
 
 /// size of this object.
 // For arrays, this is size of base type.
@@ -333,6 +355,12 @@ bool obj_is_instance(const void *P, const char *name) {
         return false;
     return strcmp(obj_typename(P),name) == 0;
 }
+
+/// dynamically cast object to type.
+// Uses `obj_is_instance`
+// @param T type name
+// @param o object
+// @function obj_cast
 
 // Ref counted objects are either arrays or structs.
 // If they are arrays of refcounted objects, then
@@ -577,7 +605,7 @@ void *array_new_(int mlen, const char *name, int len, int isref) {
 
     OTP t = type_from_dtor(name,NULL);
     if (! t)
-        t = obj_new_type(mlen,name,NULL);
+        t = new_type(mlen,name,NULL);
 
     ObjHeader *h = new_obj(mlen*(len+1),t);
     byte *P;
