@@ -157,6 +157,7 @@ ObjAllocator obj_default_allocator = {
   s_alloc, s_free, NULL
 };
 
+// shared with pool.c
 DisposeFn _pool_filter, _pool_cleaner;
 
 typedef unsigned short uint16;

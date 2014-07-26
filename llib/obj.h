@@ -55,8 +55,8 @@ typedef unsigned long long uintptr_t;
 typedef int intptr_t;
 typedef unsigned int uintptr_t;
 #endif
-typedef long long int64_t
-typedef unsigned long long uint64_t
+typedef long long int64_t;
+typedef unsigned long long uint64_t;
 #else
 #include <stdint.h>
 #endif

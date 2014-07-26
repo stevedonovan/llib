@@ -19,8 +19,12 @@ the given type, and create a reference-counted array if the name ends in 'R'.
 #include "obj.h"
 
 #ifdef __cplusplus
-#define _T_ decltype
+// Some C++11 magic needed to create a portable typeof...
+// http://stackoverflow.com/questions/13202289/remove-reference-in-decltype-return-t-instead-of-t-where-t-is-the-decltype
+#include <type_traits>
+#define _T_(e) std::remove_reference<decltype(e)>::type
 #else
+// C99 extension supported by GCC, Clang, Intel
 #define _T_ __typeof__
 #endif
 

@@ -613,7 +613,7 @@ PValue arg_process(ArgState *cmds ,  const char**argv)
 {
     PValue val;
     int flags;
-    FlagEntry *fune, *cmd_fe;
+    FlagEntry *fune, *cmd_fe = NULL;
     str_t prefix = "";
     PValue *cmd_parms = NULL;
     char *rest_arg = NULL;
