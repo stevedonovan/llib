@@ -52,6 +52,7 @@ See `test-obj.c` and `test-seq.c`
 @module obj
 */
 
+#define _LLIB_EXPOSE_OBJTYPE
 #include "obj.h"
 #include <stdio.h>
 #include <stdlib.h>
@@ -160,19 +161,6 @@ ObjAllocator obj_default_allocator = {
 // shared with pool.c
 DisposeFn _pool_filter, _pool_cleaner;
 
-typedef unsigned short uint16;
-
-typedef struct ObjType_ {
-    const char *name;
-    DisposeFn dtor;
-    ObjAllocator *alloc;
-    uint16 mlem;
-    uint16 idx;
-#ifdef LLIB_DEBUG
-    int instances;
-#endif
-} ObjType;
-
 #define PTR_FROM_HEADER(h) ((void*)(((ObjHeader*)(h))+1))
 #define HEADER_FROM_PTR(P) ((ObjHeader*)P-1)
 
@@ -230,8 +218,12 @@ int obj_refcount (const void *p)
 // Type descriptors are kept in an array
 #define LLIB_TYPE_MAX 4096
 
-static ObjType obj_types[LLIB_TYPE_MAX];
+ObjType obj_types[LLIB_TYPE_MAX];
 static int obj_types_size = 8;
+
+ObjType* obj_type_from_index(int t) {
+    return &obj_types[t];
+}
 
 typedef ObjType *OTP;
 
@@ -258,10 +250,18 @@ static OTP type_from_dtor(const char *name, DisposeFn dtor) {
     return NULL;
 }
 
+int obj_typeof_(const char *name) {
+    OTP t = type_from_dtor(name,NULL);
+    if (! t)
+        return -1;
+    return t->idx;
+}
+
 static OTP new_type(int size, const char *type, DisposeFn dtor) {
     OTP t = &obj_types[obj_types_size];
     t->name = type;
     t->dtor = dtor;
+    t->interfaces = NULL;
     t->mlem = size;
     t->idx = obj_types_size++;
     // just in case...
@@ -284,14 +284,14 @@ int obj_new_type_(int size, const char *type, DisposeFn dtor) {
 static bool initialized = false;
 
 static ObjType obj_types_initialized[] = {
-    {"char",NULL,NULL,1,0},
-    {"echar_",NULL,NULL,1,1},
-    {"int",NULL,NULL,sizeof(int),2},
-    {"long long",NULL,NULL,sizeof(long long),3},
-    {"double",NULL,NULL,sizeof(double),4},
-    {"float",NULL,NULL,sizeof(float),5},
-    {"bool",NULL,NULL,sizeof(bool),6},
-    {"MapKeyValue",NULL,NULL,sizeof(MapKeyValue),7}
+    {"char",NULL,NULL,NULL,1,0},
+    {"echar_",NULL,NULL,NULL,1,1},
+    {"int",NULL,NULL,NULL,sizeof(int),2},
+    {"long long",NULL,NULL,NULL,sizeof(long long),3},
+    {"double",NULL,NULL,NULL,sizeof(double),4},
+    {"float",NULL,NULL,NULL,sizeof(float),5},
+    {"bool",NULL,NULL,NULL,sizeof(bool),6},
+    {"MapKeyValue",NULL,NULL,NULL,sizeof(MapKeyValue),7}
 };
 
 static void initialize_types() {

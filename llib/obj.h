@@ -57,8 +57,31 @@ typedef unsigned int uintptr_t;
 #endif
 typedef long long int64_t;
 typedef unsigned long long uint64_t;
+typedef unsigned short uint16_t;
 #else
 #include <stdint.h>
+#endif
+
+#ifdef _LLIB_EXPOSE_OBJTYPE
+typedef struct InterfaceS_ {
+    int type;
+    void *interface;
+    struct InterfaceS_ *next;
+} InterfaceS;
+
+typedef struct ObjType_ {
+    const char *name;
+    DisposeFn dtor;
+    ObjAllocator *alloc;
+    InterfaceS *interfaces;
+    uint16_t mlem;
+    uint16_t idx;
+#ifdef LLIB_DEBUG
+    int instances;
+#endif
+} ObjType;
+
+ObjType* obj_type_from_index(int t);
 #endif
 
 #define obj_header_(P) ((ObjHeader*)(P)-1)
@@ -70,6 +93,8 @@ typedef unsigned long long uint64_t;
 
 #define obj_new(T,dtor) (T*)obj_new_(sizeof(T),#T,(DisposeFn)dtor)
 #define obj_new_type(T,dtor) obj_new_type_(sizeof(T),#T,(DisposeFn)dtor)
+#define obj_typeof(T) obj_typeof_(#T)
+#define obj_lookup_interface(T,P) (T*)obj_lookup_interface_(#T,P)
 #define obj_ref(P) (obj_incr_(P), P)
 #define obj_unref_v(...) obj_apply_varargs(NULL,(PFun)obj_unref,__VA_ARGS__,NULL)
 #define array_new(T,sz) (T*)array_new_(sizeof(T),#T,sz,0)
@@ -118,6 +143,7 @@ int obj_kount();
 void *obj_pool();
 int obj_new_type_(int size, const char *type, DisposeFn dtor);
 const char *obj_typename(const void *p);
+int obj_typeof_(const char *name);
 int obj_elem_size(void *P);
 void *obj_new_from_type(int ti);
 void *obj_new_(int size, const char *type,DisposeFn dtor);

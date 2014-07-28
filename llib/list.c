@@ -30,6 +30,7 @@ See `test-list.c`
 #include <stdarg.h>
 
 #include "list.h"
+#include "interface.h"
 
 /// List type
 // @tfield ListIter first
@@ -119,9 +120,40 @@ void list_init_(List *self, int flags) {
     self->size = 0;
 }
 
+// List implements Iterable
+
+typedef struct ListIterator_ ListIterator;
+
+struct ListIterator_ {
+    bool (*next)(ListIterator *iter, void *val);
+    PtrFun nextpair; // not used
+    ListIter li;
+};
+
+static bool iter_list_next(ListIterator *liter, void *pval) {
+    if (! liter->li)
+        return false;
+    *((void**)pval) = liter->li->data;
+    liter->li = liter->li->_next;
+    return true;
+}
+
+static Iterator *list_iterable(const void *o) {
+    ListIterator* liter = obj_new(ListIterator,NULL);
+    liter->li = list_start((List*)o);
+    liter->next = iter_list_next;
+    liter->nextpair = NULL;
+    return (Iterator*)liter;
+}
+
+static Iterable list_i = {
+    list_iterable
+};
+
 List *list_new (int flags) {
     if (! t_list) {
         t_list = obj_new_type(List,List_dispose);
+        interface_add(obj_typeof(Iterable),t_list,&list_i);
     }
     List *self = (List*)obj_new_from_type(t_list);
     list_init_(self,flags);
