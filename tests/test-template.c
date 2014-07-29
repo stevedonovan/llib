@@ -17,7 +17,7 @@ const char *tpl = "Hello $(P)$(name), how is $(home)?";
 
 void simple_case()
 {
-    StrTempl st = str_templ_new(tpl,NULL);
+    StrTempl *st = str_templ_new(tpl,NULL);
     char *tbl1[] = {"name","Dolly","home","here","P","X",NULL};
     char *S = str_templ_subst(st,tbl1);
     assert(str_eq(S,"Hello XDolly, how is here?"));
@@ -49,7 +49,7 @@ void using_environment()
 {
     setenv("ROME","home",1);
     setenv("PLAT","dog",1);
-    StrTempl st = str_templ_new("@{ROME} and @{PLAT}","@{}");
+    StrTempl *st = str_templ_new("@{ROME} and @{PLAT}","@{}");
     char *S = str_templ_subst_using(st, (StrLookup)l_getenv, NULL);
     printf("got '%s'\n",S);
     dispose(st,S);
@@ -73,7 +73,7 @@ void using_json()
             VMS("url","catalog.html","title","Links")
         )
     );
-    StrTempl st = str_templ_new(Tp,NULL);
+    StrTempl *st = str_templ_new(Tp,NULL);
     char *s = str_templ_subst_values(st,v);
     puts(s);
     dispose(s,v);
@@ -103,7 +103,7 @@ int main()
     simple_case();
 
     // NULL means we are happy with $() escapes
-    StrTempl st = str_templ_new(templ,NULL);
+    StrTempl *st = str_templ_new(templ,NULL);
     Str sbl[] = {
         "A","alpha",
         "B","beta",

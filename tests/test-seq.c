@@ -5,6 +5,7 @@
 */
 
 #include <stdio.h>
+#include <assert.h>
 #include <llib/obj.h>
 
 typedef struct {
@@ -58,6 +59,15 @@ int main()
     // deferencing the seq.
     double *S = (double*)seq_array_ref(ss);
     DUMP(double,"%f ",S);
+    
+    // using seq as a stack...
+    int **st = seq_new(int);
+    seq_add(st,10);
+    seq_add(st,20);
+    seq_add(st,30);
+    assert (seq_pop(st) == 30);
+    assert (seq_pop(st) == 20);
+    assert (seq_pop(st) == 10);
     
     byte **bb = seq_new(byte);
     byte b1[] = {10,20,30};

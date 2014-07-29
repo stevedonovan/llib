@@ -12,7 +12,7 @@ In their simplest form they allow substitution of placeholders like
 defined as a function plus an object. The placeholders can be changed
 if the default clashes with the target language syntax.
 
-    StrTempl st = `str_templ_new`("Hello $(P)$(name), how is $(home)?",NULL);
+    StrTempl *st = `str_templ_new`("Hello $(P)$(name), how is $(home)?",NULL);
     // using an array of key/value pairs...(uses `str_lookup`)
     char *tbl1[] = {"name","Dolly","home","here","P","X",NULL};
     char *S = `str_templ_subst`(st,tbl1);
@@ -43,22 +43,21 @@ See `test-template.c`
 #include <stdio.h> // for now
 #include "str.h"
 #include "template.h"
-#include "list.h"
 #include "value.h"
 #include "interface.h"
 
 struct StrTempl_ {
     char *str;
     char **parts;
-    List *subt;  // all subtemplates
+    StrTempl ***subt;  // all subtemplates
     // current substitution data
     StrLookup lookup;
     void *data;
     // non-NULL if we're a subtemplate
-    StrTempl parent;
+    StrTempl *parent;
 };
 
-static void StrTempl_dispose (StrTempl stl) {
+static void StrTempl_dispose (StrTempl *stl) {
     obj_unref_v(stl->str, stl->parts, stl->subt);
 }
 
@@ -98,8 +97,8 @@ static char *advance_to(char *s, char ch) {
 // `$(var)` is the default, if `markers` is NULL, but if `markers`
 // was "@<>" then it would use '@' as the escape and "<>" as the
 // brackets.
-StrTempl str_templ_new(const char *templ, const char *markers) {
-    StrTempl stl = obj_new(struct StrTempl_,StrTempl_dispose);
+StrTempl *str_templ_new(const char *templ, const char *markers) {
+    StrTempl *stl = obj_new(struct StrTempl_,StrTempl_dispose);
     if (! markers)
         markers = "$()";
     char esc = markers[0], openp = markers[1], closep = markers[2];
@@ -150,12 +149,13 @@ StrTempl str_templ_new(const char *templ, const char *markers) {
         *T = mark;
         seq_add(ss,T);
         if (st) {
-            StrTempl subt = str_templ_new(st,markers);
-            if (! stl->subt)
-                stl->subt = list_new_ref();
-            list_add(stl->subt,subt);
+            StrTempl *subt = str_templ_new(st,markers);
             subt->parent = stl;
             seq_add(ss,(char*)subt);
+            // keep references to subtemplates for later disposal
+            if (! stl->subt)
+                stl->subt = seq_new_ref(StrTempl*);
+            seq_add(stl->subt,subt);      
         }
         T = S + 1;
         if (! *T) break;
@@ -164,17 +164,17 @@ StrTempl str_templ_new(const char *templ, const char *markers) {
     return stl;
 }
 
-typedef char *(*TemplateFun)(void *arg, StrTempl stl);
+typedef char *(*TemplateFun)(void *arg, StrTempl *stl);
 
-static char *i_impl (void *arg, StrTempl stl) {
+static char *i_impl (void *arg, StrTempl *stl) {
     return str_fmt("%d", (intptr_t)arg);
 }
 
-static char *with_impl (void *arg, StrTempl stl) {
+static char *with_impl (void *arg, StrTempl *stl) {
     return str_templ_subst_using(stl,(StrLookup)interface_get_lookup(arg),arg);
 }
 
-static char *for_impl (void *arg, StrTempl stl) {
+static char *for_impl (void *arg, StrTempl *stl) {
     StrLookup mlookup = NULL;
     Iterator *a = interface_get_iterator(arg);
     Str *out = array_new_ref(Str,a->len);
@@ -191,18 +191,18 @@ static char *for_impl (void *arg, StrTempl stl) {
     return res;
 }
 
-static char *subst_using_parent(StrTempl stl) {
-    StrTempl pst = stl->parent;
+static char *subst_using_parent(StrTempl *stl) {
+    StrTempl *pst = stl->parent;
     return str_templ_subst_using(stl,pst->lookup,pst->data);
 }
 
-static intptr_t picked = false;
-static List *if_stack = NULL;
+static bool picked = false;
+static bool** if_stack = NULL;
 
-static char *if_impl (void *arg, StrTempl stl) {
+static char *if_impl (void *arg, StrTempl *stl) {
     if (! if_stack)
-        if_stack = list_new_ptr();
-    list_add(if_stack, (void*)picked);
+        if_stack = seq_new(bool);
+    seq_add(if_stack, picked);
     picked = arg != NULL;  // how we define truthiness....
     if (picked)
         return subst_using_parent(stl);
@@ -210,12 +210,12 @@ static char *if_impl (void *arg, StrTempl stl) {
         return str_new("");
 }
 
-static char *else_impl (void *arg, StrTempl stl) {
+static char *else_impl (void *arg, StrTempl *stl) {
     if (! picked)
         return subst_using_parent(stl);
     else
         return str_new("");
-    picked = (intptr_t)list_pop(if_stack);
+    picked = seq_pop(if_stack);
 }
 
 #define C (char*)
@@ -234,12 +234,12 @@ char *builtin_funs[] = {
 /// substitute variables in template using a lookup function.
 // `lookup` works with `data`, so that to use a Map you can pass
 // `map_get` together with the map.
-char *str_templ_subst_using(StrTempl stl, StrLookup lookup, void *data) {
+char *str_templ_subst_using(StrTempl *stl, StrLookup lookup, void *data) {
     int n = array_len(stl->parts);
     Str *out = array_new(Str,n);
     char *part;
     char mark = 0;
-    List *strs = NULL;
+    char*** strs = NULL;
     stl->lookup = lookup;
     stl->data = data;
 
@@ -264,7 +264,7 @@ char *str_templ_subst_using(StrTempl stl, StrLookup lookup, void *data) {
                     arg = lookup (data, arg);
                 else
                     arg = (char*)data;
-                part = fn(arg, (StrTempl)stl->parts[i+1]);
+                part = fn(arg, (StrTempl*)stl->parts[i+1]);
                 ref_str = true;
             } else {
                 // note that '_' stands for the data, without lookup
@@ -285,10 +285,10 @@ char *str_templ_subst_using(StrTempl stl, StrLookup lookup, void *data) {
                 part = (char*)value_tostring((PValue)part);
                 ref_str = true;
             }
-            if (ref_str) {
+            if (ref_str) { // collect strings that we'll need to dispose later...
                 if (! strs)
-                    strs = list_new_ref();
-                list_add(strs,part);
+                    strs = seq_new_ref(char*);
+                seq_add(strs,part);
             }
         }
         out[i] = part;
@@ -306,14 +306,14 @@ char *str_templ_subst_using(StrTempl stl, StrLookup lookup, void *data) {
 
 /// substitute the variables using an array of keys and pairs.
 // That is, a _simple map_.
-char *str_templ_subst(StrTempl stl, char **substs) {
+char *str_templ_subst(StrTempl *stl, char **substs) {
     return str_templ_subst_using(stl,(StrLookup)str_lookup,substs);
 }
 
 /// substitute using boxed values.
 // The value `v` can be any object supporting the `Accessor` interface,
 // or a simple map.
-char *str_templ_subst_values(StrTempl st, PValue v) {
+char *str_templ_subst_values(StrTempl *st, PValue v) {
     StrLookup lookup = (StrLookup)interface_get_lookup(v);
     return str_templ_subst_using(st,lookup,v);
 }

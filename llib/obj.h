@@ -198,10 +198,12 @@ typedef struct Seq_ {
 #define seq_add_items(s,...)   obj_apply_varargs(s,(PFun)seq_add_ptr,__VA_ARGS__,NULL)
 #define seq_add2(s,x1,x2) {seq_add(s,x1); seq_add(s,x2);}
 #define seq_cap(s) (((Seq*)(s))->cap)
+#define seq_pop(s) (*(s))[seq_decr_len(s)]
 
 void *seq_new_(int nlem, const char *name, int ref);
 void *seq_new_array (void *arr);
 int seq_next_(void *s);
+int seq_decr_len(void *sp);
 void seq_add_ptr(void *sp, void *p);
 void seq_add_str(void *sp, const char*p);
 void seq_resize(Seq *s, int nsz);

@@ -820,6 +820,11 @@ void seq_resize(Seq *s, int nsz) {
     s->cap = nsz;
 }
 
+int seq_decr_len(void *sp) {
+    void *arr = ((Seq *)sp)->arr;
+    return array_len(arr) = array_len(arr)-1;
+}
+
 /// add a value to a sequence.
 // @param s the sequence
 // @param v the value

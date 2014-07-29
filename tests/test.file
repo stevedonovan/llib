@@ -236,3 +236,16 @@ got 'drei'
 'one': '1'
 'three': '3'
 'two': '2'
+~/c/llib/tests$ ./test-seq
+size 27
+10 20 30 40 50 0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21
+1.000000 2.000000 3.000000 4.000000
+10 20 30 40 50 60
+1 2 3 4 5 6
+disposing foo 1
+disposing foo 2
+disposing foo 4
+disposing foo 5
+disposing foo 6
+now explicitly release f
+disposing foo 3
