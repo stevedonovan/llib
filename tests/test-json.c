@@ -66,7 +66,7 @@ int main(int argc, char **argv)
 
     PValue e = value_error("completely borked");
     if (value_is_error(e)) {
-        printf("here is an error: %s\n",e);
+        printf("here is an error: %s\n",value_as_string(e));
     }
     dispose(va,s, e);
 

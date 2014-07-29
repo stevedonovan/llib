@@ -178,11 +178,12 @@ file exists
 makefile was 'makefile'
 48 65 6C 6C 6F 2C 20 57 6F 72 6C 64 21
 got 'Hello, World!'
-size was 2036 bytes
+size was 2041 bytes
 no of lines 90
 'test-array.c'
 'test-config.c'
 'test-file.c'
+'test-interface.c'
 'test-json.c'
 'test-list.c'
 'test-map.c'
@@ -221,3 +222,17 @@ the include paths
 '/one'
 ~/c/llib/tests$ ./test-array
 ok
+~/c/llib/tests$ ./test-interface
+got 'one'
+got 'two'
+got 'three'
+'one': '1'
+'two': '2'
+'three': '3'
+lookup '2'
+got 'ein'
+got 'zwei'
+got 'drei'
+'one': '1'
+'three': '3'
+'two': '2'

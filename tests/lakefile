@@ -30,6 +30,7 @@ targets = {
     build('testing'),
     build('testa'),
     build('test-array'),
+    build('test-interface'),
 }
 
 -- force this target to be on top;

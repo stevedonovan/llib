@@ -8,7 +8,7 @@ CCC=$(CC) $(CFLAGS)
 EXES=test-obj test-list test-map test-seq test-file \
 	test-scan test-str test-template \
 	test-json test-xml test-table test-pool test-config \
-    testa testing test-array
+    testa testing test-array test-interface
 
 all: $(EXES)
 	ls -l $(EXES)
@@ -63,6 +63,9 @@ testa: testa.c $(LIB)
 	$(CCC) $< -o $@ $(LFLAGS)
 	
 test-array: test-array.c $(LIB)
+	$(CCC) $< -o $@ $(LFLAGS)
+
+test-interface: test-interface.c $(LIB)
 	$(CCC) $< -o $@ $(LFLAGS)
 	
 clean:

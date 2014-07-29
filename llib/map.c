@@ -28,6 +28,7 @@ sorts the result, giving the ten most common words.
 #include <string.h>
 
 #include "map.h"
+#include "interface.h"
 
 #define out(p) fprintf(stderr,"%s=%p (%d)\n",#p,p,obj_refcount(p))
 
@@ -82,10 +83,12 @@ void list_init_(List *self, int flags);
 void map_clear(Map *m);
 
 static int t_map;
+static void init_interfaces();
 
 Map *map_new(int ktype, enum MapValue vtype) {
     if (! t_map) { // initialize
         t_map = obj_new_type(Map,map_clear);    
+        init_interfaces();
     }
     Map *m = (Map*)obj_new_from_type(t_map);
     list_init_((List*)m,ktype);
@@ -500,5 +503,58 @@ MapIter map_iter_next (MapIter iter) {
         *iter->pvalue = iter->value;
     }
     return iter;
+}
+
+typedef struct MapIterator_ MapIterator;
+
+struct MapIterator_ {
+    bool (*next)(Iterator *iter, void *pval);
+    bool (*nextpair)(Iterator *iter, void *pkey, void *pval);
+    MapIter mi;
+    bool finis;
+};
+
+static bool iterator_map_nextpair(Iterator *iter, void *pkey, void *pval) {
+    MapIterator *miter = (MapIterator*)iter;
+    MapIter mi = miter->mi;
+    *((void**)pkey) = mi->key;
+    *((void**)pval) = mi->value;
+    if (miter->finis) {
+        miter->mi = NULL;
+        return false;
+    }
+    miter->finis = map_iter_next(mi) == NULL;
+    return true;
+}
+
+static bool iterator_map_next(Iterator *iter, void *pval) {
+    void *pnone;
+    return iterator_map_nextpair(iter,pval,(void*)&pnone);
+}
+
+static void MapIterator_dispose(MapIterator *iter) {
+    obj_unref(iter->mi);
+}
+
+static Iterator* iterator_map_init(const void *o) {
+    MapIterator *iter = obj_new(MapIterator,MapIterator_dispose);
+    iter->mi = map_iter_new((Map*)o,NULL,NULL);
+    iter->next = iterator_map_next;
+    iter->nextpair = iterator_map_nextpair;
+    iter->finis = false;
+    return (Iterator*)iter;
+}
+
+static Iterable i_map = {
+    iterator_map_init
+};
+
+static Accessor i_lookup = {
+    (ObjLookup)map_get
+};
+
+static void init_interfaces() {
+    interface_add(obj_typeof(Iterable),t_map,&i_map);
+    interface_add(obj_typeof(Accessor),t_map,&i_lookup);
 }
 

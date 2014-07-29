@@ -125,7 +125,7 @@ int main() {
         if (value_is_string(val))
             printf("'%s'\n",(char*)val);
         else if (value_is_int(val))
-            printf("%d\n",*(intptr_t*)val);
+            printf("%d\n",(int)*(intptr_t*)val);
         dispose(key,val);
     }
     unref(ts);

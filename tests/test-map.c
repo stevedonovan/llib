@@ -35,8 +35,10 @@ void dump(Data* d) {
     printf("%s (%d) %s\n",d->name,d->age, d->mf ? "male" : "female");
 }
 
+#define INT (int)(intptr_t)
+
 void dumpi(void *k, void *v) {
-    printf("%d:%d ",(intptr_t)k,(intptr_t)v);
+    printf("%d:%d ",INT k,INT v);
 }
 
 #define P (void *)
@@ -138,7 +140,7 @@ void int_maps()
 
     map_remove(m,P 5);
     FOR_MAP(iter,m) {
-        printf("[%d]=%d,",(intptr_t)iter->key,(intptr_t)iter->value);
+        printf("[%d]=%d,",INT iter->key,INT iter->value);
     }
     printf("\n");
     unref(m);
