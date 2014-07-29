@@ -48,17 +48,12 @@ Look at `value` for boxing support.  See `test-json.c`.
 #include "list.h"
 #include "str.h"
 #include "map.h"
-#include "scan.h"
-
+#include "interface.h"
 #include "json.h"
 
 typedef char *Str, **SStr;
 
 static void dump_array(SStr s, PValue vl);
-static void dump_list(SStr s, PValue vl);
-static void dump_map(SStr s, PValue vl);
-static void dump_simple_map (SStr p, PValue vi);
-
 static void dump_value(SStr s, PValue v)
 {
     if (v == NULL) {
@@ -69,84 +64,53 @@ static void dump_value(SStr s, PValue v)
         strbuf_addf(s,"%d",(intptr_t)v);
         return;
     }
-
-    int typeslot = obj_type_index(v);
-    if (value_is_array(v)) {
-        if (typeslot == OBJ_CHAR_T || typeslot == OBJ_ECHAR_T) {
-            strbuf_addf(s,"\"%s\"",v);
-        } else
-        if (typeslot == OBJ_KEYVALUE_T) {
-            dump_simple_map(s,v);
-        } else {
-            dump_array(s,v);
+    
+    Iterator *iter = interface_get_iterator(v);
+    if (iter) {
+        int ni = iter->len;
+        bool ismap = iter->nextpair != NULL;
+        strbuf_add(s,ismap ? '{' : '[');
+        FOR(i,ni) {
+            PValue val, key;
+            if (ismap) {
+                iter->nextpair(iter,&key,&val);
+                strbuf_addf(s,"\"%s\":",key);
+            } else {
+                iter->next(iter,&val);
+            }
+            dump_value(s,val);
+            if (i < ni-1)
+                strbuf_add(s,',');        
         }
-        return;
-    }
-
-    switch (typeslot) {
-    #define addf(fmt,T) strbuf_addf(s,fmt,*((T*)v))
-    case OBJ_LLONG_T:
-        addf("%d",int64_t);
-        return;
-    case OBJ_DOUBLE_T:
-        addf("%0.16g",double);
-        return;
-    case OBJ_BOOL_T:
-        strbuf_adds(s, (*(bool*)v) ? "true" : "false");
-        return;
-    #undef addf
-    }
-    // otherwise, containers!
-    if (value_is_list(v)) {
-        dump_list(s,v);
-    } else
-    if (value_is_map(v)) {
-        dump_map(s,v);
+        obj_unref(iter);
+        strbuf_add(s,ismap ? '}' : ']');  
     } else {
-        strbuf_addf(s,"%s(%p)",obj_typename(v),v);
+        int typeslot = obj_type_index(v);
+        if (value_is_array(v)) {
+            if (typeslot == OBJ_CHAR_T || typeslot == OBJ_ECHAR_T)
+                strbuf_addf(s,"\"%s\"",v);
+            else
+                dump_array(s,v);
+            return;
+        }
+        
+        switch (typeslot) {
+        #define addf(fmt,T) strbuf_addf(s,fmt,*((T*)v))
+        case OBJ_LLONG_T:
+            addf("%d",int64_t);
+            return;
+        case OBJ_DOUBLE_T:
+            addf("%0.16g",double);
+            return;
+        case OBJ_BOOL_T:
+            strbuf_adds(s, (*(bool*)v) ? "true" : "false");
+            return;
+        default:
+            strbuf_addf(s,"%s(%p)",obj_typename(v),v);
+            return;
+        #undef addf
+        }        
     }
-}
-
-static void dump_list(SStr s, PValue vl)
-{
-    List *li = (List*)vl;
-    int ni = list_size(li) - 1, i = 0;
-    strbuf_add(s,'[');
-    FOR_LIST(item,li) {
-        dump_value(s,item->data);
-        if (i++ < ni)
-            strbuf_add(s,',');
-    }
-    strbuf_add(s,']');
-}
-
-static void dump_map(SStr s, PValue vl)
-{
-    Map *m = (Map*)vl;
-    int ni = map_size(m) - 1, i = 0;
-    strbuf_add(s,'{');
-    FOR_MAP(iter,m) {
-        strbuf_addf(s,"\"%s\":",(char*)iter->key);
-        dump_value(s,iter->value);
-        if (i++ < ni)
-            strbuf_add(s,',');
-    }
-    strbuf_add(s,'}');
-}
-
-static void dump_simple_map (SStr s, PValue vi)
-{
-    char **ms = (char**)vi;
-    int n = array_len(ms)/2, i = 0;
-    int ni = n - 1;
-    strbuf_add(s,'{');
-    for (char **P = ms; *P; P += 2) {
-        strbuf_addf(s,"\"%s\":",*P);
-        dump_value(s,*(P+1));
-        if (i++ < ni)
-            strbuf_add(s,',');
-    }
-    strbuf_add(s,'}');
 }
 
 static void dump_array(SStr s, PValue vl) {
@@ -196,119 +160,5 @@ char *json_tostring(PValue v) {
     SStr s = strbuf_new();
     dump_value(s,v);
     return (char*)seq_array_ref(s);
-}
-
-// important thing to remember about this parser is that it assumes that
-// the token state has already been advanced with `scan_next`.
-static PValue json_parse(ScanState *ts) {
-    char *key;
-    PValue val, err = NULL;
-    int t = (int)ts->type;
-    switch(t) {
-    case '{':
-    case '[': {
-        void*** ss = seq_new_ref(void*);
-        bool ismap = t == '{';
-        int endt = ismap ? '}' : ']';  // corresponding close char
-        int nfloats = 0;
-        t = scan_next(ts);  // either close or first entry
-        while (t != endt) { // while there are entries in map or list
-            // a map has a key followed by a colon...
-            if (ismap) {
-                int tn;
-                key = scan_get_str(ts);
-                tn = scan_next(ts);
-                if (t != T_STRING || tn != ':') {
-                    obj_unref(key);
-                    err = value_error("expected 'key':<value> in map");
-                    break;
-                }
-                seq_add(ss,key);
-                scan_next(ts); // after ':' is the value...
-            }
-
-            // the value returned may be an error...
-            val = json_parse(ts);
-            if (value_is_error(val)) {
-                err = val;
-                break;
-            }
-            seq_add(ss,val);
-            if (value_is_float(val))
-                ++nfloats;
-
-            t = scan_next(ts); // should be separator or close
-            if (t == ',') { // move to next item (key or value)
-                t = scan_next(ts);
-            } else
-            if (t != endt) { // otherwise finished, or an error!
-                err = value_errorf("expecting ',' or '%c', got '%c'",endt,t);
-                break;
-            }
-        }
-        if (err) {
-            obj_unref(ss); // clean up the temporary array...
-            return err;
-        }
-        void** vals = (void**)seq_array_ref(ss);
-        if (ismap) {
-            obj_type_index(vals) = OBJ_KEYVALUE_T;
-        } else {
-            int n = array_len(vals);
-            if (n == nfloats) {
-                double *arr = array_new(double,n);
-                FOR(i,n)
-                    arr[i] = value_as_float(vals[i]);
-                obj_unref(vals);
-                vals = (void**)arr;
-            }
-        }
-        return (void*)vals;
-    }
-    case T_END:
-        return value_error("unexpected end of stream");
-    // scalars......
-    case T_STRING:
-        return scan_get_str(ts);
-    case T_NUMBER:
-        return value_float(scan_get_number(ts));
-    case T_IDEN: {
-        char buff[20];
-        scan_get_tok(ts,buff,sizeof(buff));
-        if (str_eq(buff,"null")) {
-            return NULL;
-        } else
-        if (str_eq(buff,"true") || str_eq(buff,"false")) {
-            return value_bool(str_eq(buff,"true"));
-        } else {
-            return value_errorf("unknown token '%s'",buff);
-        }
-    } default:
-        return value_errorf("got '%c'; expecting '{' or '['",t);
-    }
-}
-
-/// convert a string to JSON data.
-// As a special optimization, arrays consisting only of numbers
-// will be read in as primitive arrays of `double`.
-PValue json_parse_string(const char *str) {
-    PValue res;
-    ScanState *st = scan_new_from_string(str);
-    scan_next(st);
-    res = json_parse(st);
-    obj_unref(st);
-    return res;
-}
-
-/// convert a file to JSON data.
-PValue json_parse_file(const char *file) {
-    PValue res;
-    ScanState *st = scan_new_from_file(file);
-    if (! st)
-        return value_errorf("cannot open '%s'",file);
-    scan_next(st);
-    res = json_parse(st);
-    obj_unref(st);
-    return res;
 }
 

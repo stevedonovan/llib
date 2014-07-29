@@ -534,7 +534,8 @@ static bool iterator_map_next(Iterator *iter, void *pval) {
 }
 
 static void MapIterator_dispose(MapIterator *iter) {
-    obj_unref(iter->mi);
+    if (! iter->finis) // not already dead...
+        obj_unref(iter->mi);
 }
 
 static Iterator* iterator_map_init(const void *o) {

@@ -29,7 +29,7 @@ struct Iterator_ {
     int len;  // may be -1 meaning 'unknown'
 };
 
-int interface_template(const char *tname);
+int interface_typeof_(const char *tname);
 void interface_add(int itype, int type, void *funs);
 void* interface_get(int itype, const void *obj);
 ObjLookup interface_get_lookup(const void *P);

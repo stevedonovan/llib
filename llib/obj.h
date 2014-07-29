@@ -143,7 +143,7 @@ int obj_kount();
 void *obj_pool();
 int obj_new_type_(int size, const char *type, DisposeFn dtor);
 const char *obj_typename(const void *p);
-int obj_elem_size(void *P);
+int obj_elem_size(const void *P);
 void *obj_new_from_type(int ti);
 void *obj_new_(int size, const char *type,DisposeFn dtor);
 bool obj_is_instance(const void *P, const char *name);

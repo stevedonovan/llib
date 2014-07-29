@@ -343,7 +343,7 @@ void *obj_new_from_type(int ti) {
 /// size of this object.
 // For arrays, this is size of base type.
 // @within RTTI
-int obj_elem_size(void *P) {
+int obj_elem_size(const void *P) {
     ObjHeader *h = obj_header_(P);
     return obj_type_(h)->mlem;
 }
