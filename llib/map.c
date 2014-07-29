@@ -510,6 +510,7 @@ typedef struct MapIterator_ MapIterator;
 struct MapIterator_ {
     bool (*next)(Iterator *iter, void *pval);
     bool (*nextpair)(Iterator *iter, void *pkey, void *pval);
+    int len;
     MapIter mi;
     bool finis;
 };
@@ -541,6 +542,7 @@ static Iterator* iterator_map_init(const void *o) {
     iter->mi = map_iter_new((Map*)o,NULL,NULL);
     iter->next = iterator_map_next;
     iter->nextpair = iterator_map_nextpair;
+    iter->len = map_size((Map*)o);
     iter->finis = false;
     return (Iterator*)iter;
 }
@@ -554,7 +556,7 @@ static Accessor i_lookup = {
 };
 
 static void init_interfaces() {
-    interface_add(obj_typeof(Iterable),t_map,&i_map);
-    interface_add(obj_typeof(Accessor),t_map,&i_lookup);
+    interface_add(interface_typeof(Iterable),t_map,&i_map);
+    interface_add(interface_typeof(Accessor),t_map,&i_lookup);
 }
 

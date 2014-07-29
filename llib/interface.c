@@ -39,7 +39,6 @@ void* interface_get(int itype, const void *obj) {
     return NULL;
 }
 
-
 // iterating over arrays of pointers
 
 typedef struct ArrayIter_ ArrayIter;
@@ -47,6 +46,7 @@ typedef struct ArrayIter_ ArrayIter;
 struct ArrayIter_ {
     bool (*next)(ArrayIter *ai, void *pval);
     bool (*nextpair)(Iterator *iter, void *pkey, void *pval); // optional
+    int len;
     int n;
     void **P;
 };
@@ -83,6 +83,7 @@ static bool smap_nextpair(Iterator *iter, void *pkey, void *pval) {
 static ArrayIter *array_iter(void **A, int n) {
     ArrayIter *ai = obj_new(ArrayIter,NULL);
     ai->nextpair = NULL;
+    ai->len = n;
     ai->n = n;
     ai->P = A;
     return ai;
@@ -92,6 +93,7 @@ static Iterator* smap_init (const void *o) {
     ArrayIter *ai = array_iter((void**)o,array_len(o));
     ai->next = smap_next;
     ai->nextpair = smap_nextpair;
+    ai->len = array_len(o)/2;
     return (Iterator*)ai;
 }
 
@@ -105,6 +107,7 @@ static Accessor smap_a = {
 
 static bool initialized;
 static int t_accessor, t_iterable;
+int obj_typeof_(const char *name);
 
 static void initialize() {
     if (initialized) return;
@@ -115,9 +118,18 @@ static void initialize() {
     interface_add(t_iterable,OBJ_KEYVALUE_T,&smap_i);
 }
 
+int interface_typeof_(const char *tname) {
+    initialize();
+    return obj_typeof_(tname);
+}
+
+static bool is_pointer_array(const void *obj) {
+    return obj_is_array(obj) && obj_elem_size(obj) == sizeof(void*);
+}
+
 ObjLookup interface_get_lookup(const void *P) {
     initialize();
-    if (obj_refcount(P) == -1) {
+    if (obj_refcount(P) == -1 || is_pointer_array(P)) {
         return (ObjLookup)str_lookup;
     }
     Accessor* a = interface_get(t_accessor,P);
@@ -129,7 +141,7 @@ ObjLookup interface_get_lookup(const void *P) {
 Iterator* interface_get_iterator(const void *obj) {
     initialize();
     bool ours = obj_refcount(obj) != -1;
-    if (! ours || (obj_is_array(obj) && obj_elem_size(obj) == sizeof(void*))) { 
+    if (! ours || is_pointer_array(obj)) { 
         void **A = (void**)obj;
         int n = 0;
         if (! ours) { // assume it's a NULL-terminated array
@@ -140,6 +152,7 @@ Iterator* interface_get_iterator(const void *obj) {
         }
         ArrayIter *ai = array_iter(A,n);
         ai->next = array_next;
+        ai->len = n;
         return (Iterator*)ai;
     }
     Iterable* ii = interface_get(t_iterable,obj);

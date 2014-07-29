@@ -44,8 +44,8 @@ See `test-template.c`
 #include "str.h"
 #include "template.h"
 #include "list.h"
-#include "map.h"
 #include "value.h"
+#include "interface.h"
 
 struct StrTempl_ {
     char *str;
@@ -170,33 +170,19 @@ static char *i_impl (void *arg, StrTempl stl) {
     return str_fmt("%d", (intptr_t)arg);
 }
 
-static StrLookup get_lookup(void *item);
-
 static char *with_impl (void *arg, StrTempl stl) {
-    return str_templ_subst_using(stl,get_lookup(arg),arg);
+    return str_templ_subst_using(stl,(StrLookup)interface_get_lookup(arg),arg);
 }
-
-struct Iter_;
-
-typedef bool (*IterFun)(struct Iter_ *it, void **pv);
-
-typedef struct Iter_ {
-    IterFun next;
-    void **P;
-    int n;
-} *Iter;
-
-static Iter get_iterator (void *obj);
 
 static char *for_impl (void *arg, StrTempl stl) {
     StrLookup mlookup = NULL;
-    Iter a = get_iterator(arg);
-    Str *out = array_new_ref(Str,a->n);
+    Iterator *a = interface_get_iterator(arg);
+    Str *out = array_new_ref(Str,a->len);
     void *item;
     int i = 0;
     while (a->next(a,&item)) {
         if (i == 0) // assume all items have same type
-            mlookup = get_lookup(item);
+            mlookup = (StrLookup)interface_get_lookup(item);
         out[i++] = str_templ_subst_using(stl,mlookup,item);
     }
     Str res = str_concat(out,"");
@@ -325,73 +311,9 @@ char *str_templ_subst(StrTempl stl, char **substs) {
 }
 
 /// substitute using boxed values.
-// The value `v` can either represent a `Map` or be a simple
-// map.
+// The value `v` can be any object supporting the `Accessor` interface,
+// or a simple map.
 char *str_templ_subst_values(StrTempl st, PValue v) {
-    StrLookup lookup;
-    if (value_is_map(v))
-        lookup = (StrLookup)map_get;
-    else
-        lookup = (StrLookup)str_lookup;
-
+    StrLookup lookup = (StrLookup)interface_get_lookup(v);
     return str_templ_subst_using(st,lookup,v);
-}
-
-static bool iter_arr_next(Iter it, void **pv) {
-    if (it->n == 0)
-        return false;
-    --it->n;
-    *pv = *(it->P)++;
-    return true;
-}
-
-static bool iter_list_next(Iter it, void **pv) {
-    ListIter li = (ListIter)it->P;
-    if (! li)
-        return false;
-    *pv = li->data;
-    li = li->_next;
-    it->P = (void**)li;
-    return true;
-}
-
-static Iter get_iterator (void *obj) {
-    int n;
-    Iter ai = obj_new(struct Iter_,NULL);
-    if (obj_refcount(obj) == -1) {
-        // _assumed_ to be an array...
-        char **A = (char**)obj;
-        n = 0;
-        for (char** a = A; *a; ++a)
-            ++n;
-        ai->next = iter_arr_next;
-    } else {
-        if (list_object(obj)) {
-            List *L = (List*)obj;
-            n = list_size(L);
-            ai->next = iter_list_next;
-            obj = list_start(L);
-        } else { // must be an array
-            n = array_len(obj);
-            ai->next = iter_arr_next;
-        }
-    }
-    ai->n = n;
-    ai->P = (void**)obj;
-    return ai;
-}
-
-static char*null_lookup(char **d, char *key) {
-    return NULL;
-}
-
-static StrLookup get_lookup(void *item) {
-    if (map_object(item)) {
-        return (StrLookup)map_get;
-    } else
-    if (obj_refcount(item) != -1 && /*obj_elem_size(item) == sizeof(char*) &&*/ array_len(item) > 0) {
-        return (StrLookup)str_lookup; //  'simple map'
-    } else {
-        return (StrLookup)null_lookup; // default : cannot lookup
-    }
 }

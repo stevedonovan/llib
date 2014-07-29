@@ -127,6 +127,7 @@ typedef struct ListIterator_ ListIterator;
 struct ListIterator_ {
     bool (*next)(ListIterator *iter, void *val);
     PtrFun nextpair; // not used
+    int len;
     ListIter li;
 };
 
@@ -143,6 +144,7 @@ static Iterator *list_iterable(const void *o) {
     liter->li = list_start((List*)o);
     liter->next = iter_list_next;
     liter->nextpair = NULL;
+    liter->len = list_size((List*)o);
     return (Iterator*)liter;
 }
 
@@ -153,7 +155,7 @@ static Iterable list_i = {
 List *list_new (int flags) {
     if (! t_list) {
         t_list = obj_new_type(List,List_dispose);
-        interface_add(obj_typeof(Iterable),t_list,&list_i);
+        interface_add(interface_typeof(Iterable),t_list,&list_i);
     }
     List *self = (List*)obj_new_from_type(t_list);
     list_init_(self,flags);
