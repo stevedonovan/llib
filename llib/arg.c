@@ -620,6 +620,7 @@ PValue arg_process(ArgState *cmds ,  const char**argv)
     static char tmp[] = {0,0};
     int i = 1; // argv[0] is always program...
     int karg = 1;  // non-flag arguments
+    bool see_flags = true;
     
     if (cmds->has_commands && (argv[i] && *argv[i]  != '-')) {
         if (! argv[i])
@@ -634,13 +635,19 @@ PValue arg_process(ArgState *cmds ,  const char**argv)
     while (argv[i]) { // std guarantees that argv ends with NULL
         bool long_flag;
         char *arg = (char*)argv[i];
-        if (*arg == '-') { // flag
+        if (*arg == '-' && see_flags) { // flag
             char *pname = tmp;
             ++arg;
             *pname = *arg;
             long_flag = *arg=='-';
-            if (long_flag)
+            if (long_flag) {
                 pname = arg+1;
+                if (*pname == '\0') {
+                    ++i;
+                    see_flags = false;
+                    continue;
+                }
+            }
 
             while (*pname) { // short flags may be combined in a chain...( -abc )
                 fune = lookup(cmds,pname);

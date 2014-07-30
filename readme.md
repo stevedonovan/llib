@@ -271,6 +271,156 @@ by linear search, which is efficient enough for small arrays. `smap_new` creates
 so that `smap_put` and `smap_get` do linear lookup; `smap_add` simply adds a pair
 which can be more efficient for bulk operations.
 
+## Interfaces
+
+Sometimes we are not interested in the particular implementation, only in the abstract functionality.
+For instance, arrays, lists and maps can all be iterated over, and maps are indexable.  This idea was
+popularized by Java, and the llib concept is similar.  List and Map support the `Iterable`
+interface:
+
+```C
+    #include <llib/interface.h"
+    ...
+    List *ls = list_new_str();
+    list_add(ls, "ein");
+    list_add(ls, "zwei");
+    list_add(ls, "drei");
+    Iterator *it = interface_get_iterator(ls);
+    char *s;
+    while (it->next(it,&s)) {
+        printf("got '%s'\n",s);
+    }
+    unref(it);
+
+```
+
+There is an optional function `nextpair` in the `Iterator` struct,  which grabs key/value
+pairs:
+
+```C
+    Map *m = map_new_str_str();
+    map_put(m,"one","1");
+    map_put(m,"two","2");
+    map_put(m,"three","3");
+    Iterator *it = interface_get_iterator(m);
+    char *key, *val;
+    while (it->nextpair(it,&key,&val)) {
+        printf("'%s': '%s'\n",key,val);
+    }
+```
+
+`next` is also defined for Map - it returns the keys - but a non-NULL `nextpair` means we have
+an associative array.
+
+Naturally C does not provide us with any special syntactical sugar, especially to create 'objects'
+that implement interfaces. Here is how 'simple maps' implement `Iterable`:
+
+```C
+typedef struct ArrayIter_ ArrayIter;
+
+struct ArrayIter_ {
+    // Iterable
+    bool (*next)(ArrayIter *ai, void *pval);
+    bool (*nextpair)(ArrayIter *iter, void *pkey, void *pval);
+    int len;
+    // private implementation
+    int n;
+    void **P;
+};
+
+// over key/value values of simple maps
+static bool smap_nextpair(ArrayIterator *ai, void *pkey, void *pval) {
+    if (ai->n == 0)
+        return false;
+    ai->n -= 2;
+    *((void**)pkey) = *(ai->P)++;
+    *((void**)pval) = *(ai->P)++;
+    return true;
+}
+
+// over keys of simple maps
+static bool smap_next(ArrayIter *ai, void *pval) {
+    void *val;
+    return smap_nextpair(ai,pval,&val);
+}
+
+static Iterator* smap_init (const void *o) {
+    ArrayIter *ai = obj_new(ArrayIter,NULL);
+    ai->n = array_len(o);
+    ai->P = o;
+    ai->next = smap_next;
+    ai->nextpair = smap_nextpair;
+    ai->len = array_len(o)/2;
+    return (Iterator*)ai;
+}
+
+static Iterable smap_i = {
+    smap_init
+};
+
+...
+    t_iterable = obj_new_type(Iterable,NULL);
+    interface_add(t_iterable,OBJ_KEYVALUE_T,&smap_i);
+
+```
+
+The implementation of interfaces is straightforward;  llib type objects can have a list 
+of interface types and struct data that implements those interfaces. 
+
+## Array Operation Macros
+
+C is not good at expressing generic algorithms, so we have to use the preprocessor.
+By inlining the expression we side-step the lack of anonymous functions in C
+Consider the `FINDA` macro;
+it declares an index and sets it to the next array position that matches the expression.
+A placeholder variable `_`   is set in turn to each value from the array.
+The array must be 'one of ours' - that is, `array_len(a)` is meaningful.  
+(`FINDZ` is a similar animal which iterates until the end of a NULL-terminated array.)
+
+```C
+    #include <llib/array.h>
+    ....
+    int nums[] = {-1,-2,2,-1,4,3};
+    int *arr = array_new_init(int,nums);
+    
+    int k = 0;
+    while (true) {
+        FINDA(i,arr,k, _ > 0);
+        if (i == -1)
+            break;
+        printf("non-zero at %d is %d\n",i,arr[i]);
+        k = i + 1;
+    }
+
+```
+
+ `MAPA` likewise declares a new variable, which is a new array created by applying an expression
+to elements of a source array.  The `MAPAR` variant is similar but forces the result to be
+a reference container:
+
+```C
+    char** ss = str_strings("one","two","three",NULL);
+    MAPA(int,ssl,strlen(_),ss);
+    assert(ssl[0] == 3);
+    assert(ssl[1] == 3);
+    assert(ssl[2] == 5);
+    
+    int nn[] = {1,2,22,1,40,3};
+    int *na = array_new_init(int,nn);
+    
+    MAPAR(char*,sna,str_fmt("%02d",_),na);
+    
+    assert(str_eq(str_concat(sna," "),"01 02 22 01 40 03"));
+    
+```
+
+In `FILTA` the expression determines whether the value will be collected in the output array.
+So given the array `na` above, then `FILTA(int,nas,na, _ < 10)` results in `nas == {1,2,1,3}`.
+
+In C99 mode these macros use `__typeof` which is a GNU extension supported by Clang and Intel,
+and in C++11 mode uses `decltype`.  
+
+
 ## Strings
 
 Strings are the usual nul-terminated char arrays, but llib refcounted strings are arrays and so
@@ -383,7 +533,7 @@ $(for items |
 </ul>
 ```
 
-Then `items` must be something _iteratable_ returning something _indexable_. The text
+Then `items` must be something _iterable_ returning something _indexable_. The text
 inside "|...|" is the subtemplate and any variable expansion inside it will look up names
 in the objects returned by the iteration.
 
