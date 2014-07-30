@@ -45,9 +45,7 @@ Look at `value` for boxing support.  See `test-json.c`.
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdarg.h>
-#include "list.h"
 #include "str.h"
-#include "map.h"
 #include "interface.h"
 #include "json.h"
 
@@ -65,6 +63,19 @@ static void dump_value(SStr s, PValue v)
         return;
     }
     
+    int typeslot = obj_type_index(v);
+    if (value_is_array(v)) {
+        if (typeslot == OBJ_CHAR_T || typeslot == OBJ_ECHAR_T) {
+            strbuf_addf(s,"\"%s\"",v);
+            return;
+        } else
+        if (typeslot != OBJ_KEYVALUE_T) {
+            dump_array(s,v);
+            return;
+        }
+    }    
+    
+    // Object is Iterable?
     Iterator *iter = interface_get_iterator(v);
     if (iter) {
         int ni = iter->len;
@@ -84,16 +95,7 @@ static void dump_value(SStr s, PValue v)
         }
         obj_unref(iter);
         strbuf_add(s,ismap ? '}' : ']');  
-    } else {
-        int typeslot = obj_type_index(v);
-        if (value_is_array(v)) {
-            if (typeslot == OBJ_CHAR_T || typeslot == OBJ_ECHAR_T)
-                strbuf_addf(s,"\"%s\"",v);
-            else
-                dump_array(s,v);
-            return;
-        }
-        
+    } else {        
         switch (typeslot) {
         #define addf(fmt,T) strbuf_addf(s,fmt,*((T*)v))
         case OBJ_LLONG_T:
