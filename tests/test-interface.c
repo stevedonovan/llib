@@ -1,9 +1,44 @@
 #include <stdio.h>
+#include <assert.h>
 #include <llib/str.h>
 #include <llib/json.h>
 #include <llib/list.h>
 #include <llib/map.h>
 #include <llib/interface.h>
+
+// defining a new interface, Stringer
+
+typedef struct {
+    char* (*tostring) (void *o);
+    void* (*parse) (const char *s); // optional
+} Stringer;
+
+// implement tostring
+static char* list_tostring(void *o) {
+    return str_fmt("List[%d]",list_size((List*)o));
+}
+
+static Stringer s_list = {
+    list_tostring,
+    NULL  // we can choose not to implement parse
+};
+
+void defining_an_interface() {
+    // register the interface type
+    obj_new_type(Stringer,NULL);
+    
+    // List implements Stringer
+    interface_add(interface_typeof(Stringer), interface_typeof(List), &s_list);
+    
+    List *ls = list_new_str();
+    list_add(ls, "ein");
+    list_add(ls, "zwei");
+    list_add(ls, "drei");
+
+    // call the interface 'methods'
+    Stringer* s = (Stringer*) interface_get(interface_typeof(Stringer),ls);
+    assert(str_eq(s->tostring(ls),"List[3]"));
+}
 
 int main() 
 {
@@ -35,7 +70,9 @@ int main()
     it = interface_get_iterator(m);
     while (it->nextpair(it,&s,&t)) {
         printf("'%s': '%s'\n",s,t);
-    }    
+    }
+    
+    defining_an_interface();
     return 0;
 }
 

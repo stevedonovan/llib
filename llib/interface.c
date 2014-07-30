@@ -134,7 +134,7 @@ ObjLookup interface_get_lookup(const void *P) {
     if (obj_refcount(P) == -1 || is_pointer_array(P)) {
         return (ObjLookup)str_lookup;
     }
-    Accessor* a = interface_get(t_accessor,P);
+    Accessor* a = (Accessor*)interface_get(t_accessor,P);
     if (! a)
         return NULL;
     return a->lookup;
@@ -157,7 +157,7 @@ Iterator* interface_get_iterator(const void *obj) {
         ai->len = n;
         return (Iterator*)ai;
     }
-    Iterable* ii = interface_get(t_iterable,obj);
+    Iterable* ii = (Iterable*)interface_get(t_iterable,obj);
     if (! ii)
         return NULL;
     return ii->init(obj);
