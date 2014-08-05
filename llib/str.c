@@ -57,6 +57,7 @@ static void sb_adds(char **sp, str_t ss, int lss) {
     }
     memcpy((char*)s->arr + la, ss, lss);
     array_len(s->arr) = lass;
+    ((char*)s->arr)[lass] = '\0';
 }
 
 /// append a string to a string buffer.

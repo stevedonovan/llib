@@ -36,7 +36,7 @@ void defining_an_interface() {
     list_add(ls, "drei");
 
     // call the interface 'methods'
-    Stringer* s = (Stringer*) interface_get(interface_typeof(Stringer),ls);
+    Stringer* s = interface_get_by_name(Stringer,ls);
     assert(str_eq(s->tostring(ls),"List[3]"));
 }
 

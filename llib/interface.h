@@ -9,6 +9,7 @@
 #include "obj.h"
 
 #define interface_typeof(T) interface_typeof_(#T)
+#define interface_get_by_name(T,obj) (T*)interface_get(interface_typeof(T),obj)
 
 typedef void* (*ObjLookup)(const void *o, const void *key);
 
