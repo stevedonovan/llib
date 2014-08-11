@@ -6,9 +6,10 @@
 #include <llib/template.h>
 #include <llib/file.h>
 #include <llib/json.h>
+#include <llib/str.h>
 
 static char *test_impl (void *arg, StrTempl *stl) {
-    return str_ref(arg);
+    return str_fmt("<h2>%s</h2>\n",(char*)arg);
 }
 
 int main(int argc, char **argv)

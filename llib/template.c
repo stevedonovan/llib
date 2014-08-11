@@ -87,7 +87,7 @@ static char *balanced(char *T, char openp, char closep) {
     return T-1;  // *T must be closep
 }
 
-static char *spaces_right(char *p) {
+static char *spaces_left(char *p) {
     while (*p == ' ')
         --p;
     return p;
@@ -135,17 +135,18 @@ StrTempl *str_templ_new(const char *templ, const char *markers) {
         assert(*S == closep);
         *S = '\0'; // closep!
         // might contain a subtemplate!
-        p = spaces_right(S-1);
-        if (*p == '|') {
+        p = spaces_left(S-1);
+        if (*p == '|') { // right-hand boundary
             *p = '\0';
             mark = TTPL;
-            char *s = advance_to(T+1,'|');
+            char *s = advance_to(T+1,'|'); // left-hand boundary
             assert(*s == '|');
-            st = s + 1;
-            s = spaces_right(s-1) + 1;
+            st = s + 1; // now points to subtemplate
+            s = spaces_left(s-1) + 1;
             *s = '\0';
            // st = s + 2;
         }  else {
+            *(p+1) = '\0';
             st = NULL;
             mark = TVAR;
         }
@@ -271,11 +272,15 @@ char *str_templ_subst_using(StrTempl *stl, StrLookup lookup, void *data) {
                 TemplateFun fn = (TemplateFun)smap_get(builtin_funs,part);
                 char *arg = part + strlen(part) + 1;
                 assert(fn != NULL);
-                // always looks up the argument in current context
-                if (! str_eq2(arg,"_"))
+                // always looks up the argument in current context, unless it's quoted
+                if (*arg == '\"') {
+                  ++arg;
+                  arg[strlen(arg)-1] = '\0';
+                } else if (! str_eq2(arg,"_")) {
                     arg = lookup (data, arg);
-                else
+                } else {
                     arg = (char*)data;
+                }
                 part = fn(arg, (StrTempl*)stl->parts[i+1]);
                 ref_str = true;
             } else {

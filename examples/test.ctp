@@ -13,7 +13,8 @@ $(for items|<li>
  |)
  </li>|)
 </ul>
+$(test "title") And that's the rest
 </body>
 </html>
-$(test title ||)
+
 
