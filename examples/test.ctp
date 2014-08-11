@@ -15,3 +15,5 @@ $(for items|<li>
 </ul>
 </body>
 </html>
+$(test title ||)
+

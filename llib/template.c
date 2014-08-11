@@ -57,8 +57,14 @@ struct StrTempl_ {
     StrTempl *parent;
 };
 
+static char*** builtin_funs;
+static int templ_instances;
+
 static void StrTempl_dispose (StrTempl *stl) {
     obj_unref_v(stl->str, stl->parts, stl->subt);
+    --templ_instances;
+    if (templ_instances == 0)
+        obj_unref(builtin_funs);
 }
 
 #define MARKER '\01'
@@ -93,12 +99,16 @@ static char *advance_to(char *s, char ch) {
     return s;
 }
 
+static void templ_initialize();
+
 /// new template from string with variables to be expanded.
 // `$(var)` is the default, if `markers` is NULL, but if `markers`
 // was "@<>" then it would use '@' as the escape and "<>" as the
 // brackets.
 StrTempl *str_templ_new(const char *templ, const char *markers) {
     StrTempl *stl = obj_new(struct StrTempl_,StrTempl_dispose);
+    ++templ_instances;
+    templ_initialize();
     if (! markers)
         markers = "$()";
     char esc = markers[0], openp = markers[1], closep = markers[2];
@@ -164,8 +174,6 @@ StrTempl *str_templ_new(const char *templ, const char *markers) {
     return stl;
 }
 
-typedef char *(*TemplateFun)(void *arg, StrTempl *stl);
-
 static char *i_impl (void *arg, StrTempl *stl) {
     return str_fmt("%d", (intptr_t)arg);
 }
@@ -218,16 +226,20 @@ static char *else_impl (void *arg, StrTempl *stl) {
     picked = seq_pop(if_stack);
 }
 
-#define C (char*)
-char *builtin_funs[] = {
-    "i",C i_impl,
-    "with",C with_impl,
-    "for",C for_impl,
-    "if",C if_impl,
-    "else",C else_impl,
-    NULL
-};
-#undef C
+static void templ_initialize() {
+    if (builtin_funs)
+        return;
+    builtin_funs = smap_new(false);
+    str_templ_add_builtin("i", i_impl);
+    str_templ_add_builtin("with", with_impl);
+    str_templ_add_builtin("for", for_impl);
+    str_templ_add_builtin("if", if_impl);
+    str_templ_add_builtin("else", else_impl);
+}
+
+void str_templ_add_builtin(const char *name, TemplateFun fun) {
+    smap_add(builtin_funs, name, (const void*)fun);
+}
 
 #define str_eq2(s1,s2) ((s1)[0]==(s2)[0] && (s1)[1]==(s2)[1])
 
@@ -256,7 +268,7 @@ char *str_templ_subst_using(StrTempl *stl, StrLookup lookup, void *data) {
             bool ref_str = false;
             ++part;
             if (mark != TVAR) { // function-style evaluation
-                TemplateFun fn = (TemplateFun)str_lookup (builtin_funs,part);
+                TemplateFun fn = (TemplateFun)smap_get(builtin_funs,part);
                 char *arg = part + strlen(part) + 1;
                 assert(fn != NULL);
                 // always looks up the argument in current context

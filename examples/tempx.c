@@ -7,10 +7,14 @@
 #include <llib/file.h>
 #include <llib/json.h>
 
+static char *test_impl (void *arg, StrTempl *stl) {
+    return str_ref(arg);
+}
+
 int main(int argc, char **argv)
 {
     PValue v = NULL;
-    StrTempl st = NULL;
+    StrTempl *st = NULL;
     char *res = NULL;
     if (argc != 3) {
         printf("usage: tempx <js-file> <tmpl-file>\n");
@@ -29,6 +33,8 @@ int main(int argc, char **argv)
 
     st = str_templ_new(res,NULL);
     unref(res);
+    
+    str_templ_add_builtin("test",test_impl);
 
     res = str_templ_subst_values(st,v);
     printf("%s\n",res);
