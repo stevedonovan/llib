@@ -40,6 +40,7 @@ See `test-template.c`
 */
 
 #include <assert.h>
+#include <ctype.h>
 #include <stdio.h> // for now
 #include "str.h"
 #include "template.h"
@@ -87,13 +88,22 @@ static char *balanced(char *T, char openp, char closep) {
     return T-1;  // *T must be closep
 }
 
+static bool isspace_(int c) { return c == ' '; }
+
 static char *spaces_left(char *p) {
-    while (*p == ' ')
+    while (isspace_(*p))
         --p;
     return p;
 }
 
+static char *spaces_right(char *p) {
+    while (*p && isspace_(*p))
+        ++p;
+    return p;
+}
+
 static char *advance_to(char *s, char ch) {
+    ++s;
     while (*s && *s != ch)
         ++s;
     return s;
@@ -139,19 +149,41 @@ StrTempl *str_templ_new(const char *templ, const char *markers) {
         if (*p == '|') { // right-hand boundary
             *p = '\0';
             mark = TTPL;
-            char *s = advance_to(T+1,'|'); // left-hand boundary
+            char *s = advance_to(T,'|'); // left-hand boundary
             assert(*s == '|');
             st = s + 1; // now points to subtemplate
             s = spaces_left(s-1) + 1;
             *s = '\0';
-           // st = s + 2;
-        }  else {
-            *(p+1) = '\0';
+        } else { // not explicitly!
+            char *np = advance_to(T,' '); // past '(', upto space
+            np = spaces_right(np);
             st = NULL;
-            mark = TVAR;
+            if (*np) { // word followed by arg
+                if (*np == '"') { // ... quoted value
+                   np = advance_to(np,'"');
+                   assert(*np);  
+                   ++np; // past closing quote
+                } else { // ... word
+                    np = advance_to(np,' ');
+                }
+                if (*np) { // something follows arg. But is it just space?
+                    char *endp = np;
+                    np = spaces_right(np);                    
+                    if (*np)
+                        st = np;
+                    *endp = '\0';
+                }
+            }
+            if (st) {
+                mark = TTPL;
+            } else {
+                *(p+1) = '\0';
+                st = NULL;
+                mark = TVAR;
+            }
         }
         s = strchr(T,' ');
-        if (s) {
+        if (s) { // there is an argument....
             *s = '\0';
             if (mark == TVAR)
                 mark = TFUN;
