@@ -13,7 +13,7 @@ $(for items <li>
  )
  </li>)
 </ul>
-$(test "hello world") And that's the rest
+$(test "hello world") $(with extra $(1) is $(2))
 </body>
 </html>
 

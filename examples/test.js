@@ -6,6 +6,7 @@
     {'url':'catalog.html','title':'Links'},
     {'title':'Here'},
     {'url':'favourites.html','title':'Favorites'}
- ]
+ ],
+ 'extra':['one','two','three']
 }
 

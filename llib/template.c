@@ -64,8 +64,10 @@ static int templ_instances;
 static void StrTempl_dispose (StrTempl *stl) {
     obj_unref_v(stl->str, stl->parts, stl->subt);
     --templ_instances;
-    if (templ_instances == 0)
+    if (templ_instances == 0) {
         obj_unref(builtin_funs);
+        builtin_funs = NULL;
+    }
 }
 
 #define MARKER '\01'
@@ -316,7 +318,12 @@ char *str_templ_subst_using(StrTempl *stl, StrLookup lookup, void *data) {
                 part = fn(arg, (StrTempl*)stl->parts[i+1]);
                 ref_str = true;
             } else {
-                // note that '_' stands for the data, without lookup
+                if (isdigit(*part)) {
+                    if (*part == '0')
+                        part = (char*)data;
+                    else
+                        part = ((void**)data)[(int)*part - (int)'1'];                
+                } else // note that '_' stands for the data, without lookup
                 if (! str_eq2(part,"_")) {
                     char *res = lookup (data, part);
                     // which might fail; if there's a parent context, look there
