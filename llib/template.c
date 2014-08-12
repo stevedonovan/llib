@@ -289,6 +289,25 @@ void str_templ_add_builtin(const char *name, TemplateFun fun) {
 
 #define str_eq2(s1,s2) ((s1)[0]==(s2)[0] && (s1)[1]==(s2)[1])
 
+static char *do_lookup(char *part, StrTempl *stl, void *data) {
+    if (isdigit(*part)) {
+        if (*part == '0') // synonym for _
+            return (char*)data;
+        else
+            return (char*)((void**)data)[(int)*part - (int)'1'];                
+    } else // note that '_' stands for the data, without lookup
+    if (! str_eq2(part,"_")) {
+        char *res = stl->lookup (data, part);
+        // which might fail; if there's a parent context, look there
+        if (! res && stl->parent) {
+            res = stl->parent->lookup(stl->parent->data,part);
+        }
+        return res;                    
+    } else { // _ means the object itself
+        return (char*)data;
+    }
+}
+
 /// substitute variables in template using a lookup function.
 // `lookup` works with `data`, so that to use a Map you can pass
 // `map_get` together with the map.
@@ -322,12 +341,10 @@ char *str_templ_subst_using(StrTempl *stl, StrLookup lookup, void *data) {
                 assert(fn != NULL || macro != NULL);
                 // always looks up the argument in current context, unless it's quoted
                 if (*arg == '\"') {
-                  ++arg;
-                  arg[strlen(arg)-1] = '\0';
-                } else if (! str_eq2(arg,"_")) {
-                    arg = lookup (data, arg);
+                    ++arg;
+                    arg[strlen(arg)-1] = '\0';
                 } else {
-                    arg = (char*)data;
+                    arg = do_lookup(arg,stl,data);
                 }
                 if (fn) {
                     part = fn(arg, (StrTempl*)stl->parts[i+1]);
@@ -336,22 +353,7 @@ char *str_templ_subst_using(StrTempl *stl, StrLookup lookup, void *data) {
                 }
                 ref_str = true;
             } else {
-                if (isdigit(*part)) {
-                    if (*part == '0')
-                        part = (char*)data;
-                    else
-                        part = (char*)((void**)data)[(int)*part - (int)'1'];                
-                } else // note that '_' stands for the data, without lookup
-                if (! str_eq2(part,"_")) {
-                    char *res = lookup (data, part);
-                    // which might fail; if there's a parent context, look there
-                    if (! res && stl->parent) {
-                        res = stl->parent->lookup(stl->parent->data,part);
-                    }
-                    part = res;                    
-                } else {
-                    part = (char*)data;
-                }
+                part = do_lookup(part,stl,data);
             }
             if (! part)
                 part = "";
