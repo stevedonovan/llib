@@ -1,3 +1,4 @@
+$(def "H2" <h2>$(_)</h2>)
 <html>
 <head>
 </head>
@@ -14,6 +15,7 @@ $(for items <li>
  </li>)
 </ul>
 $(test "hello world") $(with extra $(1) is $(2))
+$(H2 "and more")
 </body>
 </html>
 

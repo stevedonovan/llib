@@ -32,16 +32,22 @@ char *str_lookup(char** substs, const char *name) {
 
 /// New simple map builder.
 char*** smap_new(bool ref) {
+    char*** res;
     if (ref)
-        return seq_new_ref(char*);
+        res = seq_new_ref(char*);
     else
-        return seq_new(char*);
+        res = seq_new(char*);
+    (*res)[0] = NULL;
+    return res;
 }
 
 /// Add a key/value pair.
 void smap_add(char*** smap, const char *name, const void *data) {
     seq_add(smap,(char*)name);
     seq_add(smap,(char*)data);
+    char** arr = *smap;
+    if (! obj_ref_array(arr))
+        arr[array_len(arr)] = NULL;
 }
 
 /// Update/insert a key/value pair.

@@ -17,18 +17,23 @@ int main(int argc, char **argv)
     PValue v = NULL;
     StrTempl *st = NULL;
     char *res = NULL;
+    char *jfile, *tfile;
     if (argc != 3) {
-        printf("usage: tempx <js-file> <tmpl-file>\n");
-        return 1;
+        jfile = "test.js";
+        tfile = "test.ctp";
+    } else {
+        jfile = argv[1];
+        tfile = argv[2];
     }
-    v = json_parse_file(argv[1]);
+    printf("file '%s' '%s'\n",jfile,tfile);
+    v = json_parse_file(jfile);
     if (value_is_error(v)) {
-        printf("json error: %s\n",v);
+        printf("json error: %s\n",value_as_string(v));
         goto err;
     }
-    res = file_read_all(argv[2],true);
+    res = file_read_all(tfile,true);
     if (! res) {
-        printf("cannot read '%s'\n",argv[2]);
+        printf("cannot read '%s'\n",tfile);
         goto err;
     }
 

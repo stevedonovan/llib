@@ -59,13 +59,17 @@ struct StrTempl_ {
 };
 
 static char*** builtin_funs;
+static char*** macros;
 static int templ_instances;
+static bool** if_stack = NULL;
 
 static void StrTempl_dispose (StrTempl *stl) {
     obj_unref_v(stl->str, stl->parts, stl->subt);
     --templ_instances;
     if (templ_instances == 0) {
         obj_unref(builtin_funs);
+        obj_unref(macros);
+        obj_unref(if_stack);
         builtin_funs = NULL;
     }
 }
@@ -240,11 +244,8 @@ static char *subst_using_parent(StrTempl *stl) {
 }
 
 static bool picked = false;
-static bool** if_stack = NULL;
 
 static char *if_impl (void *arg, StrTempl *stl) {
-    if (! if_stack)
-        if_stack = seq_new(bool);
     seq_add(if_stack, picked);
     picked = arg != NULL;  // how we define truthiness....
     if (picked)
@@ -254,11 +255,18 @@ static char *if_impl (void *arg, StrTempl *stl) {
 }
 
 static char *else_impl (void *arg, StrTempl *stl) {
+    char* res;
     if (! picked)
-        return subst_using_parent(stl);
+        res = subst_using_parent(stl);
     else
-        return str_new("");
+        res = str_new("");
     picked = seq_pop(if_stack);
+    return res;
+}
+
+static char *def_impl (void *arg, StrTempl *stl) {
+    smap_add(macros, (const char*)arg, stl);
+    return str_new("");
 }
 
 static void templ_initialize() {
@@ -270,6 +278,9 @@ static void templ_initialize() {
     str_templ_add_builtin("for", for_impl);
     str_templ_add_builtin("if", if_impl);
     str_templ_add_builtin("else", else_impl);
+    str_templ_add_builtin("def", def_impl);
+    macros = smap_new(false);
+    if_stack = seq_new(bool);
 }
 
 void str_templ_add_builtin(const char *name, TemplateFun fun) {
@@ -303,9 +314,12 @@ char *str_templ_subst_using(StrTempl *stl, StrLookup lookup, void *data) {
             bool ref_str = false;
             ++part;
             if (mark != TVAR) { // function-style evaluation
-                TemplateFun fn = (TemplateFun)smap_get(builtin_funs,part);
+                TemplateFun fn = NULL;
+                StrTempl *macro = (StrTempl*)smap_get(macros,part);
+                if (! macro)
+                    fn = (TemplateFun)smap_get(builtin_funs,part);
                 char *arg = part + strlen(part) + 1;
-                assert(fn != NULL);
+                assert(fn != NULL || macro != NULL);
                 // always looks up the argument in current context, unless it's quoted
                 if (*arg == '\"') {
                   ++arg;
@@ -315,7 +329,11 @@ char *str_templ_subst_using(StrTempl *stl, StrLookup lookup, void *data) {
                 } else {
                     arg = (char*)data;
                 }
-                part = fn(arg, (StrTempl*)stl->parts[i+1]);
+                if (fn) {
+                    part = fn(arg, (StrTempl*)stl->parts[i+1]);
+                } else {
+                    part = str_templ_subst_values(macro, arg);
+                }
                 ref_str = true;
             } else {
                 if (isdigit(*part)) {
@@ -353,10 +371,6 @@ char *str_templ_subst_using(StrTempl *stl, StrLookup lookup, void *data) {
     Str res = str_concat(out,NULL);
     obj_unref(out);
     obj_unref(strs);
-    if (if_stack) {
-        obj_unref(if_stack);
-        if_stack = NULL;
-    }
     return res;
 }
 
