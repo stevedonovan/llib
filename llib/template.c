@@ -340,7 +340,7 @@ char *str_templ_subst_using(StrTempl *stl, StrLookup lookup, void *data) {
                     if (*part == '0')
                         part = (char*)data;
                     else
-                        part = ((void**)data)[(int)*part - (int)'1'];                
+                        part = (char*)((void**)data)[(int)*part - (int)'1'];                
                 } else // note that '_' stands for the data, without lookup
                 if (! str_eq2(part,"_")) {
                     char *res = lookup (data, part);

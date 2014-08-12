@@ -1,5 +1,5 @@
 cd llib
-make
+make -f mingw.mak
 cd ..
 cd tests
 make -f mingw.mak
