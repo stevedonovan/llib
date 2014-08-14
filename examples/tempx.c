@@ -38,11 +38,19 @@ int main(int argc, char **argv)
     }
 
     st = str_templ_new(res,NULL);
+    if (value_is_error(st)) {
+        printf("template compilation error: %s\n",value_as_string(st));
+        goto err;
+    }
     unref(res);
     
     str_templ_add_builtin("test",test_impl);
 
     res = str_templ_subst_values(st,v);
+    if (value_is_error(res)) {
+        printf("template evaluation error: %s\n",value_as_string(res));
+        goto err;
+    }
     printf("%s\n",res);
 
 err:

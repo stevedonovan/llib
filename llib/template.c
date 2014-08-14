@@ -39,7 +39,6 @@ or an array of key/value pairs (a _simple map_).
 See `test-template.c`
 */
 
-#include <assert.h>
 #include <ctype.h>
 #include <stdio.h> // for now
 #include "str.h"
@@ -128,6 +127,7 @@ StrTempl *str_templ_new(const char *templ, const char *markers) {
     if (! markers)
         markers = "$()";
     char esc = markers[0], openp = markers[1], closep = markers[2];
+    char *err = NULL;
     // we make our own copy of the string
     // and will break it up into this sequence
     Str **ss = seq_new(Str);
@@ -145,10 +145,16 @@ StrTempl *str_templ_new(const char *templ, const char *markers) {
         if (! S)   break;
         // $(key) expansion
         T = S + 1;
-        assert(*T == openp);
+        if (*T != openp) {
+            err = "no open bracket after escape";
+            goto error;
+        }
         // grabbing stuff inside $(...)
         S = balanced(T+1,openp,closep);
-        assert(*S == closep);
+        if (*S != closep) {
+            err = "no close bracket in substitution";
+            goto error;
+        }
         *S = '\0'; // closep!
         // might contain a subtemplate!
         p = spaces_left(S-1);
@@ -156,7 +162,10 @@ StrTempl *str_templ_new(const char *templ, const char *markers) {
             *p = '\0';
             mark = TTPL;
             char *s = advance_to(T,'|'); // left-hand boundary
-            assert(*s == '|');
+            if (*s != '|') {
+                err = "no left | in subtemplate";
+                goto error;                
+            }
             st = s + 1; // now points to subtemplate
             s = spaces_left(s-1) + 1;
             *s = '\0';
@@ -167,7 +176,10 @@ StrTempl *str_templ_new(const char *templ, const char *markers) {
             if (*np) { // word followed by arg
                 if (*np == '"') { // ... quoted value
                    np = advance_to(np,'"');
-                   assert(*np);  
+                   if (! *np) {
+                       err = "no end quote in string";
+                       goto error;
+                   }
                    ++np; // past closing quote
                 } else { // ... word
                     np = advance_to(np,' ');
@@ -194,7 +206,6 @@ StrTempl *str_templ_new(const char *templ, const char *markers) {
             if (mark == TVAR)
                 mark = TFUN;
         }
-        assert(*T == openp);
         *T = mark;
         seq_add(ss,T);
         if (st) {
@@ -211,6 +222,10 @@ StrTempl *str_templ_new(const char *templ, const char *markers) {
     }
     stl->parts = (Str*)seq_array_ref(ss);
     return stl;
+error:
+    obj_unref(ss);
+    obj_unref(stl);
+    return value_error(err);
 }
 
 static char *i_impl (void *arg, StrTempl *stl) {
@@ -289,7 +304,16 @@ void str_templ_add_builtin(const char *name, TemplateFun fun) {
 
 #define str_eq2(s1,s2) ((s1)[0]==(s2)[0] && (s1)[1]==(s2)[1])
 
-static char *do_lookup(char *part, StrTempl *stl, void *data) {
+static char *do_lookup(char *part, StrTempl *stl, StrLookup lookup, void *data) {
+    char *dot = strchr(part,'.');
+    if (dot) {
+        *dot='\0';
+        ++dot;
+        void *T = do_lookup(part,stl,lookup,data);
+        if (! T)
+            return NULL;
+        return do_lookup(dot,stl,lookup,T);
+    }
     if (isdigit(*part)) {
         if (*part == '0') // synonym for _
             return (char*)data;
@@ -297,7 +321,7 @@ static char *do_lookup(char *part, StrTempl *stl, void *data) {
             return (char*)((void**)data)[(int)*part - (int)'1'];                
     } else // note that '_' stands for the data, without lookup
     if (! str_eq2(part,"_")) {
-        char *res = stl->lookup (data, part);
+        char *res = lookup (data, part);
         // which might fail; if there's a parent context, look there
         if (! res && stl->parent) {
             res = stl->parent->lookup(stl->parent->data,part);
@@ -314,7 +338,7 @@ static char *do_lookup(char *part, StrTempl *stl, void *data) {
 char *str_templ_subst_using(StrTempl *stl, StrLookup lookup, void *data) {
     int n = array_len(stl->parts);
     Str *out = array_new(Str,n);
-    char *part;
+    char *part, *err;
     char mark = 0;
     char*** strs = NULL;
     stl->lookup = lookup;
@@ -338,13 +362,16 @@ char *str_templ_subst_using(StrTempl *stl, StrLookup lookup, void *data) {
                 if (! macro)
                     fn = (TemplateFun)smap_get(builtin_funs,part);
                 char *arg = part + strlen(part) + 1;
-                assert(fn != NULL || macro != NULL);
+                if (fn == NULL && macro == NULL) {
+                    err = value_errorf("'%s' is not a function or macro",part);
+                    goto error;
+                }
                 // always looks up the argument in current context, unless it's quoted
                 if (*arg == '\"') {
                     ++arg;
                     arg[strlen(arg)-1] = '\0';
                 } else {
-                    arg = do_lookup(arg,stl,data);
+                    arg = do_lookup(arg,stl,lookup,data);
                 }
                 if (fn) {
                     part = fn(arg, (StrTempl*)stl->parts[i+1]);
@@ -353,7 +380,7 @@ char *str_templ_subst_using(StrTempl *stl, StrLookup lookup, void *data) {
                 }
                 ref_str = true;
             } else {
-                part = do_lookup(part,stl,data);
+                part = do_lookup(part,stl,lookup,data);
             }
             if (! part)
                 part = "";
@@ -374,6 +401,10 @@ char *str_templ_subst_using(StrTempl *stl, StrLookup lookup, void *data) {
     obj_unref(out);
     obj_unref(strs);
     return res;
+error:
+    obj_unref(out);
+    obj_unref(strs);
+    return err;
 }
 
 /// substitute the variables using an array of keys and pairs.

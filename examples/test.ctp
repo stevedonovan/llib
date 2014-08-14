@@ -14,7 +14,8 @@ $(for items <li>
  )
  </li>)
 </ul>
-$(test "hello world") $(with extra $(1) is $(2))
+$(test "hello world") $(extra.1) is $(extra.2) $(name.first) $(items.1.title)
+$(with items.1  Title is $(title), url is $(url))
 $(H2 "and more")
 </body>
 </html>
