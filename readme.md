@@ -313,7 +313,39 @@ pairs:
 an associative array.
 
 Naturally C does not provide us with any special syntactical sugar, especially to create 'objects'
-that implement interfaces. Here is how 'simple maps' implement `Iterable`:
+that implement interfaces.  Here is a simple example - how to create a `Stringer` interface. 
+It always provides `tostring`, but may also provide `parse`.
+
+```C
+typedef struct {
+    char* (*tostring) (void *o);
+    void* (*parse) (const char *s); // optional
+} Stringer;
+
+....
+
+    // register the interface type
+    obj_new_type(Stringer,NULL);
+
+
+// implement tostring for Lists
+static char* list_tostring(void *o) {
+    return str_fmt("List[%d]",list_size((List*)o));
+}
+
+static Stringer s_list = {
+    list_tostring,
+    NULL  // we can choose not to implement parse
+};
+
+....
+
+    // List implements Stringer
+    interface_add(interface_typeof(Stringer), interface_typeof(List), &s_list);
+
+```
+
+Here is how 'simple maps' implement `Iterable`:
 
 ```C
 typedef struct ArrayIter_ ArrayIter;
@@ -364,8 +396,10 @@ static Iterable smap_i = {
 
 ```
 
-The implementation of interfaces is straightforward;  llib type objects can have a list 
-of interface types and struct data that implements those interfaces. 
+Although the original concept only applies to functions (methods), these interfaces are defined
+by structs that may contain arbitrary data, perhaps without any functions. You can think of
+them as a general mechanism for attaching extra information to a type, which is indexed
+by the type of that information.
 
 ## Array Operation Macros
 
@@ -419,7 +453,6 @@ So given the array `na` above, then `FILTA(int,nas,na, _ < 10)` results in `nas 
 
 In C99 mode these macros use `__typeof` which is a GNU extension supported by Clang and Intel,
 and in C++11 mode uses `decltype`.  
-
 
 ## Strings
 
@@ -521,7 +554,7 @@ void using_environment()
     dispose(st,S);
 }
 ```
-An interesting experimental feature is the ability to define _subtemplates_. Say we have the
+A powerful feature is the ability to define _subtemplates_. Say we have the
 following template:
 
 ```html
@@ -533,9 +566,14 @@ $(for items |
 </ul>
 ```
 
-Then `items` must be something _iterable_ returning something _indexable_. The text
-inside "|...|" is the subtemplate and any variable expansion inside it will look up names
-in the objects returned by the iteration.
+Then `items` must be something _iterable_ returning something _indexable_, in other words,
+the object must implement the `Iterable` interface.  Templates were the original
+motivation for the the interface abstraction; the original implementation was tightly coupled
+to llib `List` and `Map`.  Now the code is dynamically coupled to any types which implement
+`Iterable` and `Accessor` and is smaller and more flexible.
+
+The text inside "|...|" is the subtemplate and any variable expansion inside it will look up names
+in the objects returned by the iteration.  One way to create suitable data would be:
 
 ```C
 char ***smap = array_new_ref(char**,2);
@@ -548,20 +586,8 @@ char *tbl = {
     NULL
 };
 ```
-
-Currently _iteratable` means either an array or list of objects; _indexable_ means either
-a 'simple map' or a llib `Map`.  This kind of dynamic behaviour is not C's greatest
-strength, due to the lack of runtime information, but llib objects do have hidden RTTI.
-
-Here we exploit several known facts:
-
-  * `obj_refcount()` will return a count greater than zero if it is one of our objects
-  *  refcounted arrays know their size; otherwise we assume NULL-terminated
-  *  `list_object` and `map_object` can identify their respective types
-
-The rest is poor man's OOP - see the last page of `template.c`.  In C this is often considered
-to be C++ envy, but OOP  predates C++ and is a good general strategy in this case;
-it just happens to be a bit more clumsy without built-in support.
+Setting up this kind of data is a bit clumsy, but in the next section I'll show some convenient
+macros for building dynamic data structures in code.
 
 ## Values
 

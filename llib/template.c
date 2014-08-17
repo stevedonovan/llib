@@ -107,9 +107,10 @@ static char *spaces_right(char *p) {
     return p;
 }
 
-static char *advance_to(char *s, char ch) {
+static char *advance_to(char *s, char* endc) {
+    char ch1 = endc[0], ch2 = endc[1];
     ++s;
-    while (*s && *s != ch)
+    while (*s && ! (*s == ch1 || *s == ch2 ))
         ++s;
     return s;
 }
@@ -156,12 +157,12 @@ StrTempl *str_templ_new(const char *templ, const char *markers) {
             goto error;
         }
         *S = '\0'; // closep!
-        // might contain a subtemplate!
+        // might contain a subtemplate inside |...|
         p = spaces_left(S-1);
         if (*p == '|') { // right-hand boundary
             *p = '\0';
             mark = TTPL;
-            char *s = advance_to(T,'|'); // left-hand boundary
+            char *s = advance_to(T,"|"); // left-hand boundary
             if (*s != '|') {
                 err = "no left | in subtemplate";
                 goto error;                
@@ -169,29 +170,31 @@ StrTempl *str_templ_new(const char *templ, const char *markers) {
             st = s + 1; // now points to subtemplate
             s = spaces_left(s-1) + 1;
             *s = '\0';
-        } else { // not explicitly!
-            char *np = advance_to(T,' '); // past '(', upto space
-            np = spaces_right(np);
+        } else { // colon notation
+            char *np = advance_to(T," :"); // past '(', upto space or colon
+            np = spaces_right(np); // might just be spaces...
             st = NULL;
-            if (*np) { // word followed by arg
+            
+            if (*np && *np != ':') { // fun followed by arg
                 if (*np == '"') { // ... quoted value
-                   np = advance_to(np,'"');
+                   np = advance_to(np,"\"");
                    if (! *np) {
                        err = "no end quote in string";
                        goto error;
                    }
                    ++np; // past closing quote
                 } else { // ... word
-                    np = advance_to(np,' ');
-                }
-                if (*np) { // something follows arg. But is it just space?
-                    char *endp = np;
-                    np = spaces_right(np);                    
-                    if (*np)
-                        st = np;
-                    *endp = '\0';
+                    np = advance_to(np," :");
                 }
             }
+            
+            if (*np) { // something follows arg. But is it just space?
+                char *endp = np;
+                if (*np && *np == ':')
+                    st = np+1;
+                *endp = '\0';
+            }
+            
             if (st) {
                 mark = TTPL;
             } else {
@@ -225,7 +228,7 @@ StrTempl *str_templ_new(const char *templ, const char *markers) {
 error:
     obj_unref(ss);
     obj_unref(stl);
-    return value_error(err);
+    return (StrTempl*)value_error(err);
 }
 
 static char *i_impl (void *arg, StrTempl *stl) {
@@ -363,7 +366,7 @@ char *str_templ_subst_using(StrTempl *stl, StrLookup lookup, void *data) {
                     fn = (TemplateFun)smap_get(builtin_funs,part);
                 char *arg = part + strlen(part) + 1;
                 if (fn == NULL && macro == NULL) {
-                    err = value_errorf("'%s' is not a function or macro",part);
+                    err = (char*)value_errorf("'%s' is not a function or macro",part);
                     goto error;
                 }
                 // always looks up the argument in current context, unless it's quoted
