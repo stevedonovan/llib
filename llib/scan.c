@@ -388,6 +388,8 @@ ScanTokenType scan_next(ScanState* ts)
         char ch, endch = *ts->P++;
         int c_str = ts->flags & C_STRING;
         ts->start_P = ts->sbuff;
+        if (ts->flags & C_STRING_QUOTE)
+            *p++ = endch;
 
         while (*ts->P && *ts->P != endch) {
             if (*ts->P == '\\' && c_str) {
@@ -422,7 +424,10 @@ ScanTokenType scan_next(ScanState* ts)
                 *p++ = *ts->P++;
             }
         }
-        if (! *ts->P) return ts->type=T_END;
+        if (! *ts->P)
+            return ts->type=T_END;
+        if (ts->flags & C_STRING_QUOTE)
+            *p++ = endch;
         ts->P++;  // skip the endch
         *p = '\0';
         ts->end_P = p;
