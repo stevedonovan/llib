@@ -285,14 +285,16 @@ void scan_force_line_mode(ScanState* ts)
 // @within Skipping
 bool scan_skip_whitespace(ScanState* ts)
 {
+    bool skipws = ! (ts->flags & C_WSPACE);
 top:
-    if (! (ts->flags & C_WSPACE)) scan_skip_space(ts);
+    if (skipws)
+        scan_skip_space(ts);
     if (*ts->P == 0) {
         if (ts->inner_flags & FORCE_LINE_MODE) {
             ts->inner_flags ^= FORCE_LINE_MODE;
             return false;
         }
-        if (! scan_fetch_line(ts,true)) return false; // EOF will pass through as T_END
+        if (! scan_fetch_line(ts,skipws)) return false; // EOF will pass through as T_END
         goto top;
     }
     return true;
