@@ -50,9 +50,11 @@ struct StrTempl_ {
     char *str;
     char **parts;
     StrTempl ***subt;  // all subtemplates
+    const char *markers;
     // current substitution data
     StrLookup lookup;
     void *data;
+    void *bound_data;
     // non-NULL if we're a subtemplate
     StrTempl *parent;
 };
@@ -136,7 +138,9 @@ StrTempl *str_templ_new(const char *templ, const char *markers) {
     stl->subt = NULL;
     stl->lookup = NULL;
     stl->data = NULL;
+    stl->bound_data = NULL;
     stl->parent = NULL;
+    stl->markers = markers;
     char *T = stl->str;
     while (true) {
         char *S = strchr(T,esc), *p, *st, *s, mark;
@@ -283,7 +287,7 @@ static char *else_impl (void *arg, StrTempl *stl) {
 }
 
 static char *def_impl (void *arg, StrTempl *stl) {
-    smap_add(macros, (const char*)arg, stl);
+    str_templ_add_macro((const char*)arg, stl, NULL);
     return str_new("");
 }
 
@@ -303,6 +307,12 @@ static void templ_initialize() {
 
 void str_templ_add_builtin(const char *name, TemplateFun fun) {
     smap_add(builtin_funs, name, (const void*)fun);
+}
+
+void str_templ_add_macro(const char *name, StrTempl *stl, void *data) {
+    smap_add(macros, name, stl);
+    if (data)
+        stl->bound_data = data;
 }
 
 #define str_eq2(s1,s2) ((s1)[0]==(s2)[0] && (s1)[1]==(s2)[1])
@@ -359,9 +369,9 @@ char *str_templ_subst_using(StrTempl *stl, StrLookup lookup, void *data) {
         if (mark > 0 && mark < TMARKER) {
             bool ref_str = false;
             ++part;
+            StrTempl *macro = (StrTempl*)smap_get(macros,part);            
             if (mark != TVAR) { // function-style evaluation
                 TemplateFun fn = NULL;
-                StrTempl *macro = (StrTempl*)smap_get(macros,part);
                 if (! macro)
                     fn = (TemplateFun)smap_get(builtin_funs,part);
                 char *arg = part + strlen(part) + 1;
@@ -383,7 +393,11 @@ char *str_templ_subst_using(StrTempl *stl, StrLookup lookup, void *data) {
                 }
                 ref_str = true;
             } else {
-                part = do_lookup(part,stl,lookup,data);
+                if (! macro) {
+                    part = do_lookup(part,stl,lookup,data);
+                } else {
+                    part = str_templ_subst_values(macro, data);
+                }
             }
             if (! part)
                 part = "";
@@ -420,6 +434,8 @@ char *str_templ_subst(StrTempl *stl, char **substs) {
 // The value `v` can be any object supporting the `Accessor` interface,
 // or a simple map.
 char *str_templ_subst_values(StrTempl *st, PValue v) {
+    if (st->bound_data)
+        v = st->bound_data;
     StrLookup lookup = (StrLookup)interface_get_lookup(v);
     return str_templ_subst_using(st,lookup,v);
 }

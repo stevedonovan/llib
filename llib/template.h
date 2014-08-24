@@ -18,6 +18,7 @@ typedef char *(*StrLookup) (void *obj, const char *key);
 
 typedef char *(*TemplateFun)(void *arg, StrTempl *stl);
 void str_templ_add_builtin(const char *name, TemplateFun fun);
+void str_templ_add_macro(const char *name, StrTempl *stl, void *data);
 
 StrTempl *str_templ_new(const char *templ, const char *markers);
 char *str_templ_subst_using(StrTempl *stl, StrLookup lookup, void *data);

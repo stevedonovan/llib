@@ -9,7 +9,7 @@
 #include <llib/json.h>
 #include <llib/farr.h>
 
-#ifndef STANDALONE_FLOT
+#ifdef STANDALONE_FLOT
 #define FLOT_CDN "file:///home/steve/projects/flot"
 #define JQUERY_CDN FLOT_CDN "/jquery.min.js"
 #else
@@ -30,6 +30,7 @@ typedef struct flot_ {
     int height;
     Map *map;
     List *text_marks;
+    void *vmap;
 } Flot;
 
 typedef struct Series_ {
@@ -41,9 +42,58 @@ typedef struct Series_ {
 } Series;
 
 typedef char *Str;
-typedef const char *CStr;
+typedef const char *str_t;
 
 static List *plugins = NULL;
+
+str_t tpl = 
+"<!DOCTYPE HTML PUBLIC '-//W3C//DTD HTML 4.01 Transitional//EN' 'http://www.w3.org/TR/html4/loose.dtd'>\n"
+"<html>\n"
+" <head>\n"
+" <meta http-equiv='Content-Type' content='text/html; charset=utf-8'>\n"
+" <title>@(title)</title>\n"
+" @(flot-headers)\n"
+" </head>\n"
+"<body>\n"
+"@(for plots | @(do-plot _) |)\n"
+"@(flot-scripts)\n"
+" </body>\n"
+"</html>\n"
+;
+
+str_t flot_plot = 
+"<h2>@(title)</h2>\n"
+"<div id='@(div)' style='width:@(width)px;height:@(height)px'></div>\n"
+;
+
+str_t flot_headers =
+"    <!--[if lte IE 8]><script language='javascript' type='text/javascript' src='@(flot)/excanvas.min.js'></script><![endif]-->\n"
+"    <script language='javascript' type='text/javascript' src='@(jquery)'></script>\n"
+"    <script language='javascript' type='text/javascript' src='@(flot)/jquery.flot.js'></script>\n"
+"    @(for plugins |\n"
+"        <script language='javascript' type='text/javascript' src='@(flot)/jquery.flot.@(_).js'></script>\n"
+"    |)\n"
+;
+
+str_t flot_scripts = 
+"<script type='text/javascript'>\n"
+"    function text_marking(plot,id,xp,yp, text) {\n"
+" 		var o = plot.pointOffset({ x: xp, y: yp});\n"
+"		// Append it to the placeholder that Flot already uses for positioning\n"
+"		$('#'+id).append(\"<div style='position:absolute;left:\" + (o.left + 4) + 'px;top:' + o.top + 'px;color:#666;font-size:smaller\">' + text + '</div>');\n"
+"    }\n"
+"\n"
+"$(function () {\n"
+"@(for plots |\n"
+"  var plot_@(div) = $.plot( $('#@(div)'),\n"
+"    @(data),\n"
+"    @(options)\n"
+" )\n"
+" @(textmarks)\n"
+"|)\n"
+"});\n"
+"</script>\n"
+;
 
 static double **interleave(double *X, double *Y) {
     int n = array_len(X);
@@ -75,7 +125,7 @@ static char *splitdot(char *key) {
 
 // key may be in dotted form, e.g. "points.show" - in this case 'points' refers to a submap
 // and 'show' is the subkey into that submap.
-static void put_submap(Map *map, CStr ckey, const void* value) {
+static void put_submap(Map *map, str_t ckey, const void* value) {
     char key[MAX_KEY];
     strcpy(key,ckey);
     char *subkey = splitdot(key);
@@ -91,7 +141,7 @@ static void put_submap(Map *map, CStr ckey, const void* value) {
     }
 }
 
-static PValue get_submap(Map *map, CStr ckey) {
+static PValue get_submap(Map *map, str_t ckey) {
     char key[MAX_KEY];
     strcpy(key,ckey);
     char *subkey = splitdot(key);
@@ -144,7 +194,7 @@ Flot *flot_new_(PValue options)  {
     return P;
 }
 
-void flot_option(Flot *P, CStr key, const void* value) {
+void flot_option(Flot *P, str_t key, const void* value) {
     put_submap(P->map,key,value);
 }
 
@@ -226,18 +276,26 @@ Series *flot_series_new_(Flot *p, double *X, double *Y, int flags, PValue option
     return s;
 }
 
-void flot_series_option(Series *S, CStr key, const void* value) {
+void flot_series_option(Series *S, str_t key, const void* value) {
     put_submap(S->map,key,value);
 }
 
-void flot_render(CStr name) {
-    // load the template...
-    char *tpl = file_read_all("flot.tpl",false);
-    if (! tpl) {
-        perror("template read");
-        exit(1);
-    }
-    
+static StrTempl *flot_plot_tpl;
+
+static char *flot_plot_impl(void *arg, StrTempl *stl) {
+    str_t title = (str_t)arg;
+    Flot *plot = NULL;
+    FOR_LIST(iter,plots) {
+        Flot *P = iter->data;
+        if (str_eq(P->caption,title)) {
+            plot = P;
+            break;
+        }
+    }    
+    return str_templ_subst_values(flot_plot_tpl, plot->vmap);
+}
+
+void *flot_create(str_t title) {
     List *plist = list_new_ref();
     FOR_LIST(iter,plots) {
         Map *pd = map_new_str_ref();
@@ -262,22 +320,33 @@ void flot_render(CStr name) {
         FOR_LIST(p,P->series) {
             Series *S = p->data;
             series[i++] = S->map;
-        }        
+        }
     
         map_puts(pd,"data",json_tostring(series));
         map_puts(pd,"options",json_tostring(P->map));
         list_add(plist,pd);
+        P->vmap = pd;
     }
 
-    // and write the substitution out to the HTML output...
-    StrTempl st = str_templ_new(tpl,"@()");
+    // and write the substitution out to the HTML output...    
     Map *data = map_new_str_ref();
     map_puts(data,"flot",FLOT_CDN);
     map_puts(data,"jquery",JQUERY_CDN);
-    map_puts(data,"title",name); // for now...
+    map_puts(data,"title",title);
     map_puts(data,"plots",plist);
     map_puts(data,"plugins",plugins);
     
+    flot_plot_tpl = str_templ_new(flot_plot,"@()");
+    str_templ_add_macro("do-plot",flot_plot_tpl,NULL);
+    str_templ_add_builtin("flot-plot",flot_plot_impl);
+    str_templ_add_macro("flot-headers",str_templ_new(flot_headers,"@()"),data);
+    str_templ_add_macro("flot-scripts",str_templ_new(flot_scripts,"@()"),data);
+    return data;
+}
+
+void flot_render(str_t name) {
+    void *data = flot_create(name);  // use name as title of document....
+    StrTempl *st = str_templ_new(tpl,"@()");    
     char *res = str_templ_subst_values(st,data);
     char *html = str_fmt("%s.html",name);
     FILE *out = fopen(html,"w");
@@ -290,7 +359,7 @@ char *flot_rgba(int r, int g, int b,int a) {
     return str_fmt("rgba(%d,%d,%d,%d)",r,g,b,a);
 }
 
-PValue flot_gradient(const char *start, const char *finish) {
+PValue flot_gradient(str_t start, str_t finish) {
     return VMS("colors",VAS(start,finish));
 }
 
@@ -306,7 +375,7 @@ PValue flot_gradient(const char *start, const char *finish) {
 //~ }
 
 
-PValue flot_region(const char *axis, double x1, double x2, const char *colour) {
+PValue flot_region(str_t axis, double x1, double x2, str_t colour) {
     Map *m = map_new_str_ref();
     Map *s = map_new_str_ref();
     map_puts(m,"color",VS(colour));
