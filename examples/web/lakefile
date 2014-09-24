@@ -1,0 +1,2 @@
+llibp = '../../llib-p'
+c99.program{P,src={P,llibp..'/http',llibp..'/socket'},needs='llib'}

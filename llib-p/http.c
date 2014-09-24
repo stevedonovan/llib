@@ -69,6 +69,7 @@ void HttpResponse_dispose(HttpResponse *resp) {
     obj_unref(resp->headers);
 }
 
+/// Send a HTTP request with an URL and optional variables.
 HttpResponse *http_request(int c, str_t path, char **vars) {
     int nreq, n;
     FILE *f = fdopen(c,"r+");
@@ -147,16 +148,19 @@ void http_url_decode (const char *url, HttpRequest *req) {
     }
 }
 
+/// set the value of a URL-encoded variable.
+// Only works if the variable _already exists_!
 bool http_var_set(char** substs, const char *name, const char *value) {
     for (char **S = substs;  *S; S += 2) {
         if (strcmp(*S,name)==0) {
             obj_unref(*(S+1));
-            *(S+1) = str_ref(value);
+            *(S+1) = (char*)str_ref(value);
         }
     }
     return NULL;
 }
 
+/// get the value of a URL-encoded variable.
 str_t http_var_get (HttpRequest *req, str_t name) {
     return str_lookup(req->vars,name);
 }
@@ -199,6 +203,8 @@ static str_t static_handler(HttpRequest *web) {
     }
 }
 
+/// Associate a route with a handler.
+// The _longest_ route which matches the path will be chosen.
 void http_add_route(const char *path, HttpHandler handler) {
     routes[last_route].path = path;
     routes[last_route].handler = handler;
@@ -210,6 +216,7 @@ void http_add_route(const char *path, HttpHandler handler) {
     }
 }
 
+/// Set up a route for statically serving files.
 void http_add_static (const char *route, const char *path) {
     http_add_route(route,static_handler);
     routes[last_route-1].local_path = path;
@@ -258,6 +265,9 @@ void HttpRequest_dispose (HttpRequest *req) {
     obj_unref(req->headers_out);
 }
 
+/// Handle a request by parsing the URL and headers and matching the route.
+// The handler is assumed to return a string; if it's one of our strings, it will
+// be disposed. This response is written to the file handle which will be closed.
 void http_handle_request (int fd) {
     FILE *in = fdopen(fd,"r+");
     if (in == NULL) {
@@ -316,12 +326,15 @@ void http_handle_request (int fd) {
     fclose(in);    
 }
 
+/// Handlers can use this to add extra headers to the response, apart
+// from the default content-type and content-length.
 void http_add_out_header(HttpRequest *req, str_t name, str_t value) {
     if (! req->headers_out)
         req->headers_out = smap_new(true);
     smap_add(req->headers_out, str_ref(name),str_ref(value));
 }
 
+/// Handlers can use this to redirect to a new URL.
 str_t http_redirect(HttpRequest *req, str_t url) {
     req->status = "302";
     http_add_out_header(req,"Location",url);

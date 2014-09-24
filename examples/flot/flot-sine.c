@@ -1,4 +1,4 @@
-#include "flot.c"
+#include <flot/flot.h>
 
 int main()
 {

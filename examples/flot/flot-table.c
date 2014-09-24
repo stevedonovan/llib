@@ -1,6 +1,6 @@
 #include <stdio.h>
 #include <llib/table.h>
-#include "flot.c"
+#include <llib/flot.c>
 
 void read_dates_and_values(const char *file, farr_t *dates, farr_t *values) {
     Table *t = table_new_from_file(file, TableCsv | TableAll);
@@ -27,12 +27,14 @@ int main()
     farr_scale(oil_dates,1000,0);
     farr_scale(exchange_dates,1000,0);    
 
-    Flot *P = flot_new("caption", "Exchange Rates and Oil Price in 2007","xaxis.mode","time",
+    Flot *P = flot_new("caption", "Exchange Rates and Oil Price in 2007",
+        "xaxis.mode","time",
         "yaxes",VA(VMS("min",VF(0)),VMS("position","right"))
     );  
     
     flot_series_new(P,oil_dates, oil_prices,FlotLines,"label","Oil price ($)");
-    flot_series_new(P,exchange_dates, exchange_rates,FlotLines,"label","USD/EUR exchange rate",
+    flot_series_new(P,exchange_dates, exchange_rates,FlotLines,
+        "label","USD/EUR exchange rate",
         "yaxis",VF(2)
     );
     

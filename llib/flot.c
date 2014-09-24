@@ -1,13 +1,10 @@
 #include <stdio.h>
 #include <stdlib.h>
-#include <llib/file.h>
-#include <llib/list.h>
-#include <llib/map.h>
-#include <llib/str.h>
-#include <llib/template.h>
-#define LLIB_JSON_EASY
-#include <llib/json.h>
-#include <llib/farr.h>
+#include "flot.h"
+#include "file.h"
+#include "list.h"
+#include "map.h"
+#include "template.h"
 
 #ifdef STANDALONE_FLOT
 #define FLOT_CDN "file:///home/steve/projects/flot"
@@ -17,36 +14,9 @@
 #define JQUERY_CDN "http://ajax.googleapis.com/ajax/libs/jquery/1.10.2/jquery.min.js"
 #endif
 
-#define FlotMax 1e100
-#define FlotMin -FlotMax
-
-typedef struct flot_ {
-    List *series;
-    const char* caption;
-    const char *id;
-    const char* xtitle;
-    const char* ytitle;
-    int width;
-    int height;
-    Map *map;
-    List *text_marks;
-    void *vmap;
-} Flot;
-
-typedef struct Series_ {
-    const char *name;
-    double *X;
-    double *Y;
-    Flot *plot;
-    Map *map;
-} Series;
-
-typedef char *Str;
-typedef const char *str_t;
-
 static List *plugins = NULL;
 
-str_t tpl = 
+static str_t tpl = 
 "<!DOCTYPE HTML PUBLIC '-//W3C//DTD HTML 4.01 Transitional//EN' 'http://www.w3.org/TR/html4/loose.dtd'>\n"
 "<html>\n"
 " <head>\n"
@@ -61,12 +31,12 @@ str_t tpl =
 "</html>\n"
 ;
 
-str_t flot_plot = 
-"<h2>@(title)</h2>\n"
-"<div id='@(div)' style='width:@(width)px;height:@(height)px'></div>\n"
+static str_t flot_plot = 
+"@(if text |@(text)|)@(else |<h2>@(title)</h2>\n"
+"<div id='@(div)' style='width:@(width)px;height:@(height)px'></div>\n|)"
 ;
 
-str_t flot_headers =
+static str_t flot_headers =
 "    <!--[if lte IE 8]><script language='javascript' type='text/javascript' src='@(flot)/excanvas.min.js'></script><![endif]-->\n"
 "    <script language='javascript' type='text/javascript' src='@(jquery)'></script>\n"
 "    <script language='javascript' type='text/javascript' src='@(flot)/jquery.flot.js'></script>\n"
@@ -75,7 +45,7 @@ str_t flot_headers =
 "    |)\n"
 ;
 
-str_t flot_scripts = 
+static str_t flot_scripts = 
 "<script type='text/javascript'>\n"
 "    function text_marking(plot,id,xp,yp, text) {\n"
 " 		var o = plot.pointOffset({ x: xp, y: yp});\n"
@@ -84,13 +54,13 @@ str_t flot_scripts =
 "    }\n"
 "\n"
 "$(function () {\n"
-"@(for plots |\n"
+"@(for plots | @(if div |\n"
 "  var plot_@(div) = $.plot( $('#@(div)'),\n"
 "    @(data),\n"
 "    @(options)\n"
 " )\n"
 " @(textmarks)\n"
-"|)\n"
+"|)|)\n"
 "});\n"
 "</script>\n"
 ;
@@ -167,6 +137,10 @@ static void update_options(Map *map, PValue options) {
     }
 }
 
+/// new Flot plot.
+// @param .... options (as name/value pairs)
+// @function flot_new
+
 #define flot_new(...) flot_new_(value_map_of_str(__VA_ARGS__))
 
 Flot *flot_new_(PValue options)  {
@@ -185,17 +159,23 @@ Flot *flot_new_(PValue options)  {
     P->series = list_new_ref();
     P->map = map_new_str_ref();
     P->id = str_fmt("placeholder%d",kount++);
-    update_options(P->map,options);
-    P->caption = map_get(P->map,"caption");
-    if (get_submap(P->map,"xaxis.mode")) {
+    Map *map = (Map*)P->map;
+    update_options(map,options);
+    P->caption = map_get(map,"caption");
+    if (get_submap(map,"xaxis.mode")) {
         list_add_unique(plugins,"time");
     }
     list_add(plots,P);
     return P;
 }
 
+void flot_comment (str_t text) {
+    list_add(plots,str_new(text));
+}
+
+/// set an option for a whole plot.
 void flot_option(Flot *P, str_t key, const void* value) {
-    put_submap(P->map,key,value);
+    put_submap((Map*)P->map,key,value);
 }
 
 typedef struct TextMark_ {
@@ -203,47 +183,42 @@ typedef struct TextMark_ {
     const char *text;
 } TextMark;
 
-void flot_text_mark(Flot *P, double x, double y, const char *text) {
+/// attach text annotations to a plot.
+void flot_text_mark(Flot *P, double x, double y, str_t text) {
     if (! P->text_marks) 
         P->text_marks = list_new_ref();
     TextMark *mark = obj_new(TextMark,NULL);
     mark->x = x;
     mark->y = y;
     mark->text = text;
-    list_add(P->text_marks, mark);
+    list_add((List*)P->text_marks, mark);
 }
 
 static void Series_dispose(Series *S) {
     obj_unref_v(S->X, S->Y);
 }
 
-enum {
-    FlotLines = 1,
-    FlotPoints = 2,
-    FlotBars = 4,
-    FlotFill = 8
-};
-
-#define flot_series_new(p,x,y,flags,...) flot_series_new_(p,x,y,flags,value_map_of_str(__VA_ARGS__))
-
+/// new Flot series associated with a plot.
+// If `Y` is `NULL`, then `X` is interpreted as containing x and y values interleaved.
 Series *flot_series_new_(Flot *p, double *X, double *Y, int flags, PValue options) {
     Series *s = obj_new(Series,Series_dispose);
     s->plot = p;
     s->map = map_new_str_ref();
+    Map *map = s->map;
     if (flags == FlotBars) {
-        put_submap(s->map,"bars.show",True);
+        put_submap(map,"bars.show",True);
     } else {
         if (flags & FlotLines) {
-            put_submap(s->map,"lines.show",True);
+            put_submap(map,"lines.show",True);
             if (flags & FlotFill) {
-                put_submap(s->map,"lines.fill",VF(0.5));
+                put_submap(map,"lines.fill",VF(0.5));
             }
         }
         if (flags & FlotPoints) {
-            put_submap(s->map,"points.show",True);
+            put_submap(map,"points.show",True);
         }
     }
-    update_options(s->map,options);
+    update_options(map,options);
     double **xydata = NULL;
     if (! Y) { 
         // might already be an array in the correct form!
@@ -268,16 +243,17 @@ Series *flot_series_new_(Flot *p, double *X, double *Y, int flags, PValue option
     }
     if (! xydata)
         xydata = interleave(s->X,s->Y);
-    map_puts(s->map,"data",xydata);
-    if (get_submap(s->map,"points.errorbars")) {
+    map_puts((Map*)s->map,"data",xydata);
+    if (get_submap((Map*)s->map,"points.errorbars")) {
         list_add_unique(plugins,"errorbars");
     }
-    list_add(p->series,s);
+    list_add((List*)p->series,s);
     return s;
 }
 
+/// setting a Series option.
 void flot_series_option(Series *S, str_t key, const void* value) {
-    put_submap(S->map,key,value);
+    put_submap((Map*)S->map,key,value);
 }
 
 static StrTempl *flot_plot_tpl;
@@ -295,37 +271,42 @@ static char *flot_plot_impl(void *arg, StrTempl *stl) {
     return str_templ_subst_values(flot_plot_tpl, plot->vmap);
 }
 
+/// Create template data prior to rendering.
 void *flot_create(str_t title) {
     List *plist = list_new_ref();
     FOR_LIST(iter,plots) {
         Map *pd = map_new_str_ref();
-        Flot *P = iter->data;
-        map_puts(pd,"title",VS(P->caption));
-        map_puts(pd,"width",VI(P->width));
-        map_puts(pd,"height",VI(P->height));
-        map_puts(pd,"div",VS(P->id));
-        
-        if (P->text_marks) {
-            char **out = strbuf_new();
-            FOR_LIST(p,P->text_marks) {
-                TextMark *m = p->data;
-                strbuf_addf(out,"text_marking(plot_%s,'%s',%f,%f,'%s')\n",P->id,P->id,m->x,m->y,m->text);
+        if (obj_is_instance(iter->data,"Flot")) {
+            Flot *P = iter->data;
+            map_puts(pd,"title",VS(P->caption));
+            map_puts(pd,"width",VI(P->width));
+            map_puts(pd,"height",VI(P->height));
+            map_puts(pd,"div",VS(P->id));
+            
+            if (P->text_marks) {
+                char **out = strbuf_new();
+                FOR_LIST(p,(List*)P->text_marks) {
+                    TextMark *m = p->data;
+                    strbuf_addf(out,"text_marking(plot_%s,'%s',%f,%f,'%s')\n",P->id,P->id,m->x,m->y,m->text);
+                }
+                map_puts(pd,"textmarks",strbuf_tostring(out));
             }
-            map_puts(pd,"textmarks",strbuf_tostring(out));
+        
+            // an array of all the data objects of the series
+            PValue *series = array_new_ref(PValue,list_size((List*)P->series));
+            int i = 0;
+            FOR_LIST(p,(List*)P->series) {
+                Series *S = p->data;
+                series[i++] = S->map;
+            }
+        
+            map_puts(pd,"data",json_tostring(series));
+            map_puts(pd,"options",json_tostring(P->map));
+            P->vmap = pd;
+        } else {
+            map_puts(pd,"text",iter->data);
         }
-    
-        // an array of all the data objects of the series
-        PValue *series = array_new_ref(PValue,list_size(P->series));
-        int i = 0;
-        FOR_LIST(p,P->series) {
-            Series *S = p->data;
-            series[i++] = S->map;
-        }
-    
-        map_puts(pd,"data",json_tostring(series));
-        map_puts(pd,"options",json_tostring(P->map));
         list_add(plist,pd);
-        P->vmap = pd;
     }
 
     // and write the substitution out to the HTML output...    
@@ -344,6 +325,7 @@ void *flot_create(str_t title) {
     return data;
 }
 
+/// Render plots to a file, `name`.html.
 void flot_render(str_t name) {
     void *data = flot_create(name);  // use name as title of document....
     StrTempl *st = str_templ_new(tpl,"@()");    
@@ -359,21 +341,22 @@ char *flot_rgba(int r, int g, int b,int a) {
     return str_fmt("rgba(%d,%d,%d,%d)",r,g,b,a);
 }
 
+//// gradient between two colours.
 PValue flot_gradient(str_t start, str_t finish) {
     return VMS("colors",VAS(start,finish));
 }
 
-#define flot_markings(...) "grid.markings",VA(__VA_ARGS__)
+/// coloured region between x1 and x2
+// @double x1
+// @double x2
+// @string colour
+// @function flot_vert_region
 
-#define flot_line(axis,x,colour,line_width) VMS("color",colour,"lineWidth",VF(line_width), axis,VMS("from",VF(x),"to",VF(x)))
-#define flot_vert_line(x,c,w) flot_line("xaxis",x,c,w)
-#define flot_horz_line(x,c,w) flot_line("xaxis",x,c,w)
-
-// does not work for flot -run:  undefined symbol 'value_map_of_str'
-//~ PValue flot_line(const char *axis, double x, const char *colour, int line_width) {
-    //~ return VMS("color",colour,"lineWidth",VF(line_width), axis,VMS("from",VF(x),"to",VF(x)));
-//~ }
-
+/// coloured region between y1 and y2
+// @double y1
+// @double y2
+// @string colour
+// @function flot_horz_region
 
 PValue flot_region(str_t axis, double x1, double x2, str_t colour) {
     Map *m = map_new_str_ref();
@@ -385,11 +368,5 @@ PValue flot_region(str_t axis, double x1, double x2, str_t colour) {
     if (x2 < FlotMax)
         map_puts(s,"to",VF(x2));
     return m;
-    //return value_array_values_(3,"color","#f6f6f6","yaxis",value_array_values_(3,"to",VF(x),NULL),NULL);
 }
-
-#define flot_vert_region(x1,x2,c) flot_region("xaxis",x1,x2,c)
-#define flot_horz_region(x1,x2,c) flot_region("yaxis",x1,x2,c)
-
-#define flot_empty list_new_ptr
 

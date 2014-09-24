@@ -1,6 +1,6 @@
 #include <stdio.h>
 #include <llib/table.h>
-#include "flot.c"
+#include <llib/flot.h>
 
 int main()
 {

@@ -44,7 +44,7 @@ enum {
     LIST_STRING = LIST_STR + LIST_REF
 };
 
-#define FOR_LIST_ITEM(type,var,list) for (type *var = (type*)list->first; var != NULL; var = (type*)var->_next)
+#define FOR_LIST_ITEM(type,var,list) for (type *var = (type*)(list)->first; var != NULL; var = (type*)var->_next)
 #define FOR_LIST(var,list) FOR_LIST_ITEM(ListEntry,var,list)
 #define FOR_LIST_REV(type,var,list) for (type *var = (type*)list->last; var != NULL; var = (type*)var->_prev)
 #define FOR_LIST_FROM(type,var,item,list) for (type *var = (type*)item; var != NULL; var = (type*)var->_next)

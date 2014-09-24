@@ -1,6 +1,6 @@
 // Simple use of llib flot using the defaults.
 
-#include "flot.c"
+#include <llib/flot.h>
 
 double sqr(double x) { return x*x; }
 
@@ -24,6 +24,7 @@ int main()
     flot_series_new(P,xv,make_gaussian(5,1,xv), FlotLines,"label","norm s=1");    
     flot_series_new(P,xv,make_gaussian(4,0.7,xv), FlotLines,"label","norm s=0.7"); 
     
+    flot_comment("default fill colour is line colour");
     flot_render("norm");
     return 0;
     

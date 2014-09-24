@@ -18,7 +18,7 @@ const char *tpl =
 
 int main(int argc, char **argv)
 {
-    StrTempl t = str_templ_new(tpl,NULL);
+    StrTempl *t = str_templ_new(tpl,NULL);
     char *res = str_templ_subst(t,argv+1);
     printf("%s\n",res);
     return 0;
