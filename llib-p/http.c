@@ -248,7 +248,7 @@ static RouteEntry *match_request(str_t path) {
 static void send_response(FILE *in, str_t body, str_t code, str_t type, char** headers) {
     fprintf(in,"HTTP/1.1 %s\r\n",code);
     fprintf(in,"Content-Type: %s\r\n",type);
-    fprintf(in,"Content-Length: %d\r\n",strlen(body));
+    fprintf(in,"Content-Length: %d\r\n",(int)strlen(body));
     if (headers) {
         for (char **h = headers; *h; h += 2) {
             fprintf(in,"%s: %s\r\n",*h,*(h+1));

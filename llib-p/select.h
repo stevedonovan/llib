@@ -24,6 +24,7 @@ SelectFile *select_add_read(Select *s, int fd);
 int select_open(Select *s, const char *str, int flags);
 bool select_remove_read(Select *s, int fd);
 bool select_can_read(Select *s, int fd);
+bool select_can_write(Select *s, int fd);
 bool select_can_read_chan(Select *s, SelectChan *chan);
 
 SelectFile *select_add_write(Select *s, int fd);
