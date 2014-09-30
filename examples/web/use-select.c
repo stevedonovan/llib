@@ -18,7 +18,7 @@ which is a simple map suitable for passing directly to the template.
 str_t templ = 
   "<html><body>\n"
   "<h1>Hello $(name)! How is $(dog)?</h2>\n"
-  "vars are $(for _: $(_); ) <br/>\n"
+  "vars are $(for _: $(_) = $([_]); ) <br/>\n"
   "Here is the <a href='/static/use-select.c'>code</a>\n"
   "</body></html>\n"; 
   

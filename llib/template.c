@@ -9,15 +9,14 @@
 
 In their simplest form they allow substitution of placeholders like
 `$(var)` with the value of `var` determined by a lookup, which is
-defined as a function plus an object. The placeholders can be changed
-if the default clashes with the target language syntax.
+defined as a function plus an object.
 
     StrTempl *st = `str_templ_new`("Hello $(P)$(name), how is $(home)?",NULL);
     // using an array of key/value pairs...(uses `str_lookup`)
     char *tbl1[] = {"name","Dolly","home","here","P","X",NULL};
     char *S = `str_templ_subst`(st,tbl1);
     assert(`str_eq`(S,"Hello XDolly, how is here?"));
-    // using a map
+    // using a map - explicit lookup function and object
     Map *m = `map_new_str_str`();
     `map_put`(m,"name","Monique");
     `map_put`(m,"home","Paris");
@@ -25,16 +24,24 @@ if the default clashes with the target language syntax.
     S = `str_templ_subst_using`(st,(StrLookup)map_get,m);
     assert(`str_eq`(S,"Hello !Monique, how is Paris?"));
     
+`str_templ_subst_value` will use `interface_get_lookup` to see if the object
+implements `Accessor`, so the last could be simply written `str_templ_subst_value(st)`
+since `Map` defines that interface.
 
-Subtemplates can be defined; for instance this template generates an HTML list:
+The placeholders can be changed if the default clashes with
+the target language syntax, e.g. `str_templ_new(str,"@{}")`.
 
-    "<ul>$(for ls |<li>_</li>)</ul>"
+Subtemplates can be defined; for instance this template generates an HTML list.
+There is an alternative syntax using a single colon instead of bracketting
+pipe characters.
+
+    "<ul>$(for ls |<li>$(_)</li>|)</ul>"
+    "<ul>$(for ls: <li>$(_)</li>)</ul>"
     
-The special `for` form iterates over a List or an array. The special variable `\_` means 
-"use each value of the array";  otherwise the _iterable_ must be a map-like object.
+The special `for` form iterates over an `Iterable` object like a `List` or an array.
 
-When expanding a template you pass a map-like object, either an actual `Map`
-or an array of key/value pairs (a _simple map_).
+The special variable `\_` refers to each value of the `Iterable`; if we're iterating
+over a map-like object, then it will be the _key_;  use `$([\_])` for the _value_.
 
 See `test-template.c`
 */
@@ -332,12 +339,23 @@ static char *do_lookup(char *part, StrTempl *stl, StrLookup lookup, void *data) 
             return (char*)data;
         else
             return (char*)((void**)data)[(int)*part - (int)'1'];                
-    } else // note that '_' stands for the data, without lookup
-    if (! str_eq2(part,"_")) {
-        char *res = lookup (data, part);
+    } else
+    if (str_eq(part,"[_]")) { // used when iterating over a map; `_` is key, `[_]` is value
+    	stl = stl->parent;
+    	if (stl && stl->lookup)
+    		return stl->lookup(stl->data, (char*)data);
+    	else
+    		return NULL;
+    } else
+    if (! str_eq2(part,"_")) {  // note that '_' stands for the data, without lookup
+        char *res = NULL;
+        if (lookup)
+        	res = lookup (data, part);
         // which might fail; if there's a parent context, look there
-        if (! res && stl->parent) {
-            res = stl->parent->lookup(stl->parent->data,part);
+        stl = stl->parent;
+        while (! res && stl) {
+            res = stl->lookup(stl->data,part);
+            stl = stl->parent;
         }
         return res;                    
     } else { // _ means the object itself
