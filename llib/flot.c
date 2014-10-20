@@ -102,7 +102,7 @@ static void put_submap(Map *map, str_t ckey, const void* value) {
     if (! subkey) {
         map_puts(map,key,value);
     } else {
-        Map *sub = map_gets(map,key);
+        Map *sub = (Map*)map_gets(map,key);
         if (! sub) {
             sub = map_new_str_ref();
             map_puts(map,key,sub);
@@ -118,7 +118,7 @@ static PValue get_submap(Map *map, str_t ckey) {
     if (! subkey) {
         return map_gets(map,key);
     } else {
-        Map *sub = map_gets(map,key);
+        Map *sub = (Map*)map_gets(map,key);
         if (! sub)
             return NULL;
         return get_submap(sub,subkey);
@@ -161,7 +161,7 @@ Flot *flot_new_(PValue options)  {
     P->id = str_fmt("placeholder%d",kount++);
     Map *map = (Map*)P->map;
     update_options(map,options);
-    P->caption = map_get(map,"caption");
+    P->caption = (str_t)map_get(map,"caption");
     if (get_submap(map,"xaxis.mode")) {
         list_add_unique(plugins,"time");
     }
@@ -204,7 +204,7 @@ Series *flot_series_new_(Flot *p, double *X, double *Y, int flags, PValue option
     Series *s = obj_new(Series,Series_dispose);
     s->plot = p;
     s->map = map_new_str_ref();
-    Map *map = s->map;
+    Map *map = (Map*)s->map;
     if (flags == FlotBars) {
         put_submap(map,"bars.show",True);
     } else {
@@ -222,7 +222,7 @@ Series *flot_series_new_(Flot *p, double *X, double *Y, int flags, PValue option
     double **xydata = NULL;
     if (! Y) { 
         // might already be an array in the correct form!
-        void **D = (void*)X;
+        void **D = (void**)X;
         if (obj_refcount(D[0]) != -1 && array_len(D[0]) > 0) {
             xydata = (double**)X;
         } else { // even values are X, odd values are Y
@@ -262,7 +262,7 @@ static char *flot_plot_impl(void *arg, StrTempl *stl) {
     str_t title = (str_t)arg;
     Flot *plot = NULL;
     FOR_LIST(iter,plots) {
-        Flot *P = iter->data;
+        Flot *P = (Flot*)iter->data;
         if (str_eq(P->caption,title)) {
             plot = P;
             break;
@@ -277,7 +277,7 @@ void *flot_create(str_t title) {
     FOR_LIST(iter,plots) {
         Map *pd = map_new_str_ref();
         if (obj_is_instance(iter->data,"Flot")) {
-            Flot *P = iter->data;
+            Flot *P = (Flot*)iter->data;
             map_puts(pd,"title",VS(P->caption));
             map_puts(pd,"width",VI(P->width));
             map_puts(pd,"height",VI(P->height));
@@ -286,7 +286,7 @@ void *flot_create(str_t title) {
             if (P->text_marks) {
                 char **out = strbuf_new();
                 FOR_LIST(p,(List*)P->text_marks) {
-                    TextMark *m = p->data;
+                    TextMark *m = (TextMark*)p->data;
                     strbuf_addf(out,"text_marking(plot_%s,'%s',%f,%f,'%s')\n",P->id,P->id,m->x,m->y,m->text);
                 }
                 map_puts(pd,"textmarks",strbuf_tostring(out));
@@ -296,7 +296,7 @@ void *flot_create(str_t title) {
             PValue *series = array_new_ref(PValue,list_size((List*)P->series));
             int i = 0;
             FOR_LIST(p,(List*)P->series) {
-                Series *S = p->data;
+                Series *S = (Series*)p->data;
                 series[i++] = S->map;
             }
         
