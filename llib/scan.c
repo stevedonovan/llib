@@ -21,10 +21,13 @@ Each time you call `scan_next`, the scanner finds the next _token_,
     double val2 = `scan_get_number`(ts); // 20
     
 At any point, `ts->type` tells you the next available token.
+Note that by default this scanner ignores space.
 
 A convenient higher-level function is `scan_scanf`;  the equivalent of above code is
-simply `scan_scanf(ts,"%s %c (%f,%f",&name,&ch,&val1,&val2)`.  Note that
-by default this scanner ignores space.
+simply:
+
+    `scan_scanf`(ts,"%s %c (%f,%f",&name,&ch,&val1,&val2).
+
     
 See `test-scan.c` for examples of various uses.
 

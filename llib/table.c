@@ -13,15 +13,6 @@ The rows are then available as an array of string arrays.
 
 If `TableColumns` is also specified, it will additionally create columns,
 which will be converted into `float` arrays if they appear to be numbers.
-With `table_convert_cols` you can customize this conversion, and even
-provide your own conversion functions.  These look like this:
-
-    const char *int_convert(const char *str, void *res) {
-        \*((int*)res) = strtol(str,&endptr,10);
-        return *endptr ? endptr : NULL;
-    }
-
-That is, they set the value and return an _error_ if conversion is impossible.
 
 Given a simple CSV file like this:
 
@@ -33,7 +24,7 @@ Given a simple CSV file like this:
     
 then the most straightforward way to read it would be:
 
-    Table *t = `table_new_from_file`("test.csv", TableCsv | TableAll);
+    Table *t = `table_new_from_file`("test.csv", TableCsv | TableAll | TableColumns);
     if (t->error) { // note how you handle errors: file not found, conversion failed
         fprintf(stderr,"%s\n",t->error);
         return 1;
@@ -47,6 +38,16 @@ then the most straightforward way to read it would be:
     // getting the second column with default conversion (float)
     float *ages = (float*)t->cols[1];
     
+With `table_convert_cols` you can customize column conversion, and even
+provide your own conversion functions.  These look like this:
+
+    const char *int_convert(const char *str, void *res) {
+        \*((int*)res) = strtol(str,&endptr,10);
+        return *endptr ? endptr : NULL;
+    }
+
+That is, they set the value and return an _error_ if conversion is impossible.
+
 See `test-table.c` for an example with custom conversions, and
 `test-sqlite3-table.c` for a case where the table is built up
 using `table_add_row` (which by design matches the required signature

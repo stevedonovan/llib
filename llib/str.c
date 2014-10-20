@@ -8,13 +8,20 @@
 //
 // When building up strings use a _strbuf_, which is a sequence of chars; can add characters
 // and strings, formatted strings (like `str_fmt`) and also insert and remove substrings.
-// The actual string is always `*S` but use `strbuf_tostring(S)` to properly clean up and
+// The actual string is always `*S` but use `strbuf_tostring` to properly clean up and
 // dispose of the sequence.
 //
 // `str_split` creates a refcounted array of strings, splitting using a delimiter. `str_concat`
 // works the other way, joining an array of strings with a separator.
 //
-// Then there are searching operations which return a boolean or integer index.
+// There are searching operations which return a boolean or integer index,
+// loosely based on C++'s `std::string` methods.
+//
+// _smaps_ ('simple maps') are arrays of strings where the odd indices
+// are keys and the even indices are values. `str_lookup` does a
+// linear search, which is simple and sufficient for small maps. A convenient
+// way to build these maps is to start with `smap_new` and use either `smap_add`
+// to simply add, or `smap_put` to update/add, key/value pairs.
 //
 // See `test-str.c`
 // @module str

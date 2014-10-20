@@ -29,13 +29,16 @@ implements `Accessor`, so the last could be simply written `str_templ_subst_valu
 since `Map` defines that interface.
 
 The placeholders can be changed if the default clashes with
-the target language syntax, e.g. `str_templ_new(str,"@{}")`.
+the target language syntax, e.g. `str_templ_new(str,"@<>")`. Then your template
+will look like "this is @<home>, welcome @<name>".
 
 Subtemplates can be defined; for instance this template generates an HTML list.
+
+    "<ul>$(for ls |<li>$(_)</li>|)</ul>"
+    
 There is an alternative syntax using a single colon instead of bracketting
 pipe characters.
 
-    "<ul>$(for ls |<li>$(_)</li>|)</ul>"
     "<ul>$(for ls: <li>$(_)</li>)</ul>"
     
 The special `for` form iterates over an `Iterable` object like a `List` or an array.

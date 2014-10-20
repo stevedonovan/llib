@@ -53,7 +53,7 @@ double config_getf(SMap m, str_t key, double def) {
     }
 }
 
-/// get an array of strings, with default.
+/// get an array of strings.
 char** config_gets_arr(SMap m, str_t key) {
     str_t s = str_lookup(m,key);
     if (! s) {
@@ -63,19 +63,19 @@ char** config_gets_arr(SMap m, str_t key) {
     }    
 }
 
-/// get an array of ints, with default.
+/// get an array of ints.
 int* config_geti_arr(SMap m, str_t key) {
     char** parts = config_gets_arr(m,key);
     MAPA(int,res,atoi(_),parts);
-    unref(parts);
+    obj_unref(parts);
     return res;
 }
 
-/// get an array of double, with default.
+/// get an array of double.
 double* config_getf_arr(SMap m, str_t key) {
     char** parts = config_gets_arr(m,key);
     MAPA(double,res,atof(_),parts);
-    unref(parts);
+    obj_unref(parts);
     return res;
 }
 
@@ -94,7 +94,7 @@ char** config_read(str_t file) {
         char **parts = str_split(line,"=");
         str_trim(parts[1]);
         smap_add(ss,str_ref(parts[0]),str_ref(parts[1]));
-        unref(parts);
+        obj_unref(parts);
     }
     fclose(in);
     return smap_close(ss);    

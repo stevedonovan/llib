@@ -13,7 +13,7 @@ comparison functions (which are like `strcmp`) and key allocation. The nodes hav
 structure, so structs with `LIST_HEADER` can be also put into maps, provided the next
 field is the key.
 
-Keys are always pointers, but like with string lists char pointers are a special case.
+Keys are always pointers, but like with string lists,  char* pointers are a special case.
 
 If the keys aren't strings, then the comparison function is simply the less-than operator.
 This will work fine if simple equality defines a match, as with pointers and integers.

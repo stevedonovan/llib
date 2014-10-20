@@ -12,8 +12,8 @@ The other functions return a refcounted string, or array of strings (like with `
 
     FILE *f = fopen(file,"r");
     printf("size was %d bytes\n",`file_size`(file));
-    Str *lines = `file_getlines(f);
-    printf("no of lines %d \n",array_len(lines));
+    char **lines = `file_getlines`(f);
+    printf("no of lines %d \n",`array_len`(lines));
     fclose(f);
 
 

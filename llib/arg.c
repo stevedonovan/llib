@@ -7,10 +7,11 @@
 /***
 ### Command-line Argument Parser.
 
-This allows you to bind variables to command-line arguments, providing
-the flag name/type, a shortcut, a pointer to the variable, and some help text.
+This allows you to bind variables to command-line arguments.
 For this we write _specifications_ (which are strings containing pseudo-C declarations
-followed by a comment, which may specify a shortcut).
+followed by a comment, which may specify a shortcut),followed by the address of
+the variable that receives the value. 
+The first line may be a comment documenting the program.
 
 The argument parser follows GNU conventions; long flags with double-hyphen,
 which may have short single-letter forms with a single-hyphen. Short flags may
@@ -21,10 +22,12 @@ be combined ("-abc") and may be followed immediately by their value ("-n10").
     
     int lines;
     FILE *file;
-    bool print_lines;
+    bool verbose, print_lines;
     
     PValue args[] = {
+        "// cmd: show n lines from top of a file",
         "int lines=10; // -n number of lines to print",&lines,
+        "bool verbose=false; // -v controls verbosity",&verbose,
         "bool lineno; // -l output line numbers",&print_lines,
         "infile #1=stdin; // file to dump",&file,
         NULL
@@ -53,13 +56,28 @@ refer to the first non-flag argument and so forth.  Both '--lines' and '-n' can 
 used to set the integer variable `lines`.  If a flag has no default, then it is an error.
 Plain boolean flags have an implicit default of `false`.
 
+The supported types are `int`, `float`, `bool`, `string`, `infile`
+and `outfile`. `float` binds a _double_ value, and `infile|outfile` bind
+to `FILE*` directly.  An array 'type' (like "string I[]...") binds to an _array_
+of these values and defines a flag that may be specified more than once,
+for instance "-I/my/path -I/your/path".
+
 Help usage is automatically generated from these specifications.
+
+    $ cmd --help
+    cmd: show n lines from top of a file
+    Flags:
+            --help,-h       help on commands and flags
+            --lines,-n (10) number of lines to print
+            --verbose,-v (false)    controls verbosity
+            --lineno,-l (false)     output line numbers
+            --#1 (stdin)    file to dump
 
 If a conversion is not possible (not a integer, file cannot be opened, etc)
 then the program will exit, showing the help.
 
 @{cmd.c} is a basic example; @{testa.c} shows how to 
-define flags and commands as functions, as well as defining a simple REPL.
+define flags and commands as _functions_, as well as defining a simple REPL.
 
 `arg_bind_values` may be used directly to process an array of name/value
 pairs, for instance in `config.c`
@@ -70,7 +88,6 @@ pairs, for instance in `config.c`
 #include <stdarg.h>
 #define INSIDE_ARG_C
 #include "arg.h"
-
 
 enum {
     ValueFileIn = 0x200,
@@ -109,7 +126,7 @@ static void arg_set_unused(FlagEntry *fe) {
 
 #define C (char*)
 char *typenames[] = {
-   "int",C ValueInt,
+    "int",C ValueInt,
     "float",C ValueFloat,
     "string",C ValueString,
     "bool",C ValueBool,
