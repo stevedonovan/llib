@@ -172,12 +172,13 @@ typedef struct {
     int path_len;
     HttpHandler handler;
     const char *local_path;
+    HttpContinuation *cc;
 } RouteEntry;
 
 static RouteEntry routes[MAX_ROUTES];
 static int last_route = 0;
 
-char *mime_types[] = {
+static char *mime_types[] = {
     "jpeg","image/jpeg","jpg","image/jpg","gif","image/gif","png","image/png",
     "html","text/html","css","text/css","js","text/javascript",
     NULL
@@ -265,15 +266,17 @@ void HttpRequest_dispose (HttpRequest *req) {
     obj_unref(req->headers_out);
 }
 
+static void finish_response(FILE *in, str_t body, HttpRequest *req);
+
 /// Handle a request by parsing the URL and headers and matching the route.
 // The handler is assumed to return a string; if it's one of our strings, it will
 // be disposed. This response is written to the file handle which will be closed.
-void http_handle_request (int fd) {
+HttpContinuation* http_handle_request (int fd) {
     FILE *in = fdopen(fd,"r+");
     if (in == NULL) {
         perror("fdopen");
         close(fd);
-        return;
+        return NULL;
     }
     file_gets(in,line,sizeof(line));
     printf("request '%s'\n",line);
@@ -313,17 +316,55 @@ void http_handle_request (int fd) {
         
         // call the handler
         str_t body = re_match->handler(req);
-        char **headers_out = NULL;
-        if (req->headers_out)
-            headers_out = *req->headers_out;
-        send_response(in, body,req->status,req->type,headers_out);
-        
-        // and clean up the string, if it's one of ours
-        if (obj_refcount(body) != -1)
-            obj_unref(body);
+        if (obj_is_instance(body,"HttpContinuation")) {
+            HttpContinuation *cc = (HttpContinuation*)body;
+            cc->handler  = re_match->handler;
+            cc->in = in; 
+            cc->req = req;
+            re_match->cc = cc;
+            return cc;
+        }
+        finish_response(in, body, req);
     }        
     obj_unref(req);
     fclose(in);    
+    return NULL;
+}
+
+static void finish_response(FILE *in, str_t body, HttpRequest *req) {
+    char **headers_out = NULL;
+    if (req->headers_out)
+        headers_out = *req->headers_out;
+    send_response(in, body,req->status,req->type,headers_out);
+    
+    // and clean up the string, if it's one of ours
+    if (obj_refcount(body) != -1)
+        obj_unref(body);    
+}
+
+static void HttpContinuation_dispose(HttpContinuation *cc) {
+    obj_unref(cc->req);
+    fclose(cc->in);    
+}
+
+str_t http_continuation_new(void *data) {
+    HttpContinuation *cc = obj_new(HttpContinuation,HttpContinuation_dispose);
+    cc->data = data;
+    return (str_t)cc;
+}
+
+void http_continuation_end(HttpContinuation *cc, str_t body) {
+    finish_response(cc->in, body, cc->req);
+    obj_unref(cc);
+}
+
+void http_continuation_handle (HttpHandler h, str_t body) {
+    for (RouteEntry *re = routes; re->path; ++re) {
+        if (re->handler == h) {
+            http_continuation_end(re->cc,body);
+            return;
+        }
+    }
 }
 
 /// Handlers can use this to add extra headers to the response, apart
