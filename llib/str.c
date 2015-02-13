@@ -316,6 +316,7 @@ char *str_concat(char **ss, str_t delim) {
 }
 
 /// Allocating a simple array of strings.
+// End the string arguments with a final `NULL`.
 // Note that this array is _not_ a ref container; the
 // string addresses are just copied over.
 char **str_strings(char *first,...) {

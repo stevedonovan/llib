@@ -6,6 +6,12 @@
 #include <llib/file.h>
 #include "http.h"
 
+static bool s_verbose = false;
+
+void http_set_verbose(bool v) {
+    s_verbose = v;
+}
+
 char *http_url_encode (str_t val) {
     char **res = strbuf_new();
     int len = strlen(val);
@@ -54,6 +60,8 @@ static char** parse_headers(FILE *in) {
     char ***hds = smap_new(true);
     file_gets(in,line,sizeof(line));
     while (*line != 0) {
+        if (s_verbose)
+            printf("%s\n",line);
         char *sep = strchr(line,':');
         *sep = '\0';
         var_put(hds,line,sep+2);
@@ -69,23 +77,32 @@ void HttpResponse_dispose(HttpResponse *resp) {
     obj_unref(resp->headers);
 }
 
+static void encode_vars(FILE *f, char **vars) {
+    for (int i = 0, n = array_len(vars); i < n; i+=2) {
+        char *enc = http_url_encode(vars[i+1]);
+        fprintf(f,"%s=%s",vars[i],enc);
+        if (i < n-2)
+            fprintf(f,"&");
+        obj_unref(enc);
+    }
+}    
+
 /// Send a HTTP request with an URL and optional variables.
-HttpResponse *http_request(int c, str_t path, char **vars) {
+// May also say `true` for `post` and provide a body to be sent.
+HttpResponse *http_request(int c, str_t path, char **vars, bool post, str_t obody) {
     int nreq, n;
     FILE *f = fdopen(c,"r+");
-    fprintf(f,"GET %s",path);
+    fprintf(f,"%s %s",post ? "POST" : "GET",path);
     if (vars) {
         fprintf(f,"?");
-        for (int i = 0, n = array_len(vars); i < n; i+=2) {
-            char *enc = http_url_encode(vars[i+1]);
-            fprintf(f,"%s=%s",vars[i],enc);
-            if (i < n-2)
-                fprintf(f,"&");
-            obj_unref(enc);
-        }
+        encode_vars(f,vars);
     }
     fprintf(f," HTTP/1.1\r\n");
     fprintf(f,"Host: localhost\r\n\r\n");
+    if (obody) {
+        fprintf(f,"Content-Length: %d\r\n",(int)strlen(obody));
+        fprintf(f,"%s\r\n",obody);        
+    }
     fflush(f);
     
     HttpResponse *resp = obj_new(HttpResponse,HttpResponse_dispose);
@@ -103,7 +120,8 @@ HttpResponse *http_request(int c, str_t path, char **vars) {
     
     resp->type = str_ref(str_lookup(resp->headers,"Content-Type"));
     
-    printf("fetching %d bytes\n",n);
+    if (s_verbose)
+        printf("fetching %d bytes\n",n);
     char *body = str_new_size(n);
     nreq = fread(body,1,n,f);
     if (nreq != n) {
@@ -189,7 +207,8 @@ static str_t static_handler(HttpRequest *web) {
     str_t contents;
     strcpy(file,web->local_path);
     strcat(file,web->path);
-    printf("trying to open '%s'\n",file);
+    if (s_verbose)
+        printf("trying to open '%s'\n",file);
     contents = file_read_all(file,false); 
     if (! contents) {
         web->status = "404";
@@ -200,6 +219,7 @@ static str_t static_handler(HttpRequest *web) {
         if (! mime)
             mime = "text/plain";
         web->type = mime;
+        http_add_out_header(web,"Cache-Control","max-age=86400");
         return contents;
     }
 }
@@ -236,7 +256,8 @@ static RouteEntry *match_request(str_t path) {
     RouteEntry *re_match = NULL;
     for (RouteEntry *re = routes; re->path; ++re) {
         if (strncmp(path,re->path,re->path_len) == 0 && is_end(path,re->path_len)) {
-            printf("matching '%s'\n",re->path);
+            if (s_verbose)
+                printf("matching '%s'\n",re->path);
             if (re->path_len > max_len) {
                 max_len = re->path_len;
                 re_match = re;
@@ -279,7 +300,8 @@ HttpContinuation* http_handle_request (int fd) {
         return NULL;
     }
     file_gets(in,line,sizeof(line));
-    printf("request '%s'\n",line);
+    if (s_verbose)
+        printf("request '%s'\n",line);
     // char **parts = str_split(line," "); bommmbed?
     // pull out path
     char *sp = strchr(line,' ');
