@@ -27,7 +27,7 @@ using the `arg` module where variables are bound directly to properties.
 
 /// get a string value, with default.
 str_t config_gets(SMap m, str_t key, str_t def) {
-    str_t res = str_lookup(m,key);
+    str_t res = str_gets(m,key);
     if (! res)
         res = str_ref(def);
     return str_new(res);
@@ -35,7 +35,7 @@ str_t config_gets(SMap m, str_t key, str_t def) {
 
 /// get an int value, with default.
 int config_geti(SMap m, str_t key, int def) {
-    str_t s = str_lookup(m,key);
+    str_t s = str_gets(m,key);
     if (! s) {
         return def;
     } else {
@@ -45,7 +45,7 @@ int config_geti(SMap m, str_t key, int def) {
 
 /// get a double value, with default.
 double config_getf(SMap m, str_t key, double def) {
-    str_t s = str_lookup(m,key);
+    str_t s = str_gets(m,key);
     if (! s) {
         return def;
     } else {
@@ -55,12 +55,12 @@ double config_getf(SMap m, str_t key, double def) {
 
 /// get an array of strings.
 char** config_gets_arr(SMap m, str_t key) {
-    str_t s = str_lookup(m,key);
+    str_t s = str_gets(m,key);
     if (! s) {
         return array_new(char*,0);
     } else {
         return str_split(s,",");
-    }    
+    }
 }
 
 /// get an array of ints.
@@ -85,17 +85,17 @@ char** config_read(str_t file) {
     char*** ss = smap_new(true);
     char line[256];
     while (file_gets(in,line,sizeof(line))) {
-        char *p = strchr(line,'#');       
+        char *p = strchr(line,'#');
         if (p) {
             *p = '\0';
         }
         if (str_is_blank(line))
-            continue;        
+            continue;
         char **parts = str_split(line,"=");
         str_trim(parts[1]);
         smap_add(ss,str_ref(parts[0]),str_ref(parts[1]));
         obj_unref(parts);
     }
     fclose(in);
-    return smap_close(ss);    
+    return smap_close(ss);
 }

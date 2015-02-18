@@ -48,8 +48,9 @@ char ** str_split(str_t s, str_t delim);
 char *str_concat(char **ss, str_t delim);
 char **str_strings(char *p,...);
 
-char **str_lookup_ptr(char** substs, str_t name);
-char *str_lookup(SMap substs, str_t name);
+void **str_lookup_ptr(char** substs, str_t name);
+void *str_lookup(SMap substs, str_t name);
+char *str_gets(SMap substs, str_t name);
 
 char **strbuf_new(void);
 #define strbuf_add seq_add

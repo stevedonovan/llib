@@ -14,20 +14,26 @@
 // @section smap
 
 /// Look up a string in a smap returning pointer to entry.
-char **str_lookup_ptr(char** substs, const char *name) {
+void **str_lookup_ptr(char** substs, const char *name) {
     for (char **S = substs;  *S; S += 2) {
-        if (strcmp(*S,name)==0)
-            return (S+1);
+        char *P = *S;
+        if (strcmp(P,name)==0)
+            return (void**)(S+1);
     }
     return NULL;
 }
 
 /// Look up a string key in a smap returning associated value.
-char *str_lookup(char** substs, const char *name) {
-    char **pref = str_lookup_ptr(substs,name);
+void *str_lookup(char** substs, const char *name) {
+    void **pref = str_lookup_ptr(substs,name);
     if (! pref)
         return NULL;
     return *pref;
+}
+
+/// Like `str_lookup` but assuming value is a string.
+char *str_gets(char** substs, const char *name) {
+    return (char*)str_lookup(substs,name);
 }
 
 /// New simple map builder.
@@ -53,11 +59,11 @@ void smap_add(char*** smap, const char *name, const void *data) {
 /// Update/insert a key/value pair.
 void smap_put(char*** smap, const char *name, const void *data) {
     char **ps = *smap;
-    char **pref = str_lookup_ptr(ps,name);
+    void **pref = str_lookup_ptr(ps,name);
     if (pref) {
         if (obj_ref_array(ps))
-            obj_unref(*ps);
-        *ps = (char*)data;
+            obj_unref(*pref);
+        *pref = (void*)data;
     } else {
         smap_add(smap,name,data);
     }
@@ -65,7 +71,7 @@ void smap_put(char*** smap, const char *name, const void *data) {
 
 /// Get the value associated with `name`.
 void *smap_get(char*** smap, const char *name) {
-    return (void*)str_lookup(*smap,name);
+    return str_lookup(*smap,name);
 }
 
 /// close the sequence, returning a simple map.
