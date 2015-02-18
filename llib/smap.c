@@ -10,7 +10,7 @@
 
 /// Simple Maps.
 // These are arrays of strings where the odd entries are keys
-// and the even entries are values.
+// and the even entries are values, ending with a `NULL`.
 // @section smap
 
 /// Look up a string in a smap returning pointer to entry.
