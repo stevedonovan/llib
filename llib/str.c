@@ -276,21 +276,37 @@ static char* strtok_r(char *str,str_t delim,char **nextp) {
 #endif
 #endif
 
-/// split a string using a set of delimiters.
+/// split a string upto `nsplit` times using delimiters.
 // Returns a ref array of ref strings.
-char ** str_split(str_t s, str_t delim) {
+char ** str_split_n(str_t s, str_t delim, int nsplit) {
     char ***ss = seq_new_ref(char*);
     // make our own copy of the string...
     char *sc = str_new(s), *saveptr;
     char *t = strtok_r(sc,delim,&saveptr);
+    int i = 1;
     while (t != NULL) {
         seq_add(ss,str_new(t));
-        t = strtok_r(NULL,delim,&saveptr);
+        ++i;
+        if (nsplit && i > nsplit) {
+        	char *rest = t+strlen(t)+1;
+        	while (strchr(delim,*rest))
+        		++rest;
+        	seq_add(ss,str_new(rest));
+        	break;
+        } else {
+        	t = strtok_r(NULL,delim,&saveptr);
+        }
     }
     char **res = (char**)seq_array_ref(ss);
     res[array_len(res)] = NULL;
     obj_unref(sc);
     return res;
+}
+
+/// split a string using delimiters.
+// Returns a ref array of ref strings.
+char ** str_split(str_t s, str_t delim) {
+	return str_split_n(s,delim,0);
 }
 
 /// concatenate an array of strings.

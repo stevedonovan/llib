@@ -46,6 +46,7 @@ int str_find_first_not_of(str_t s, str_t ps);
 bool str_is_blank(str_t s);
 void str_trim(char *s);
 char* str_sub(str_t s, int i1, int i2);
+char ** str_split_n(str_t s, str_t delim, int nsplit);
 char ** str_split(str_t s, str_t delim);
 char *str_concat(char **ss, str_t delim);
 char **str_strings(char *p,...);
