@@ -8,6 +8,7 @@
 #define __LLIB_STR_H
 #include "obj.h"
 #include <string.h>
+#include <stdarg.h>
 
 // easier to type ;)
 typedef const char * str_t;
@@ -33,6 +34,7 @@ char** smap_close(char*** smap);
 #define FOR_SMAP(k,v,sm) for(char **p_=(sm), *k=*p_,*v=*(p_+1); \
  (v=*(p_+1),k=*p_); p_+=2)
 
+char *str_vfmt(str_t fmt,va_list ap);
 char *str_fmt(str_t fmt,...);
 int str_findstr(str_t s, str_t sub);
 int str_findch(str_t s, char ch);

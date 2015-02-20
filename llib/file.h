@@ -19,7 +19,9 @@ FILE **file_fopen(const char *file, const char *how);
 long file_size_stream(FILE *fp);
 long file_size(const char *file);
 char **file_getlines(FILE *f);
+FILE *file_popen_fmt(const char *fmt, const char *how, ...);
 char *file_command(const char *cmd);
+char *file_command_fmt(const char *cmd,...);
 char **file_command_lines(const char *cmd);
 char **file_files_in_dir(const char *dirname, int abs);
 

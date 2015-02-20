@@ -31,7 +31,6 @@
 
 #include <stdio.h>
 #include <string.h>
-#include <stdarg.h>
 #include "str.h"
 
 #define BUFSZ 256
@@ -129,26 +128,39 @@ static int offset_str(str_t P, str_t Q) {
 /// Extra string functions.
 // @section strings
 
-/// safe verson of `sprintf` which returns an allocated string.
-char *str_fmt(str_t fmt,...) {
-    va_list ap;
+// Keep MSVC happy, if necessary (defined only in 2013)
+#ifndef va_copy
+#define va_copy(dest, src) (dest = src)
+#endif
+
+/// safe verson of `vsprintf` which returns a refcounted string.
+char *str_vfmt(str_t fmt,va_list ap) {
     int size;
     char *str;
 
     // needed size of buffer...
-    va_start(ap, fmt);
-    size = vsnprintf(NULL, 0, fmt, ap);
-    va_end(ap);
-
+    // In GENERAL vsnprintf modifies its va_list!
+    va_list aq;
+    va_copy(aq, ap);
+    size = vsnprintf(NULL, 0, fmt, aq);
+    va_end(aq);
     str = str_new_size(size);
-
-    va_start(ap, fmt);
     size = vsnprintf(str, size+1, fmt, ap);
-    va_end(ap);
     return str;
 }
 
+/// safe verson of `sprintf` which returns a refcounted string.
+char *str_fmt(str_t fmt, ...) {
+    va_list ap;
+    va_start(ap,fmt);
+    char *res = str_vfmt(fmt,ap);
+    va_end(ap);
+    return res;    
+}
+
 /// extract a substring.
+// Note that `i2` is an index which may be negative, so (0,-1)
+// is a string copy and (1,-2) copies from 2nd to second-last character.
 char* str_sub(str_t s, int i1, int i2) {
     int sz = strlen(s);
     int len = i2 < 0 ? sz+i2+1 : i2 - i1;
