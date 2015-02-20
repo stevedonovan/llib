@@ -79,23 +79,45 @@ double* config_getf_arr(SMap m, str_t key) {
     return res;
 }
 
-/// read a configuration file, skipping # comments and blank lines.
-char** config_read(str_t file) {
-    FILE *in = fopen(file,"r");
+/// read a configuration stream.
+char** config_read_stream(FILE *in, int flags) {
     char*** ss = smap_new(true);
     char line[256];
+    char *delim = (flags & CONFIG_DELIM_EQUALS) ? "=" : " ";
     while (file_gets(in,line,sizeof(line))) {
-        char *p = strchr(line,'#');
-        if (p) {
+        char *p = NULL;
+        if (flags & CONFIG_COMMENT_ONLY_FIRST)
+            p = *line=='#' ? p : NULL;
+        else
+            p = strchr(line,'#');
+        if (p)
             *p = '\0';
-        }
         if (str_is_blank(line))
             continue;
-        char **parts = str_split(line,"=");
-        str_trim(parts[1]);
-        smap_add(ss,str_ref(parts[0]),str_ref(parts[1]));
+
+        char **parts = str_split_n(line,delim,2);
+        if (parts[1])
+            str_trim(parts[1]);
+        smap_add(ss,str_ref(parts[0]),str_ref(parts[1] ? parts[1] : ""));
         obj_unref(parts);
     }
-    fclose(in);
+
     return smap_close(ss);
+}
+
+/// read a configuration file, with options.
+// Currently either CONFIG_DELIM_EQUALS or CONFIG_DELIM_SPACE.
+// Will return `NULL` if the file cannot be opened.
+char** config_read_opt (str_t file, int flags) {
+    FILE *in = fopen(file,"r");
+    if (! in)
+        return NULL;
+    char** res = config_read_stream(in,flags);
+    fclose(in);
+    return res;
+}
+
+/// read a configuration file, skipping # comments and blank lines.
+char** config_read (str_t file) {
+    return config_read_opt(file,CONFIG_DELIM_EQUALS);
 }
