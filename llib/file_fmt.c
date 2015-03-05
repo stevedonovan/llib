@@ -12,6 +12,11 @@
 #include "file.h"
 #include "str.h"
 
+#ifdef _MSC_VER
+#define popen _popen
+#define pclose _pclose
+#endif
+
 static FILE *file_popen_vfmt(const char *fmt, const char *how, va_list ap) {
     char *cmd = str_vfmt(fmt,ap);
     printf("got '%s'\n",cmd);
@@ -37,7 +42,7 @@ char *file_command_fmt(const char *fmt,...) {
     va_start(ap,fmt);
     FILE *out = file_popen_vfmt(fmt,"r",ap);
     va_end(ap);
-    char *text = file_getline(out);    
+    char *text = file_getline(out);
     pclose(out);
     return text ? text : str_new("");
 }

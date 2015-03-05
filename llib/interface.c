@@ -20,11 +20,11 @@ void interface_add(int itype, int type, void *funs) {
     } else {
         for (InterfaceS *ii = *iface; ii->type; ++ii)
             ++n;
-        *iface = (InterfaceS*)realloc(*iface,(n+1)*sizeof(InterfaceS));    
+        *iface = (InterfaceS*)realloc(*iface,(n+1)*sizeof(InterfaceS));
     }
     (*iface)[n-1].type = t_inter->idx;
     (*iface)[n-1].interface = funs;
-    (*iface)[n].type = 0;    
+    (*iface)[n].type = 0;
 }
 
 /// find the interface `type` for this object.
@@ -142,8 +142,12 @@ ObjLookup interface_get_lookup(const void *P) {
 
 Iterator* interface_get_iterator(const void *obj) {
     initialize();
+    Iterable* ii = NULL;
     bool ours = obj_refcount(obj) != -1;
-    if (! ours || is_pointer_array(obj)) { 
+    if (ours) {
+        ii = (Iterable*)interface_get(t_iterable,obj);
+    }
+    if (! ii && is_pointer_array(obj)) {
         void **A = (void**)obj;
         int n = 0;
         if (! ours) { // assume it's a NULL-terminated array
@@ -157,7 +161,6 @@ Iterator* interface_get_iterator(const void *obj) {
         ai->len = n;
         return (Iterator*)ai;
     }
-    Iterable* ii = (Iterable*)interface_get(t_iterable,obj);
     if (! ii)
         return NULL;
     return ii->init(obj);
