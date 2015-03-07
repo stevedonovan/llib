@@ -1,0 +1,11 @@
+if WINDOWS then quit("llib-p not available for Windows, sorry") end
+
+if DEBUG then
+  defines = 'LLIB_DEBUG'
+end
+
+libs = 'llibp llib'
+
+if not P then P = 'test-rx' end
+
+c99.program{P,incdir='..',libdir='../llib ../llib-p',libs=libs,defines=defines}

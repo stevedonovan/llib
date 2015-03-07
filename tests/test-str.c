@@ -29,6 +29,11 @@ void test_split()
     assert(str_eq(words[1],"beta"));
     assert(str_eq(words[2],"gamma"));
     dispose(words);
+    words = str_split_n("alpha, beta, gamma",", ",1);
+    assert(str_eq(words[0],"alpha"));
+    assert(str_eq(words[1],"beta, gamma"));
+    //printf("'%s' '%s'\n",words[1],words[2]);
+    dispose(words);
 }
 
 int main()

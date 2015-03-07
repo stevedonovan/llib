@@ -168,7 +168,7 @@ char* rx_gsub(Regex *R, str_t s, StrLookup lookup, void *data) {
         out = (str_t)data;
     }
     while (rx_find(R,s,&i1,&i2)) {
-        str_t ms, ls;
+        str_t ms=NULL, ls=NULL;
         if (i1 > 0) // text between any matches
             strbuf_addr(ss,s,i0,i1);
         if (out) { // output pattern (e.g. %2=%1)

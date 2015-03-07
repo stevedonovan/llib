@@ -1,0 +1,4 @@
+c99.library{'llibp',
+    src='select socket http rx',
+    incdir='..',libdir='../llib',libs='llib'
+}

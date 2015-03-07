@@ -147,8 +147,9 @@ long file_size(const char *file)
 static char* read_all(FILE *fp, bool text) {
     int sz = file_size_stream(fp);
     char *res = str_new_size(sz);
-    fread(res,1,sz,fp);
+    int n = fread(res,1,sz,fp);
     if (text) {
+        res[n] = '\0';
         strip_eol(res);
     }
     fclose(fp);
