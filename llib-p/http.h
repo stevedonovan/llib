@@ -23,16 +23,30 @@ typedef struct HttpResponse_ {
 
 typedef str_t (*HttpHandler)(HttpRequest *web);
 
+typedef struct {
+    HttpHandler handler;
+    FILE *in;
+    HttpRequest *req;
+    void *data;
+} HttpContinuation;
+
+void http_set_verbose(bool v);
 str_t http_var_get (HttpRequest *req, str_t name);
 char *http_url_encode (str_t val);
 void http_url_decode (str_t url, HttpRequest *req);
-HttpResponse *http_request(int c, str_t path, char **vars);
+HttpResponse *http_request(int c, str_t path, char **vars, bool post, str_t body);
 bool http_var_set(char** substs, str_t name, str_t value);
 void http_add_route(str_t path, HttpHandler handler);
 void http_add_static (str_t route, str_t path);
-void http_handle_request (int fd);
+HttpContinuation *http_handle_request (int fd);
+str_t http_continuation_new(void *data);
+void http_continuation_end(HttpContinuation *cc, str_t body);
+void http_continuation_handle (HttpHandler h, str_t body);
 void http_add_out_header(HttpRequest *req, str_t name, str_t value);
 str_t http_redirect(HttpRequest *req, str_t url);
+str_t http_continuation_new(void *data);
+void http_continuation_end(HttpContinuation *cc, str_t body);
+
 
 //#define http_server(addr)  http_handle_request(socket
 

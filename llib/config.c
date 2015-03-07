@@ -27,7 +27,7 @@ using the `arg` module where variables are bound directly to properties.
 
 /// get a string value, with default.
 str_t config_gets(SMap m, str_t key, str_t def) {
-    str_t res = str_lookup(m,key);
+    str_t res = str_gets(m,key);
     if (! res)
         res = str_ref(def);
     return str_new(res);
@@ -35,7 +35,7 @@ str_t config_gets(SMap m, str_t key, str_t def) {
 
 /// get an int value, with default.
 int config_geti(SMap m, str_t key, int def) {
-    str_t s = str_lookup(m,key);
+    str_t s = str_gets(m,key);
     if (! s) {
         return def;
     } else {
@@ -45,7 +45,7 @@ int config_geti(SMap m, str_t key, int def) {
 
 /// get a double value, with default.
 double config_getf(SMap m, str_t key, double def) {
-    str_t s = str_lookup(m,key);
+    str_t s = str_gets(m,key);
     if (! s) {
         return def;
     } else {
@@ -55,12 +55,12 @@ double config_getf(SMap m, str_t key, double def) {
 
 /// get an array of strings.
 char** config_gets_arr(SMap m, str_t key) {
-    str_t s = str_lookup(m,key);
+    str_t s = str_gets(m,key);
     if (! s) {
         return array_new(char*,0);
     } else {
         return str_split(s,",");
-    }    
+    }
 }
 
 /// get an array of ints.
@@ -85,7 +85,7 @@ char** config_read_stream(FILE *in, int flags) {
     char line[256];
     char *delim = (flags & CONFIG_DELIM_EQUALS) ? "=" : " ";
     while (file_gets(in,line,sizeof(line))) {
-        char *p;
+        char *p = NULL;
         if (flags & CONFIG_COMMENT_ONLY_FIRST)
             p = *line=='#' ? p : NULL;
         else
@@ -106,9 +106,12 @@ char** config_read_stream(FILE *in, int flags) {
 }
 
 /// read a configuration file, with options.
-// Currently either CONFIG_DELIM_EQUALS or CONFIG_DELIM_SPACE
+// Currently either CONFIG_DELIM_EQUALS or CONFIG_DELIM_SPACE.
+// Will return `NULL` if the file cannot be opened.
 char** config_read_opt (str_t file, int flags) {
     FILE *in = fopen(file,"r");
+    if (! in)
+        return NULL;
     char** res = config_read_stream(in,flags);
     fclose(in);
     return res;

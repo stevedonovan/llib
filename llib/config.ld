@@ -15,4 +15,6 @@ examples={
 format='discount'
 new_type("macro","Macros")
 tparam_alias('double','double')
+style = '!fixed'
+
 

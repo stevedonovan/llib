@@ -6,6 +6,12 @@
 #include <llib/file.h>
 #include "http.h"
 
+static bool s_verbose = false;
+
+void http_set_verbose(bool v) {
+    s_verbose = v;
+}
+
 char *http_url_encode (str_t val) {
     char **res = strbuf_new();
     int len = strlen(val);
@@ -54,6 +60,8 @@ static char** parse_headers(FILE *in) {
     char ***hds = smap_new(true);
     file_gets(in,line,sizeof(line));
     while (*line != 0) {
+        if (s_verbose)
+            printf("%s\n",line);
         char *sep = strchr(line,':');
         *sep = '\0';
         var_put(hds,line,sep+2);
@@ -69,23 +77,32 @@ void HttpResponse_dispose(HttpResponse *resp) {
     obj_unref(resp->headers);
 }
 
+static void encode_vars(FILE *f, char **vars) {
+    for (int i = 0, n = array_len(vars); i < n; i+=2) {
+        char *enc = http_url_encode(vars[i+1]);
+        fprintf(f,"%s=%s",vars[i],enc);
+        if (i < n-2)
+            fprintf(f,"&");
+        obj_unref(enc);
+    }
+}    
+
 /// Send a HTTP request with an URL and optional variables.
-HttpResponse *http_request(int c, str_t path, char **vars) {
+// May also say `true` for `post` and provide a body to be sent.
+HttpResponse *http_request(int c, str_t path, char **vars, bool post, str_t obody) {
     int nreq, n;
     FILE *f = fdopen(c,"r+");
-    fprintf(f,"GET %s",path);
+    fprintf(f,"%s %s",post ? "POST" : "GET",path);
     if (vars) {
         fprintf(f,"?");
-        for (int i = 0, n = array_len(vars); i < n; i+=2) {
-            char *enc = http_url_encode(vars[i+1]);
-            fprintf(f,"%s=%s",vars[i],enc);
-            if (i < n-2)
-                fprintf(f,"&");
-            obj_unref(enc);
-        }
+        encode_vars(f,vars);
     }
     fprintf(f," HTTP/1.1\r\n");
     fprintf(f,"Host: localhost\r\n\r\n");
+    if (obody) {
+        fprintf(f,"Content-Length: %d\r\n",(int)strlen(obody));
+        fprintf(f,"%s\r\n",obody);        
+    }
     fflush(f);
     
     HttpResponse *resp = obj_new(HttpResponse,HttpResponse_dispose);
@@ -103,7 +120,8 @@ HttpResponse *http_request(int c, str_t path, char **vars) {
     
     resp->type = str_ref(str_lookup(resp->headers,"Content-Type"));
     
-    printf("fetching %d bytes\n",n);
+    if (s_verbose)
+        printf("fetching %d bytes\n",n);
     char *body = str_new_size(n);
     nreq = fread(body,1,n,f);
     if (nreq != n) {
@@ -172,12 +190,13 @@ typedef struct {
     int path_len;
     HttpHandler handler;
     const char *local_path;
+    HttpContinuation *cc;
 } RouteEntry;
 
 static RouteEntry routes[MAX_ROUTES];
 static int last_route = 0;
 
-char *mime_types[] = {
+static char *mime_types[] = {
     "jpeg","image/jpeg","jpg","image/jpg","gif","image/gif","png","image/png",
     "html","text/html","css","text/css","js","text/javascript",
     NULL
@@ -188,7 +207,8 @@ static str_t static_handler(HttpRequest *web) {
     str_t contents;
     strcpy(file,web->local_path);
     strcat(file,web->path);
-    printf("trying to open '%s'\n",file);
+    if (s_verbose)
+        printf("trying to open '%s'\n",file);
     contents = file_read_all(file,false); 
     if (! contents) {
         web->status = "404";
@@ -199,6 +219,7 @@ static str_t static_handler(HttpRequest *web) {
         if (! mime)
             mime = "text/plain";
         web->type = mime;
+        http_add_out_header(web,"Cache-Control","max-age=86400");
         return contents;
     }
 }
@@ -235,7 +256,8 @@ static RouteEntry *match_request(str_t path) {
     RouteEntry *re_match = NULL;
     for (RouteEntry *re = routes; re->path; ++re) {
         if (strncmp(path,re->path,re->path_len) == 0 && is_end(path,re->path_len)) {
-            printf("matching '%s'\n",re->path);
+            if (s_verbose)
+                printf("matching '%s'\n",re->path);
             if (re->path_len > max_len) {
                 max_len = re->path_len;
                 re_match = re;
@@ -265,18 +287,21 @@ void HttpRequest_dispose (HttpRequest *req) {
     obj_unref(req->headers_out);
 }
 
+static void finish_response(FILE *in, str_t body, HttpRequest *req);
+
 /// Handle a request by parsing the URL and headers and matching the route.
 // The handler is assumed to return a string; if it's one of our strings, it will
 // be disposed. This response is written to the file handle which will be closed.
-void http_handle_request (int fd) {
+HttpContinuation* http_handle_request (int fd) {
     FILE *in = fdopen(fd,"r+");
     if (in == NULL) {
         perror("fdopen");
         close(fd);
-        return;
+        return NULL;
     }
     file_gets(in,line,sizeof(line));
-    printf("request '%s'\n",line);
+    if (s_verbose)
+        printf("request '%s'\n",line);
     // char **parts = str_split(line," "); bommmbed?
     // pull out path
     char *sp = strchr(line,' ');
@@ -313,17 +338,55 @@ void http_handle_request (int fd) {
         
         // call the handler
         str_t body = re_match->handler(req);
-        char **headers_out = NULL;
-        if (req->headers_out)
-            headers_out = *req->headers_out;
-        send_response(in, body,req->status,req->type,headers_out);
-        
-        // and clean up the string, if it's one of ours
-        if (obj_refcount(body) != -1)
-            obj_unref(body);
+        if (obj_is_instance(body,"HttpContinuation")) {
+            HttpContinuation *cc = (HttpContinuation*)body;
+            cc->handler  = re_match->handler;
+            cc->in = in; 
+            cc->req = req;
+            re_match->cc = cc;
+            return cc;
+        }
+        finish_response(in, body, req);
     }        
     obj_unref(req);
     fclose(in);    
+    return NULL;
+}
+
+static void finish_response(FILE *in, str_t body, HttpRequest *req) {
+    char **headers_out = NULL;
+    if (req->headers_out)
+        headers_out = *req->headers_out;
+    send_response(in, body,req->status,req->type,headers_out);
+    
+    // and clean up the string, if it's one of ours
+    if (obj_refcount(body) != -1)
+        obj_unref(body);    
+}
+
+static void HttpContinuation_dispose(HttpContinuation *cc) {
+    obj_unref(cc->req);
+    fclose(cc->in);    
+}
+
+str_t http_continuation_new(void *data) {
+    HttpContinuation *cc = obj_new(HttpContinuation,HttpContinuation_dispose);
+    cc->data = data;
+    return (str_t)cc;
+}
+
+void http_continuation_end(HttpContinuation *cc, str_t body) {
+    finish_response(cc->in, body, cc->req);
+    obj_unref(cc);
+}
+
+void http_continuation_handle (HttpHandler h, str_t body) {
+    for (RouteEntry *re = routes; re->path; ++re) {
+        if (re->handler == h) {
+            http_continuation_end(re->cc,body);
+            return;
+        }
+    }
 }
 
 /// Handlers can use this to add extra headers to the response, apart

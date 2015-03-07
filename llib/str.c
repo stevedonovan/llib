@@ -31,7 +31,6 @@
 
 #include <stdio.h>
 #include <string.h>
-#include <stdarg.h>
 #include "str.h"
 
 #define BUFSZ 256
@@ -129,26 +128,39 @@ static int offset_str(str_t P, str_t Q) {
 /// Extra string functions.
 // @section strings
 
-/// safe verson of `sprintf` which returns an allocated string.
-char *str_fmt(str_t fmt,...) {
-    va_list ap;
+// Keep MSVC happy, if necessary (defined only in 2013)
+#ifndef va_copy
+#define va_copy(dest, src) (dest = src)
+#endif
+
+/// safe verson of `vsprintf` which returns a refcounted string.
+char *str_vfmt(str_t fmt,va_list ap) {
     int size;
     char *str;
 
     // needed size of buffer...
-    va_start(ap, fmt);
-    size = vsnprintf(NULL, 0, fmt, ap);
-    va_end(ap);
-
+    // In GENERAL vsnprintf modifies its va_list!
+    va_list aq;
+    va_copy(aq, ap);
+    size = vsnprintf(NULL, 0, fmt, aq);
+    va_end(aq);
     str = str_new_size(size);
-
-    va_start(ap, fmt);
     size = vsnprintf(str, size+1, fmt, ap);
-    va_end(ap);
     return str;
 }
 
+/// safe verson of `sprintf` which returns a refcounted string.
+char *str_fmt(str_t fmt, ...) {
+    va_list ap;
+    va_start(ap,fmt);
+    char *res = str_vfmt(fmt,ap);
+    va_end(ap);
+    return res;    
+}
+
 /// extract a substring.
+// Note that `i2` is an index which may be negative, so (0,-1)
+// is a string copy and (1,-2) copies from 2nd to second-last character.
 char* str_sub(str_t s, int i1, int i2) {
     int sz = strlen(s);
     int len = i2 < 0 ? sz+i2+1 : i2 - i1;
@@ -264,21 +276,37 @@ static char* strtok_r(char *str,str_t delim,char **nextp) {
 #endif
 #endif
 
-/// split a string using a set of delimiters.
+/// split a string upto `nsplit` times using delimiters.
 // Returns a ref array of ref strings.
-char ** str_split(str_t s, str_t delim) {
+char ** str_split_n(str_t s, str_t delim, int nsplit) {
     char ***ss = seq_new_ref(char*);
     // make our own copy of the string...
     char *sc = str_new(s), *saveptr;
     char *t = strtok_r(sc,delim,&saveptr);
+    int i = 1;
     while (t != NULL) {
         seq_add(ss,str_new(t));
-        t = strtok_r(NULL,delim,&saveptr);
+        ++i;
+        if (nsplit && i > nsplit) {
+        	char *rest = t+strlen(t)+1;
+        	while (strchr(delim,*rest))
+        		++rest;
+        	seq_add(ss,str_new(rest));
+        	break;
+        } else {
+        	t = strtok_r(NULL,delim,&saveptr);
+        }
     }
     char **res = (char**)seq_array_ref(ss);
     res[array_len(res)] = NULL;
     obj_unref(sc);
     return res;
+}
+
+/// split a string using delimiters.
+// Returns a ref array of ref strings.
+char ** str_split(str_t s, str_t delim) {
+	return str_split_n(s,delim,0);
 }
 
 /// concatenate an array of strings.
@@ -316,6 +344,7 @@ char *str_concat(char **ss, str_t delim) {
 }
 
 /// Allocating a simple array of strings.
+// End the string arguments with a final `NULL`.
 // Note that this array is _not_ a ref container; the
 // string addresses are just copied over.
 char **str_strings(char *first,...) {

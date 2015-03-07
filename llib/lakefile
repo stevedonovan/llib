@@ -5,6 +5,6 @@ if WINDOWS and CC=='gcc' then
   defines = (defines or '')..' LLIB_PTR_LIST'
 end
 c99.library{'llib',
-    src='obj sort pool interface list file filew scan map str value template arg json json-data json-parse seq smap xml table farr config flot',
+    src='obj sort pool interface list file filew file_fmt scan map str value template arg json json-data json-parse seq smap xml table farr config flot',
     defines=defines
 }
