@@ -49,13 +49,13 @@ int main() {
     
     char *aa[] = {"one","1","two","2",NULL};
     R = rx_new("%$([a-z]+)",RX_LUA);
-    char *s = rx_gsub(R,"$one = $two(doo)",(StrLookup)str_lookup,aa);
+    char *s = rx_gsub(R,"$one = $two(doo)",rx_lookup(str_lookup,aa));
     printf("got '%s'\n",s);
-    s = rx_gsub(R,"got $one,$two",(StrLookup)str_lookup,aa);
+    s = rx_gsub(R,"got $one,$two",rx_lookup(str_lookup,aa));
     printf("got '%s'\n",s);
     
     R = rx_new("(%w+)=(%w+)",RX_LUA);
-    s = rx_gsub(R,"bonzo=dog,frodo=20",NULL,"\"%1\":%2");
+    s = rx_gsub(R,"bonzo=dog,frodo=20",rx_string("\"%1\":%2"));
     printf("got '%s'\n",s);
     
     return 0;

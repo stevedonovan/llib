@@ -1,3 +1,19 @@
+/*
+* llib little C library
+* BSD licence
+* Copyright Steve Donovan, 2013
+*/
+
+/****
+### Convenience API for POSIX regular expressions
+
+These are innspired by the Lua string API in two ways; first, you may
+write your regexes in Lua form like `%d+` instead of '\\[[digit]]` and
+second, there are find and gsub functions.
+
+
+*/
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <llib/str.h>
@@ -65,6 +81,15 @@ static void Regex_dispose(Regex *R) {
     regfree(R->rx);
 }
 
+/// create a regex object. The flags are a combination
+// of RX_ICASE (ignore case),  RX_NEWLINE (^$ matches lines) and RX_LUA,
+// where the awkward '\\' can be written '%', and the Lua character classes
+// 's','d','x','a' and 'w' are replaced by the POSIX classes "space","digit","xdigit",
+// "alpha" and "alnum". (This is _just_ a string substitution and the regex
+// semantics are not changed in any way!) 
+//
+// If the compilation fails, then the result is an error object (i.e. `value_is_error(res)`
+// is true)
 Regex *rx_new(str_t fmt, int cflags) {
     regex_t *rx = malloc(sizeof(regex_t));
     str_t pattern = fmt;
@@ -75,7 +100,6 @@ Regex *rx_new(str_t fmt, int cflags) {
         flags |= REG_NEWLINE;
     if (cflags  & RX_LUA) {
         pattern = percent_subst(fmt);
-        //~ printf("converted %s\n",pattern);
     }
     int res = regcomp(rx, pattern, flags);
     if (cflags  & RX_LUA)
@@ -105,10 +129,14 @@ static bool r_exec (Regex *R, str_t s) {
     }    
 }
 
+/// return any matches as an array of strings.
+// The first match is the whole regex, and subsequent 
+// matches are any explicit groups.
+// On no match, return `NULL`
 char **rx_match_groups(Regex *R, str_t s) {
     if (r_exec(R,s)) {
         int n = array_len(R->matches);
-        char **res = array_new(char*,n);
+        char **res = array_new_ref(char*,n);
         regmatch_t *M = R->matches;
         FOR(i,n) {            
             res[i] = str_sub(s,M->rm_so,M->rm_eo);
@@ -119,6 +147,24 @@ char **rx_match_groups(Regex *R, str_t s) {
         return NULL;
     }
 }
+
+/// return the matching index range.
+// This behaves rather like Lua's `string.find`, except that
+// the start and end indices are returned in the last two arguments.
+// If these arguments are not NULL, then the first `pi1` _must_ be
+// initialized to a valid index, even if 0.
+// If they are NULL then `rx_find` just indicates whether a match
+// took place or not. 
+//
+// This is useful for scanning through a string looking for similar patterns.
+// @usage
+//    Regex *R = rx_new("[a+z]+",0);
+//    str_t text = ""aa bb cc ddeeee";
+//    int i1 = 0, i2;  // i1 is initialized!
+//    while (rx_find(R,text,&i1,&i2)) {
+//        printf("got %d %d '%s'\n",i1,i2,str_sub(text,i1,i2));
+//        i1 = i2;
+//    }
 
 bool rx_find(Regex *R, str_t s, int *pi1, int *pi2) {
     int i1 = pi1 ? *pi1 : 0;
@@ -135,10 +181,14 @@ bool rx_find(Regex *R, str_t s, int *pi1, int *pi2) {
         R->s  = s;
         return true;
     } else {
-        return false;    
+        return false;
     }
 }
 
+/// whether a string matches a regex or not.
+// @param R
+// @string s
+// @treturn bool
 #define rx_match(R,s) rx_find(R,s,NULL,NULL)
 
 /// number of groups?
@@ -158,6 +208,24 @@ static str_t lookup_capture(Regex *R, str_t cap) {
     return rx_group(R,idx);
 }
 
+// globally replaces all matches of `R` in `s`.
+// In the first case, `lookup` is a function that operates with `data`
+// like `str_lookup` or `map_get`. 
+// If this is NULL, then the data must be a _string_, containing
+// group references like %1 etc.
+//
+// You may prefer to use the `rx_lookup` and `rx_string` convenience macros
+// for the last two arguments.
+//
+// @usage
+//    char *aa[] = {"one","1","two","2",NULL};
+//    R = rx_new("\\$([a-z]+)",0);
+//    char *s = rx_gsub(R,"$one = $two(doo)",(StrLookup)str_lookup,aa);
+//    assert(str_eq(s,"1 = 2(doo)"));
+// @usage
+//    R = rx_new("(%w+)=(%w+)",RX_LUA);
+//    s = rx_gsub(R,"bonzo=dog,frodo=20",NULL,"'%1':%2");
+//    assert(str_eq(s,"'bonzo':dog,'frodo':20"));
 char* rx_gsub(Regex *R, str_t s, StrLookup lookup, void *data) {
     int i1 = 0, i2 = 0,i0 = 0;
     char** ss = strbuf_new();
@@ -198,6 +266,22 @@ char* rx_gsub(Regex *R, str_t s, StrLookup lookup, void *data) {
     return strbuf_tostring(ss);    
 }
 
+/// substitute explicitly.
+// Rather than passing the matching substring to a function,
+// this allows you to write it out as a loop, which can be more
+// convenient in C.
+// @usage
+//    Regex *R = rx_new("%$%((%a+)%)",RX_LUA);
+//    str_t text = "here is $(HOME) for $(USER)!";
+//    int i = 0;
+//    char **ss = strbuf_new();
+//    while (rx_subst(R,text,ss,&i)) {
+//        str_t var = rx_group(R,1);
+//        strbuf_adds(ss,getenv(var));
+//        unref(var);
+//    }
+//    char *res = strbuf_tostring(ss);
+//    printf("subst '%s'\n",res);
 bool rx_subst(Regex *R, str_t s, char** ss, int *pi1) {
     int i2, i0 = *pi1;
     if (rx_find(R,s,pi1,&i2)) {

@@ -1,3 +1,14 @@
+/*
+* llib little C library
+* BSD licence
+* Copyright Steve Donovan, 2013-2015
+*/
+
+/****
+### Simple HTTP app server
+
+*/
+
 #define _POSIX_SOURCE
 #include <stdio.h>
 #include <stdlib.h>
@@ -8,10 +19,12 @@
 
 static bool s_verbose = false;
 
+/// make the server very chatty.
 void http_set_verbose(bool v) {
     s_verbose = v;
 }
 
+/// escape any non-alphanumeric characters in an URL.
 char *http_url_encode (str_t val) {
     char **res = strbuf_new();
     int len = strlen(val);
@@ -238,6 +251,7 @@ void http_add_route(const char *path, HttpHandler handler) {
 }
 
 /// Set up a route for statically serving files.
+// Multiple such routes may be set for different directories.
 void http_add_static (const char *route, const char *path) {
     http_add_route(route,static_handler);
     routes[last_route-1].local_path = path;

@@ -18,7 +18,9 @@ enum {
     RX_NEWLINE = 4
 };
 
-#define rx_match(R,s) rx_find(R,s,NULL,NULL)
+#define rx_lookup(fn,o) (StrLookup)(fn),(o)
+#define rx_string(s) NULL,(s)
+
 
 Regex *rx_new(str_t fmt, int cflags);
 char **rx_match_groups(Regex *R, str_t s);
@@ -27,6 +29,10 @@ int rx_group_count(Regex *R);
 char *rx_group(Regex *R, int idx);
 char* rx_gsub (Regex *R, str_t s, StrLookup lookup, void *data);
 bool rx_subst (Regex *R, str_t s, char** ss, int *pi1);
+
+inline bool rx_matches(Regex *R, str_t s) {
+    return rx_find(R,s,NULL,NULL);
+}
 
 #endif
 
