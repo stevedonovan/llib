@@ -30,13 +30,23 @@ See `test-array.c`.
 #define _T_ __typeof__
 #endif
 
-/// Iterate over an array.
-// @param arr the array (can be an expression)
+/// Iterate over array values.
+// `_` is `A[i]`
+// @param A the array (can be an expression)
 // @param expr the expression containing `_`
 // @macro FORA
 // @usage `FORA`(ints,printf("%i ",_));
 #define FORA(A_,E_) {_T_(A_) a_ = A_; FOR(i,array_len(a_)) \
   { _T_(*a_) _ = a_[i]; E_; }}
+
+/// Iterate over pointers to elements.
+// `_` is `A+i`. Useful with arrays of structs to avoid
+// copying, and when you need to modify the array
+// @param A the array
+// @param expr the expression containing `_`
+// @macro FORAP
+// @usage `FORAP`(if(*_ < 0) *_ = 0);
+#define FORAP(A_,E_) {_T_(A_) _ = A_; FOR(i,array_len(_)) { E_; _++; }}
 
 /// Declare an array which is `[F(x)|x in A]`
 // @param T the resulting type
@@ -84,7 +94,19 @@ See `test-array.c`.
  #define FILTAR(T_,v_,A_,E_) T_ *v_; {_T_(A_) a_ = A_; T_**s_ = seq_new_ref(T_); \
  FOR(i_,array_len(a_)) { _T_(*a_) _ = a_[i_]; if (E_) seq_add(s_,obj_ref(_)); } \
  v_ = (T_*)seq_array_ref(s_); }
- 
+
+/// Array of _pointers_ to elements of array matching expression.
+// Useful if you needed selected 'views' of an array of structs,
+// without the need for copying them.
+// @param v the name of the new array
+// @param A the input array
+// @param expr the filter expresion in `_`
+// @macro FILTAP
+#define FILTAP(v_,A_,E_) _T_(A_) *v_; {_T_(A_) **s_ = seq_new(_T_(A_)); \
+    _T_(A_) _ = A_; \
+    FOR(i_,array_len(A_)) { if(E_) seq_add(s_,_); ++_; } \
+    v_ = (_T_(A_)*)seq_array_ref(s_); }
+
  /// Index into array where expression matches value.
  // Declares a variable `v`, which will be -1 if no match is possible.
  // @param v new index
@@ -92,7 +114,7 @@ See `test-array.c`.
  // @param istart where to start searching (usually 0)
  // @param expr expression in `_`
  // @macro FINDA
- // @usage 
+ // @usage
  //   char** exts = `str_strings`(".o",".d",".obj",NULL);
  //   str_t file = "bonzo.d";
  //   `FINDA`(idx,exts,0,`str_ends_with`(file,_));
@@ -102,6 +124,20 @@ See `test-array.c`.
 for (int i_=istart_,n_=array_len(a_); i_<n_; i_++) { \
          _T_(*a_) _ = a_[i_]; if (E_) { v_=i_; break; } \
 }}
+
+/// Like `FINDA` but expression variable is pointer.
+ // Declares a variable `v`, which will be -1 if no match is possible.
+ // @param v new index
+ // @param A the array
+ // @param istart where to start searching (usually 0)
+ // @param expr expression in `_`
+ // @macro FINDAP
+#define FINDAP(v_,A_,istart_,E_) \
+ int v_=-1; {_T_(A_) a_ = A_; \
+for (int i_=istart_,n_=array_len(a_); i_<n_; i_++) { \
+         _T_(a_) _ = &a_[i_]; if (E_) { v_=i_; break; } \
+}}
+
 
 /// Like `FINDA` but starts searching at end.
  // Declares a variable `v`, which will be -1 if no match is possible.
