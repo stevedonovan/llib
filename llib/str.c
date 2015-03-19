@@ -228,6 +228,19 @@ int str_findstr(str_t s, str_t sub) {
     return offset_str(P,s);
 }
 
+/// contains substring?
+// also optionally return index past match.
+bool str_contains(str_t s, str_t sub, int *after) {
+    int idx = str_findstr(s,sub);
+    if (idx == -1) {
+        return false;
+    }
+    if (after) {
+        *after = idx + strlen(sub);
+    }
+    return true;
+}
+
 /// find character `ch` in the string.
 int str_findch(str_t s, char ch) {
     str_t P = strchr(s,ch);

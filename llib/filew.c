@@ -10,7 +10,6 @@ typedef struct {
 } FileW;
 
 static void FileW_dispose(FileW *pf) {
-    printf("dispose '%p'\n",pf->f);
     fclose(pf->f);
 }
 
