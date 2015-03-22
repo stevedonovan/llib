@@ -86,6 +86,7 @@ pairs, for instance in `config.c`
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdarg.h>
+#include <ctype.h>
 #define INSIDE_ARG_C
 #include "arg.h"
 
@@ -624,6 +625,8 @@ void arg_reset_used(ArgState *cmds) {
     }
 }
 
+#define MAX_FLAG_LEN 64
+
 /// parse the given command-line args, given the processed state.
 // Call `arg_parse_spec` first to call this directly.
 PValue arg_process(ArgState *cmds ,  const char**argv)
@@ -635,6 +638,7 @@ PValue arg_process(ArgState *cmds ,  const char**argv)
     PValue *cmd_parms = NULL;
     char *rest_arg = NULL;
     static char tmp[] = {0,0};
+    char buff[MAX_FLAG_LEN];
     int i = 1; // argv[0] is always program...
     int karg = 1;  // non-flag arguments
     bool see_flags = true;
@@ -658,11 +662,19 @@ PValue arg_process(ArgState *cmds ,  const char**argv)
             *pname = *arg;
             long_flag = *arg=='-';
             if (long_flag) {
-                pname = arg+1;
-                if (*pname == '\0') {
+                pname = arg+1;  // long flag name
+                if (*pname == '\0') { // just '--' means 'ignore subsequent flags and treat as arguments'
                     ++i;
                     see_flags = false;
                     continue;
+                }
+                // the argument of long flags may follow after a '='
+                int equals = str_findch(pname,'=');
+                if (equals != -1) {
+                    strncpy(buff,pname,equals);
+                    buff[equals] = '\0';
+                    rest_arg = pname+equals+1;
+                    pname = buff;
                 }
             }
 
@@ -674,26 +686,26 @@ PValue arg_process(ArgState *cmds ,  const char**argv)
                 
                 bool needs_argument = flags & FlagNeedsArgument;
 
-                // a chain of short flags must end if one needs an argument... (-vo file)
-                if (needs_argument && ! long_flag) {
-                    long_flag = true;
-                    if (arg[1]) // anything following the flag is its argument ( -n10 )
-                        rest_arg = arg+1;
-                }
-
                 if (needs_argument)  {
+                    // a chain of short flags must end if one needs an argument... (-vo file)
+                    if (! long_flag) {
+                        long_flag = true; // will break us out of loop..
+                        if (arg[1]) { // any number following the flag is its argument ( -n10 )
+                            rest_arg = arg+1;
+                       }
+                    }
                     if (rest_arg) { // don't need to advance to get argument!
                         arg = rest_arg;
                         rest_arg = NULL;
                     } else {
                         arg = (char*)argv[++i];
+                        if (! arg || *arg == '-')
+                            return value_errorf("flag '%s' expects a value",fune->name);
                     }
                 }
                 if (flags & FlagFunction) { // a function flag (may have argument)
                     PValue *fun_args = allocate_args(fune,cmds);
                     if (needs_argument) {
-                        if (! arg || *arg == '-')
-                            return value_errorf("flag '%s' expects a value",fune->name);
                         val = bind_argument(cmds,fune->name,1,arg,NULL);
                         if (value_is_error(val))
                             return val;                        
