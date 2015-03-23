@@ -249,3 +249,11 @@ disposing foo 5
 disposing foo 6
 now explicitly release f
 disposing foo 3
+appending arrays to a container seq
+unref extra
+seq has all references now
+disposing foo 7
+disposing foo 8
+disposing foo 9
+disposing foo 10
+disposing foo 11

@@ -89,5 +89,19 @@ int main()
     unref(sf);
     printf("now explicitly release f\n");
     unref(f);
+    
+    printf("appending arrays to a container seq\n");
+    sf = seq_new_ref(PFoo);
+    FOR (i,2)
+        seq_add(sf,foo_new());
+    PFoo *extra = array_new_ref(PFoo,3);
+    FOR (i,3)
+        extra[i] = foo_new();
+    seq_adda(sf,extra,-1);
+    puts("unref extra");
+    unref(extra);
+    puts("seq has all references now");
+    unref(sf);
+    
     return 0;
 }
