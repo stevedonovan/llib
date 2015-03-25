@@ -19,7 +19,6 @@
 
 static FILE *file_popen_vfmt(const char *fmt, const char *how, va_list ap) {
     char *cmd = str_vfmt(fmt,ap);
-    printf("got '%s'\n",cmd);
     FILE *res = popen(cmd, how);
     obj_unref(cmd);
     return res;

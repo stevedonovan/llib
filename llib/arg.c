@@ -166,6 +166,9 @@ static void *value_parse_ex(str_t s, int type) {
                 return out;
         }
     } else {
+        if (type == ValueString && *s=='\'') {
+            s = str_sub(s,1,-2);
+        }        
         return value_parse(s,(ValueType)type);
     }
 }

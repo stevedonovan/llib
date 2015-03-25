@@ -163,7 +163,7 @@ char *str_fmt(str_t fmt, ...) {
 // is a string copy and (1,-2) copies from 2nd to second-last character.
 char* str_sub(str_t s, int i1, int i2) {
     int sz = strlen(s);
-    int len = i2 < 0 ? sz+i2+1 : i2 - i1;
+    int len = i2 < 0 ? sz+i2 : i2 - i1 + 1;
     char *res = str_new_size(len);
     memcpy(res,s+i1,len);
     return res;
