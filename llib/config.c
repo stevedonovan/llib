@@ -95,7 +95,7 @@ char** config_read_stream(FILE *in, int flags) {
         if (str_is_blank(line))
             continue;
 
-        char **parts = str_split_n(line,delim,2);
+        char **parts = str_split_n(line,delim,1);
         if (parts[1])
             str_trim(parts[1]);
         smap_add(ss,str_ref(parts[0]),str_ref(parts[1] ? parts[1] : ""));

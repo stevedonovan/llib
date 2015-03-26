@@ -166,9 +166,6 @@ static void *value_parse_ex(str_t s, int type) {
                 return out;
         }
     } else {
-        if (type == ValueString && *s=='\'') {
-            s = str_sub(s,1,-2);
-        }        
         return value_parse(s,(ValueType)type);
     }
 }
@@ -190,8 +187,12 @@ static bool parse_flag(str_t arg, FlagEntry *pfd)
         char *is_arr = strstr(rest,"[]");
         if (strchr(rest,'=') && ! is_arr) { //  type name=default
             char **nparts = str_split(rest,"=");
-            pfd->defname = nparts[1];
-            pfd->defval = value_parse_ex(nparts[1],pfd->type);
+            char *defval = nparts[1];
+            if (*defval == '\'') {
+                defval = str_sub(defval,1,-2);
+            }
+            pfd->defname = *defval=='\0' ? NULL : defval;
+            pfd->defval = value_parse_ex(defval,pfd->type);
             pfd->name = ref(nparts[0]);
         } else { // type name ([]))
             if (is_arr) { // type name[](=split)
