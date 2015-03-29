@@ -662,17 +662,19 @@ void * array_copy(void *P, int i1, int i2) {
     ObjHeader *pr = obj_header_(P);
     OTP t = obj_type_(pr);
     int mlem = t->mlem;
-    int offs = i1*mlem;
-    int len = i2 < 0 ? pr->_len+i2+1 : i2-i1;
+    if (i2 < 0) {
+        i2 += pr->_len;
+    }
+    int len = i2 - i1 + 1;
     bool is_ref = pr->is_ref_container != 0;
     void *newp = array_new_(mlem,t->name,len,is_ref);
     if (is_ref) { // update reference counts if needed
-        void **ptr = (void**)P+offs, **op = (void**)newp;
+        void **ptr = (void**)P+i1, **op = (void**)newp;
         FOR(i,len) {
             op[i] = obj_ref(ptr[i]);
         }
     } else {
-        memcpy(newp,(char*)P+offs,mlem*len);
+        memcpy(newp,(char*)P+mlem*i1,mlem*len);
     }
     return newp;
 }
