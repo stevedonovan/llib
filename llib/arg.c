@@ -270,7 +270,7 @@ static FlagEntry *parse_spec(str_t spec)
     } else { // a flag
         parse_flag(spec,pfd);
         pfd->args = NULL;
-        if (pfd->type != ValueBool || (pfd->flags & FlagIsArray))
+        if (pfd->type != ValueBool) // || (pfd->flags & FlagIsArray))
             pfd->flags |= FlagNeedsArgument;
     }
     return pfd;
