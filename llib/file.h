@@ -15,6 +15,7 @@ const char *file_exists_any_(const char *rw, ...);
 char *file_gets(FILE *f, char *buff, int bufsize);
 char *file_getline(FILE *f);
 char *file_read_all(const char *file, bool text);
+bool file_write_fmt(const char *file,const char *fmt,...);
 FILE **file_fopen(const char *file, const char *how);
 long file_size_stream(FILE *fp);
 long file_size(const char *file);
