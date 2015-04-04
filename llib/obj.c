@@ -540,21 +540,23 @@ const char *obj_type_name(void *P) {
     return buff;
 }
 
-void obj_dump_ptr(void *P) {
+const char *dump_(void *P) {
     int c = obj_refcount(P);
+    char buff[1024];
     if (c != -1)
-        printf("%p ref %d type %s\n",P,c,obj_type_name(P));
+        snprintf(buff,sizeof(buff),"%p ref %d type %s",P,c,obj_type_name(P));
     else
-        printf("not one of ours\n");
+        strcpy(buff,"not one of ours");
+    return str_new(buff);
 }
 
 #ifdef LLIB_PTR_LIST
-void obj_dump_pointers() {
+void obj_dump_ptrs() {
     printf("+++ llib objects\n");
     FOR(i,max_p) {
         if (our_ptrs[i] != NULL) {
             void *P = (void*)((ObjHeader*)our_ptrs[i] + 1);
-            obj_dump_ptr(P);            
+            puts(dump_(P)); 
         }
     }
     printf("+++\n");
@@ -576,7 +578,7 @@ void obj_snap_ptrs_dump() {
     FOR(i,MAX_PTRS) {
         if (our_ptrs[i] != NULL && s_ptrs[i] == NULL) {
             void *P = (void*)((ObjHeader*)our_ptrs[i] + 1);
-            obj_dump_ptr(P);
+            puts(dump_(P));
         }
     }
 }
@@ -663,9 +665,9 @@ void * array_copy(void *P, int i1, int i2) {
     OTP t = obj_type_(pr);
     int mlem = t->mlem;
     if (i2 < 0) {
-        i2 += pr->_len;
+        i2 = pr->_len + i2 + 1;
     }
-    int len = i2 - i1 + 1;
+    int len = i2 - i1;
     bool is_ref = pr->is_ref_container != 0;
     void *newp = array_new_(mlem,t->name,len,is_ref);
     if (is_ref) { // update reference counts if needed
@@ -803,7 +805,7 @@ void *seq_new_(int nlem, const char *name, int isref) {
 void *seq_new_array (void *arr) {
     Seq *s = obj_new(Seq,seq_dispose);
     int n = array_len(arr);
-    s->arr = array_copy(arr,0,n);
+    s->arr = array_copy(arr,0,-1);
     s->cap = 0;// our capacity    
     seq_resize(s,n);
     array_len(s->arr) = n;

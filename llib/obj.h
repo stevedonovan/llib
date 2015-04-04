@@ -128,6 +128,7 @@ ObjType* obj_type_from_index(int t);
 #ifdef LLIB_DEBUG
 void obj_dump_types(bool all);
 const char *obj_type_name(void *P);
+const char *dump_(void *P);
 #ifdef LLIB_PTR_LIST
 void obj_dump_pointers();
 void obj_snap_ptrs_create();
