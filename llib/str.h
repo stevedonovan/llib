@@ -51,6 +51,10 @@ char ** str_split_n(str_t s, str_t delim, int nsplit);
 char ** str_split(str_t s, str_t delim);
 char *str_concat(char **ss, str_t delim);
 char **str_strings(char *p,...);
+int str_eq_any_ (const char *s, ...);
+int str_index(const char **strings, const char *s);
+
+#define str_eq_any(s,...) str_eq_any_(s,__VA_ARGS__,NULL)
 
 void **str_lookup_ptr(char** substs, str_t name);
 void *str_lookup(SMap substs, str_t name);
@@ -59,6 +63,7 @@ char *str_gets(SMap substs, str_t name);
 char **strbuf_new(void);
 #define strbuf_add seq_add
 void strbuf_adds(char **sp, str_t ss);
+void strbuf_addsp(char **ss, str_t s);
 void strbuf_addf(char **sp, str_t fmt, ...);
 void strbuf_addr(char **sp, str_t s, int i1, int i2);
 char *strbuf_insert_at(char **sp, int pos, str_t src, int sz);

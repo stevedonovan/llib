@@ -87,6 +87,16 @@ void strbuf_addr(char **sp, str_t s, int i1, int i2) {
     sb_adds(sp,s+i1,i2-i1);
 }
 
+/// append a string surronded by spaces.
+// useful when building up a string of tokens separated by spaces.
+void strbuf_addsp(char **ss, str_t s) {
+    if (s && *s) {
+        strbuf_add(ss,' ');
+        strbuf_adds(ss,s);
+        strbuf_add(ss,' ');
+    }
+} 
+
 /// insert a string into a string buffer at `pos`.
 // May specify the number of characters to be copied `sz`; if this is -1
 // then use the ordinary length of the string.
@@ -159,11 +169,21 @@ char *str_fmt(str_t fmt, ...) {
 }
 
 /// extract a substring.
-// Note that `i2` is an index which may be negative, so (0,-1)
+// Note that `i2` and 'i1' are indices which may be negative, so (0,-1)
 // is a string copy and (1,-2) copies from 2nd to second-last character.
+// @usage str_sub("hello",2,3) -> "l"
+// @usage str_sub("hello",2,-1) -> "llo"
 char* str_sub(str_t s, int i1, int i2) {
-    int sz = strlen(s);
-    int len = i2 < 0 ? sz+i2 : i2 - i1 + 1;
+     int sz = strlen(s);
+    if (i2 < 0)
+        i2 = sz + i2 + 1;
+    if (i1 < 0)
+        i1  = sz + i1 + 1;
+    if (i1 > sz)
+        i1 = sz-1;
+    if (i2 > sz)
+        i2 = sz-1;
+    int len = i2 - i1;
     char *res = str_new_size(len);
     memcpy(res,s+i1,len);
     return res;
@@ -381,3 +401,39 @@ char **str_strings(char *first,...) {
     return res;
 }
 
+/// index of `s` in string array `strings`.
+// -1 if not found. The string array must be NULL terminated.
+int str_index(const char **strings, const char *s) {
+    int i = 0;
+    for (str_t *S = strings; *S; S++,i++) {
+        if (str_eq(*S,s)) {
+            return i;
+        }
+    }
+    return -1;
+}
+
+/// 1-based index of `s` in an arbitrary number of string arguments.
+// If we don't match, then return 0!  `str_eq_any` is a convenient
+// replacement for a chain of string comparions. Also useful to parse enum values.
+// @string s  the string to match
+// @param ... the strings to match against
+// @treturn int
+// @function str_eq_any
+// @usage  str_eq_any("foo","baz","foo","bar") == 2;
+int str_eq_any_ (const char *s, ...) {
+    va_list ap;
+    va_start(ap,s);
+    str_t S;
+    int res = 0, i = 1;
+    while ((S = va_arg(ap,str_t)) != NULL) {
+        if (str_eq(S,s)) {
+            res = i;
+            break;
+        }
+        ++i;
+    }
+    va_end(ap);
+    return res;
+}
+    
