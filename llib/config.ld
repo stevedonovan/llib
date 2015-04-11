@@ -3,7 +3,7 @@ title='llib Documentation'
 description='llib: A compact general-purpose C library'
 full_description='Available at [Github](https://github.com/stevedonovan/llib)'
 file={'obj.c', 'str.c', 'smap.c','scan.c', 'template.c', 'list.c', 'map.c', 'file.c', 
-    'value.c', 'json.c','json-parse.c', 'xml.c','farr.c','array.h','table.c','config.c',
+    'value.c', 'interface.c', 'json.c','json-parse.c', 'xml.c','farr.c','array.h','table.c','config.c',
     'arg.c','flot.c'}
 parse_extra={C=true}
 -- dont_escape_underscore=true

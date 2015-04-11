@@ -21,11 +21,11 @@ llib objects may specify a _dispose_ function:
         int age;
         char *name;
     } Person;
-    
+
     static void Person_dispose(Person *p) {
         `obj_unref`(p->name);
     }
-    
+
     Person *person_new(int age, char *name) {
         Person *p = `obj_new`(Person,Person_dispose);
         p->age = age;
@@ -39,7 +39,7 @@ only dispose the string if it hasn't already been referenced elsewhere, which
 permits flexible sharing of data.  (We use `str_ref` specifically here because the
 argument `name` may not be already a ref-counted string.)
 
-_Arrays_ carry their own size, accessible with `array_len`; 
+_Arrays_ carry their own size, accessible with `array_len`;
 if created with `array_new_ref`, they will unref their elements when disposed.
 
 _Sequences_ are resizeable arrays. `seq_add` appends a new value
@@ -170,7 +170,7 @@ static ObjHeader *new_obj(int size, ObjType *t) {
     void *obj;
 
     if (! t->alloc) {
-        obj = malloc(size);        
+        obj = malloc(size);
     } else {
         obj = t->alloc->alloc(t->alloc,size);
     }
@@ -327,7 +327,7 @@ void *obj_new_(int size, const char *type, DisposeFn dtor) {
     OTP t = type_from_dtor(type,dtor);
     if (! t)
         t = new_type(size,type,dtor);
-    
+
     return obj_from_type(t);
 }
 
@@ -396,7 +396,7 @@ static void obj_free_(ObjHeader *h, const void *P) {
     } else {
 #ifdef LLIB_DEBUG
         if (s_do_free)
-#endif        
+#endif
             free(h);
     }
 }
@@ -412,12 +412,12 @@ static void obj_free_(ObjHeader *h, const void *P) {
 void obj_incr_(const void *P) {
     ObjHeader *h = obj_header_(P);
     // if the object pool is active, then remove our pointer from it!
-#ifdef LLIB_DEBUG_VERBOSE    
+#ifdef LLIB_DEBUG_VERBOSE
     fprintf(stderr,"+ref %p\n",P);
 #endif
     if (_pool_cleaner && h->_ref == 1) {
         _pool_cleaner((void*)P);
-    }    
+    }
     ++(h->_ref);
 }
 
@@ -435,7 +435,7 @@ void obj_unref(const void *P) {
     // this check is only really useful if LLIB_PTR_LIST is used
     if (! our_ptr(h)) {
         fprintf(stderr,"llib: unref of non ref-counted pointer\n");
-        abort();        
+        abort();
     }
     // catches already unreferenced pointers...
     if (h->_ref == 0) {
@@ -445,10 +445,10 @@ void obj_unref(const void *P) {
 #endif
     --(h->_ref);
     if (h->_ref == 0) {
-#ifdef LLIB_DEBUG_VERBOSE    
+#ifdef LLIB_DEBUG_VERBOSE
         fprintf(stderr,"freed %p\n",P);
 #endif
-        obj_free_(h,P);        
+        obj_free_(h,P);
     }
 }
 
@@ -556,7 +556,7 @@ void obj_dump_ptrs() {
     FOR(i,max_p) {
         if (our_ptrs[i] != NULL) {
             void *P = (void*)((ObjHeader*)our_ptrs[i] + 1);
-            puts(dump_(P)); 
+            puts(dump_(P));
         }
     }
     printf("+++\n");
@@ -587,7 +587,7 @@ void obj_snap_ptrs_dump() {
 void obj_dump_all() {
     obj_dump_types(false);
 #ifdef LLIB_PTR_LIST
-    obj_dump_pointers();
+    obj_dump_ptrs();
 #endif
 }
 
@@ -622,9 +622,9 @@ void *array_new_(int mlen, const char *name, int len, int isref) {
     } else { // otherwise just the last element
         memset(P+mlen*len,0,mlen);
     }
-#ifdef LLIB_DEBUG_VERBOSE    
+#ifdef LLIB_DEBUG_VERBOSE
     fprintf(stderr,"arr %s %p[%d] %d\n",name,P,len,isref);
-#endif    
+#endif
     return P;
 }
 
@@ -806,7 +806,7 @@ void *seq_new_array (void *arr) {
     Seq *s = obj_new(Seq,seq_dispose);
     int n = array_len(arr);
     s->arr = array_copy(arr,0,-1);
-    s->cap = 0;// our capacity    
+    s->cap = 0;// our capacity
     seq_resize(s,n);
     array_len(s->arr) = n;
     return (void*)s;

@@ -4,6 +4,53 @@
 * Copyright Steve Donovan, 2013
 */
 
+/***
+### Defining and Using Interfaces
+llib has a mechanism for types to implement _interfaces_. For instance,
+`list` objects implement the Iterable` interface, which has a function `init`
+that returns an 'Iterator` object.
+
+```C
+    #include <llib/interface.h"
+    ...
+    List *ls = list_new_str();
+    list_add(ls, "ein");
+    list_add(ls, "zwei");
+    list_add(ls, "drei");
+    Iterator *it = interface_get_iterator(ls);
+    char *s;
+    while (it->next(it,&s)) {
+        printf("got '%s'\n",s);
+    }
+    unref(it);
+```
+
+There is an optional function `nextpair` in the `Iterator` struct,  which grabs key/value
+pairs:
+
+```C
+    Map *m = map_new_str_str();
+    map_put(m,"one","1");
+    map_put(m,"two","2");
+    map_put(m,"three","3");
+    Iterator *it = interface_get_iterator(m);
+    char *key, *val;
+    while (it->nextpair(it,&key,&val)) {
+        printf("'%s': '%s'\n",key,val);
+    }
+```
+
+`Accessible` is simpler; the type provides a single `lookup` function for finding
+the value associated with a key;  `map` implements this.
+
+This module also defines default iterators and accessors for arrays.
+In this way, the JSON generator and the `template` module may consume arbitrary llib
+data.
+
+
+@module interface
+*/
+
 #include <stdlib.h>
 #define _LLIB_EXPOSE_OBJTYPE
 #include "interface.h"
@@ -131,13 +178,12 @@ static bool is_pointer_array(const void *obj) {
 
 ObjLookup interface_get_lookup(const void *P) {
     initialize();
-    if (obj_refcount(P) == -1 || is_pointer_array(P)) {
+    Accessor* a = (Accessor*)interface_get(t_accessor,P);
+    if (a) {
+        return a->lookup;
+    } else {
         return (ObjLookup)str_lookup;
     }
-    Accessor* a = (Accessor*)interface_get(t_accessor,P);
-    if (! a)
-        return NULL;
-    return a->lookup;
 }
 
 Iterator* interface_get_iterator(const void *obj) {

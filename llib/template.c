@@ -4,7 +4,7 @@
 * Copyright Steve Donovan, 2013
 */
 
-/**** 
+/****
 ### String Templates.
 
 In their simplest form they allow substitution of placeholders like
@@ -23,7 +23,7 @@ defined as a function plus an object.
     `map_put`(m,"P","!");
     S = `str_templ_subst_using`(st,(StrLookup)map_get,m);
     assert(`str_eq`(S,"Hello !Monique, how is Paris?"));
-    
+
 `str_templ_subst_value` will use `interface_get_lookup` to see if the object
 implements `Accessor`, so the last could be simply written `str_templ_subst_value(st)`
 since `Map` defines that interface.
@@ -35,12 +35,12 @@ will look like "this is @<home>, welcome @<name>".
 Subtemplates can be defined; for instance this template generates an HTML list.
 
     "<ul>$(for ls |<li>$(_)</li>|)</ul>"
-    
+
 There is an alternative syntax using a single colon instead of bracketting
 pipe characters.
 
     "<ul>$(for ls: <li>$(_)</li>)</ul>"
-    
+
 The special `for` form iterates over an `Iterable` object like a `List` or an array.
 
 The special variable `\_` refers to each value of the `Iterable`; if we're iterating
@@ -179,7 +179,7 @@ StrTempl *str_templ_new(const char *templ, const char *markers) {
             char *s = advance_to(T,"|"); // left-hand boundary
             if (*s != '|') {
                 err = "no left | in subtemplate";
-                goto error;                
+                goto error;
             }
             st = s + 1; // now points to subtemplate
             s = spaces_left(s-1) + 1;
@@ -188,7 +188,7 @@ StrTempl *str_templ_new(const char *templ, const char *markers) {
             char *np = advance_to(T," :"); // past '(', upto space or colon
             np = spaces_right(np); // might just be spaces...
             st = NULL;
-            
+
             if (*np && *np != ':') { // fun followed by arg
                 if (*np == '"') { // ... quoted value
                    np = advance_to(np,"\"");
@@ -201,14 +201,14 @@ StrTempl *str_templ_new(const char *templ, const char *markers) {
                     np = advance_to(np," :");
                 }
             }
-            
+
             if (*np) { // something follows arg. But is it just space?
                 char *endp = np;
                 if (*np && *np == ':')
                     st = np+1;
                 *endp = '\0';
             }
-            
+
             if (st) {
                 mark = TTPL;
             } else {
@@ -232,7 +232,7 @@ StrTempl *str_templ_new(const char *templ, const char *markers) {
             // keep references to subtemplates for later disposal
             if (! stl->subt)
                 stl->subt = seq_new_ref(StrTempl*);
-            seq_add(stl->subt,subt);      
+            seq_add(stl->subt,subt);
         }
         T = S + 1;
         if (! *T) break;
@@ -250,7 +250,11 @@ static char *i_impl (void *arg, StrTempl *stl) {
 }
 
 static char *with_impl (void *arg, StrTempl *stl) {
-    return str_templ_subst_using(stl,(StrLookup)interface_get_lookup(arg),arg);
+    ObjLookup lookup = interface_get_lookup(arg);
+    if (lookup == NULL) {
+        return (char*)value_error("with: object does not implement Accessor");
+    }
+    return str_templ_subst_using(stl,(StrLookup)lookup,arg);
 }
 
 static char *for_impl (void *arg, StrTempl *stl) {
@@ -341,7 +345,7 @@ static char *do_lookup(char *part, StrTempl *stl, StrLookup lookup, void *data) 
         if (*part == '0') // synonym for _
             return (char*)data;
         else
-            return (char*)((void**)data)[(int)*part - (int)'1'];                
+            return (char*)((void**)data)[(int)*part - (int)'1'];
     } else
     if (str_eq(part,"[_]")) { // used when iterating over a map; `_` is key, `[_]` is value
     	stl = stl->parent;
@@ -360,7 +364,7 @@ static char *do_lookup(char *part, StrTempl *stl, StrLookup lookup, void *data) 
             res = stl->lookup(stl->data,part);
             stl = stl->parent;
         }
-        return res;                    
+        return res;
     } else { // _ means the object itself
         return (char*)data;
     }
@@ -390,7 +394,7 @@ char *str_templ_subst_using(StrTempl *stl, StrLookup lookup, void *data) {
         if (mark > 0 && mark < TMARKER) {
             bool ref_str = false;
             ++part;
-            StrTempl *macro = (StrTempl*)smap_get(macros,part);            
+            StrTempl *macro = (StrTempl*)smap_get(macros,part);
             if (mark != TVAR) { // function-style evaluation
                 TemplateFun fn = NULL;
                 if (! macro)

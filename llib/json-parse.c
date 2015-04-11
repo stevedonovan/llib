@@ -112,6 +112,11 @@ PValue json_parse_string(const char *str) {
     ScanState *st = scan_new_from_string(str);
     scan_next(st);
     res = json_parse(st);
+    if (value_is_error(res)) {
+        PValue err = value_errorf("line %d: %s",st->line,res);
+        obj_unref(res);
+        res = err;
+    }
     obj_unref(st);
     return res;
 }

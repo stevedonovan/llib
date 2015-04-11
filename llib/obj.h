@@ -22,6 +22,7 @@ typedef struct ObjAllocator_ {
     void *data;
 } ObjAllocator;
 
+// 64-bit header
 typedef struct ObjHeader_ {
     unsigned int type:14;
     unsigned int is_array:1;
@@ -30,6 +31,7 @@ typedef struct ObjHeader_ {
     unsigned int _len:32;
 } ObjHeader;
 
+// predefined base types
 enum {
     OBJ_CHAR_T = 0,
     OBJ_ECHAR_T = 1,
@@ -41,6 +43,7 @@ enum {
     OBJ_KEYVALUE_T = 7
 };
 
+// this is type 7
 typedef struct {
     void *key;
     void *value;
