@@ -222,6 +222,8 @@ ObjType obj_types[LLIB_TYPE_MAX];
 static int obj_types_size = 8;
 
 ObjType* obj_type_from_index(int t) {
+    if (t < 0 || t > obj_types_size)
+        return NULL;
     return &obj_types[t];
 }
 

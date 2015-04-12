@@ -79,7 +79,7 @@ void* interface_get(int itype, const void *obj) {
     ObjType* t_iter = obj_type_from_index(itype);
     int idx = t_iter->idx;
     ObjType* t_obj = obj_type_from_index(obj_type_index(obj));
-    if (! t_obj->interfaces)
+    if (! t_obj || ! t_obj->interfaces)
         return NULL;
     for (InterfaceS *ii = t_obj->interfaces; ii->type; ++ii) {
         if (ii->type == idx)
