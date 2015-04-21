@@ -513,19 +513,19 @@ void obj_snapshot_dump() {
     FOR(i,LLIB_TYPE_MAX) {
         ObjType *T = &obj_types[i];
         if (T->instances > 0 && snp[i] == 0)
-            printf("%3d (%s) %d\n",i,T->name,T->instances);
+            printf("(%s) %d\n",T->name,T->instances);
     }
     printf("+++ deleted objects\n");
     FOR(i,LLIB_TYPE_MAX) {
         ObjType *T = &obj_types[i];
         if (T->instances == 0 && snp[i] > 0)
-            printf("%3d (%s) %d\n",i,T->name,T->instances);
+            printf("(%s) %d\n",T->name,snp[i]);
     }
     printf("+++ changed objects\n");
     FOR(i,LLIB_TYPE_MAX) {
         ObjType *T = &obj_types[i];
         if (T->instances > 0 && snp[i] > 0 && T->instances != snp[i])
-            printf("%3d (%s) %d -> %d\n",i,T->name,snp[i],T->instances);
+            printf("(%s) %d -> %d\n",T->name,snp[i],T->instances);
     }
 }
 
@@ -580,7 +580,8 @@ void obj_snap_ptrs_dump() {
     FOR(i,MAX_PTRS) {
         if (our_ptrs[i] != NULL && s_ptrs[i] == NULL) {
             void *P = (void*)((ObjHeader*)our_ptrs[i] + 1);
-            puts(dump_(P));
+            const char *name = obj_typename(P);
+            printf("%s %s\n",dump_(P),(strcmp(name,"char")==0 ? (char*)P : ""));
         }
     }
 }
