@@ -271,17 +271,6 @@ static OTP new_type(int size, const char *type, DisposeFn dtor) {
     return t;
 }
 
-/// allocate a new type
-// @tparam type T
-// @tparam DisposeFn optional destructior
-// @treturn T*
-// @function obj_new_type
-// @within New
-
-int obj_new_type_(int size, const char *type, DisposeFn dtor) {
-    return new_type(size,type,dtor)->idx;
-}
-
 // the type system needs to associate certain common types with fixed slots
 static bool initialized = false;
 
@@ -299,6 +288,20 @@ static ObjType obj_types_initialized[] = {
 static void initialize_types() {
     initialized = true;
     memcpy(obj_types,obj_types_initialized,sizeof(obj_types_initialized));
+}
+
+/// allocate a new type
+// @tparam type T
+// @tparam DisposeFn optional destructior
+// @treturn T*
+// @function obj_new_type
+// @within New
+
+int obj_new_type_(int size, const char *type, DisposeFn dtor) {
+    if (! initialized) {
+        initialize_types();
+    }
+    return new_type(size,type,dtor)->idx;
 }
 
 /// allocate a new refcounted object.
