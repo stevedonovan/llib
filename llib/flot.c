@@ -7,6 +7,18 @@
 /***
 ### Generating Pretty Plots with Flot
 
+A llib flot program generates an HTML file containing [flot](http://flotcharts.org) plots,
+which you can then open in your browser.  For example, this example will generate a
+'norm.html' file.
+
+By default, this file will have Internet references to Flot and jQuery, which makes it
+a self-contained document suitable for giving to others.  However, for situations where
+one is offline or simply don't enjoy the latency, you can define LLIB_FLOT to be
+the location of a local copy of Flot (e.g. 'file:///home/user/stuff/flot')
+
+The official JavaScript API still applies here. Options are passed as name/value pairs,
+and the name may be 'dotted', like "series.lines.fill",VF(0.2)" means 'series:{lines:{fill:0.2}}}'.
+
     #include <llib/flot.h>
     
     double sqr(double x) { return x*x; }
@@ -34,7 +46,6 @@
         flot_series_new(P,xv,make_gaussian(4,0.7,xv), 
             FlotLines,"label","norm s=0.7"); 
         
-        flot_comment("default fill colour is line colour");
         flot_render("norm");
         return 0;    
     }
@@ -52,13 +63,8 @@
 #include "map.h"
 #include "template.h"
 
-#ifdef STANDALONE_FLOT
-#define FLOT_CDN "file:///home/steve/projects/flot"
-#define JQUERY_CDN FLOT_CDN "/jquery.min.js"
-#else
 #define FLOT_CDN "http://www.flotcharts.org/flot/"
 #define JQUERY_CDN "http://ajax.googleapis.com/ajax/libs/jquery/1.10.2/jquery.min.js"
-#endif
 
 static List *plugins = NULL;
 
@@ -357,8 +363,14 @@ void *flot_create(str_t title) {
 
     // and write the substitution out to the HTML output...    
     Map *data = map_new_str_ref();
-    map_puts(data,"flot",FLOT_CDN);
-    map_puts(data,"jquery",JQUERY_CDN);
+    str_t flot_cdn = FLOT_CDN, jquery_cdn = JQUERY_CDN;
+    str_t flot_base = getenv("LLIB_FLOT");
+    if (flot_base) {
+        flot_cdn = flot_base;
+        jquery_cdn = str_fmt("%s/jquery.min.js",flot_cdn);
+    }
+    map_puts(data,"flot",flot_cdn);
+    map_puts(data,"jquery",jquery_cdn);
     map_puts(data,"title",title);
     map_puts(data,"plots",plist);
     map_puts(data,"plugins",plugins);

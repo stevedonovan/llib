@@ -5,7 +5,8 @@
 */
 
 /***
-### Defining and Using Interfaces
+### Defining and Using Interfaces.
+
 llib has a mechanism for types to implement _interfaces_. For instance,
 `list` objects implement the Iterable` interface, which has a function `init`
 that returns an 'Iterator` object.
@@ -55,6 +56,12 @@ data.
 #define _LLIB_EXPOSE_OBJTYPE
 #include "interface.h"
 #include "str.h"
+
+/// an interface for iterating over the elements of an object.
+// @typename Iterable
+
+/// an interface for returning a lookup function for a map-like object.
+// @typename Accessor
 
 /// make a type `type` support a particular interface `itype`.
 void interface_add(int itype, int type, void *funs) {
@@ -167,6 +174,10 @@ static void initialize() {
     interface_add(t_iterable,OBJ_KEYVALUE_T,&smap_i);
 }
 
+/// type of an interface
+// @param name
+// @treturn int type index
+// @name interface_typeof
 int interface_typeof_(const char *tname) {
     initialize();
     return obj_typeof_(tname);
@@ -176,6 +187,8 @@ static bool is_pointer_array(const void *obj) {
     return obj_is_array(obj) && obj_elem_size(obj) == sizeof(void*);
 }
 
+/// get a lookup function for this object.
+// Will look for 'Accessor', otherwise returns 'str_lookup'
 ObjLookup interface_get_lookup(const void *P) {
     initialize();
     Accessor* a = (Accessor*)interface_get(t_accessor,P);
@@ -186,6 +199,8 @@ ObjLookup interface_get_lookup(const void *P) {
     }
 }
 
+/// get an iterator for this object.
+// Will look for 'Iterable', otherwise returns an array iterator
 Iterator* interface_get_iterator(const void *obj) {
     initialize();
     Iterable* ii = NULL;

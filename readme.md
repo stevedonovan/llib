@@ -548,7 +548,7 @@ static char *l_getenv (void *data, char *key) {
 
 void using_environment()
 {
-    StrTempl st = str_templ_new("hello @{USER}, here is @{HOME}","@{}");
+    StrTempl st = str_templ_new("hello @<USER>, here is @<HOME>","@<>");
     char *S = str_templ_subst_using(st, (StrLookup)l_getenv, NULL);
     printf("got '%s'\n",S);
     dispose(st,S);

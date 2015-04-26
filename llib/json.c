@@ -9,7 +9,8 @@
 
 `json_parse_string` and `json_parse_file` will return an llib object, with maps as
 'simple maps' (arrays where a string key is followed by a value), and
-arrays containing values.
+arrays containing values. They will return an error object if they fail.  If an array only
+contains numbers, then they will be unboxed and the result is a simple array of doubles.
 
 `json_tostring` will convert llib values into JSON format.
 
