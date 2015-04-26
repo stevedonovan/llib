@@ -32,7 +32,9 @@ static void insert_remove(void *sp, int pos, void *ins, int sz) {
 
     if (ins) {  // make some room!    
         seq_resize(s, on + sz);
+        // new array, don't reuse old header!
         P = (char*)s->arr;
+        pr = obj_header_(P);
         // bump ref count for new elements
         if (pr->is_ref_container)  {
             void **objs = (void**)ins;
