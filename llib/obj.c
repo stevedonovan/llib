@@ -814,7 +814,6 @@ void *seq_new_array (void *arr) {
     s->arr = array_copy(arr,0,-1);
     s->cap = 0;// our capacity
     seq_resize(s,n);
-    array_len(s->arr) = n;
     return (void*)s;
 }
 
@@ -823,11 +822,12 @@ void seq_resize(Seq *s, int nsz) {
     if (nsz <= s->cap)
         return;
     // best size is next power of two
-    int result = 1;
-    while (result < nsz) result <<= 1;
-    nsz = result;
-    s->arr = array_resize(s->arr, nsz);
-    s->cap = nsz;
+    int cap = 1;
+    while (cap < nsz) cap <<= 1;
+    s->arr = array_resize(s->arr, cap);
+    s->cap = cap;
+    // but ensure that the array is given the correct requested size!
+    array_len(s->arr) = nsz;
 }
 
 int seq_decr_len(void *sp) {

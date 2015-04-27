@@ -95,7 +95,7 @@ void strbuf_addsp(char **ss, str_t s) {
         strbuf_adds(ss,s);
         strbuf_add(ss,' ');
     }
-} 
+}
 
 /// insert a string into a string buffer at `pos`.
 // May specify the number of characters to be copied `sz`; if this is -1
@@ -165,7 +165,7 @@ char *str_fmt(str_t fmt, ...) {
     va_start(ap,fmt);
     char *res = str_vfmt(fmt,ap);
     va_end(ap);
-    return res;    
+    return res;
 }
 
 /// extract a substring.
@@ -287,9 +287,9 @@ int str_find_first_not_of(str_t s, str_t ps) {
 #ifdef _WIN32
 #ifdef _MSC_VER
 #define strtok_r strtok_s
-#else
+#elif ! strtok_r
 // see http://stackoverflow.com/questions/12975022/strtok-r-for-mingw
-static char* strtok_r(char *str,str_t delim,char **nextp) {
+char* strtok_r(char *str,str_t delim,char **nextp) {
     char *ret;
     if (str == NULL)  {
         str = *nextp;
@@ -436,4 +436,4 @@ int str_eq_any_ (const char *s, ...) {
     va_end(ap);
     return res;
 }
-    
+

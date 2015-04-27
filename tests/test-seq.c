@@ -28,7 +28,7 @@ Foo *foo_new()
 
 #define DUMP(T,F,arr) FOR_ARR(T,p_,arr) \
     printf(F,*p_);  printf("\n");
-    
+
 typedef unsigned char byte;
 
 int main()
@@ -59,7 +59,7 @@ int main()
     // deferencing the seq.
     double *S = (double*)seq_array_ref(ss);
     DUMP(double,"%f ",S);
-    
+
     // using seq as a stack...
     int **st = seq_new(int);
     seq_add(st,10);
@@ -68,14 +68,14 @@ int main()
     assert (seq_pop(st) == 30);
     assert (seq_pop(st) == 20);
     assert (seq_pop(st) == 10);
-    
+
     byte **bb = seq_new(byte);
     byte b1[] = {10,20,30};
     byte b2[] = {40,50,60};
     seq_adda(bb,b1,3);
     seq_adda(bb,b2,3);
     DUMP(byte,"%d ",*bb);
-    
+
     // ref seqs are containers for ref objects
     typedef Foo *PFoo;
     PFoo **sf = seq_new_ref(PFoo);
@@ -89,7 +89,7 @@ int main()
     unref(sf);
     printf("now explicitly release f\n");
     unref(f);
-    
+
     printf("appending arrays to a container seq\n");
     sf = seq_new_ref(PFoo);
     FOR (i,2)
@@ -102,6 +102,12 @@ int main()
     unref(extra);
     puts("seq has all references now");
     unref(sf);
-    
+
+    seq_remove(bb,1,1);
+    assert((*bb)[1]==30);
+    byte b = 21;
+    seq_insert(bb,1,&b,1);
+    assert((*bb)[1] == 21);
+
     return 0;
 }

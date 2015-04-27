@@ -429,7 +429,7 @@ List* list_slice(List *other, ListIter begin, ListIter end) {
         if (isc) {
             data = item->data;
             if (isref)
-                obj_ref(data);
+                obj_incr_(data);
         } else {
             data = item;
         }
@@ -515,7 +515,7 @@ List *list_new_from_array(int type, void **arr, int sz) {
     for (int i = 0; i < sz; i++) {
         void *data = arr[i];
         if (type & LIST_REF)
-            obj_ref(data);
+            obj_incr_(data);
         list_add(ls,data);
     }
     return ls;
