@@ -30,6 +30,8 @@ See `test-json.c` for how values are used in practice.
 #ifdef _MSC_VER
 #define strtoll _strtoi64
 #define snprintf _snprintf
+#else
+#include <inttypes.h>
 #endif
 
 /// Querying Type
@@ -158,7 +160,7 @@ PValue value_parse(const char *str, ValueType type) {
 #ifdef _WIN32
 #define LONG_LONG_FMT "%I64d"
 #else
-#define LONG_LONG_FMT "%lld"
+#define LONG_LONG_FMT "%" PRIu64
 #endif
 
 /// Default representation of a value as a string.
