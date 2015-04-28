@@ -94,6 +94,7 @@ int main()
     str_trim(sp);
     assert(str_eq(sp,""));
     
+    // note: the range is [i1,i2)!
     Str s1 = str_sub(s,0,2), s2 = str_sub(s,2,-1);
     assert(str_eq(s1,"he"));
     assert(str_eq(s2,"llo dolly"));
