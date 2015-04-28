@@ -476,7 +476,7 @@ int main(int argc, const char **argv)
     
     bool output = false;
     
-    kount();
+    //kount();
     FOR (i,array_len(packages)) {
         str_t package = packages[i];
         if (ppath) { // this is a useful extension - equivalent to 'which' for .pc files!
@@ -521,7 +521,7 @@ int main(int argc, const char **argv)
         }
     }
     unref(pkg_map);
-    kount();
+    //kount();
     if (output) {
         printf("\n");
         fflush(stdout);

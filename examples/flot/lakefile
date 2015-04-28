@@ -1,1 +1,1 @@
-c99.program{P,needs='llib math'}
+c99.program{P,needs='llib math',defines='STANDALONE_FLOT'}
