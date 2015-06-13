@@ -376,6 +376,53 @@ char *str_concat(char **ss, str_t delim) {
     return res;
 }
 
+void str_replace_char(char *s, char t, char r) {
+    for (; *s; ++s)
+        if (*s == t)
+            *s = r;
+}
+
+char *str_replace_str(str_t s, str_t sub, str_t repl, int how) {
+    typedef char *(*Finds)(str_t,str_t);
+    bool all = (how & STR_ALL) != 0, pat = (how & STR_PAT) != 0;
+    Finds find = all ? strstr : strpbrk;
+    char *pos = find(s,sub);
+    if (! pos) // an optimization; if given a RC string, can just incr RC
+        return (char*)str_ref(s);
+    int n = how & 0xFF;
+    if (n == 0) n = 0xFFFF;
+    int slen = all ? strlen(sub) : 1;
+    char** res = strbuf_new();
+    for (int i = 0; i < n; ++i) {
+        // copy up to the point of substitution, and skip it
+        for (; s != pos; s++) strbuf_add(res,*s);
+        s += slen;
+        // insert the substitution and find the next match
+        if (pat) { // replace '%1' with whatever is found
+            for (str_t R=repl; *R; ++R) {
+                if (*R == '%' && *(R+1) == '1') {
+                       R+=2;
+                       if (all) {
+                           strbuf_adds(res,sub);
+                       } else { puts(pos);
+                           strbuf_add(res,*pos);
+                       }
+                } else {
+                    strbuf_add(res,*R);
+                }
+            }
+        } else {
+            strbuf_adds(res,repl);
+        }
+        pos = find(s,sub);
+        if (! pos)
+            break;
+    }
+    // finally add the last bit..
+    strbuf_adds(res,s);
+    return strbuf_tostring(res);    
+}
+
 /// Allocating a simple array of strings.
 // End the string arguments with a final `NULL`.
 // Note that this array is _not_ a ref container; the

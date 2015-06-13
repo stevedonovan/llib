@@ -13,6 +13,8 @@
 // easier to type ;)
 typedef const char * str_t;
 
+enum {STR_ALL=1024,STR_ANY=2048,STR_PAT=4096};
+
 #ifndef STRLOOKUP_DEFINED
 typedef char *(*StrLookup) (void *obj, const char *key);
 #define STRLOOKUP_DEFINED
@@ -46,6 +48,8 @@ int str_find_first_of(str_t s, str_t ps);
 int str_find_first_not_of(str_t s, str_t ps);
 bool str_is_blank(str_t s);
 void str_trim(char *s);
+void str_replace_char(char *s, char t, char r);
+char *str_replace_str(str_t s, str_t sub, str_t repl, int how);
 char* str_sub(str_t s, int i1, int i2);
 char ** str_split_n(str_t s, str_t delim, int nsplit);
 char ** str_split(str_t s, str_t delim);
