@@ -3,7 +3,7 @@
 #include <stdio.h>
 #include "obj.h"
 
-typedef enum {
+enum {
    T_END, T_EOF=0,
    T_TOKEN, T_IDEN=1,
    T_NUMBER,
@@ -14,7 +14,9 @@ typedef enum {
    T_STRING,
    T_CHAR,
    T_NADA
-} ScanTokenType;
+};
+
+typedef int ScanTokenType;
 
 typedef enum {
    C_IDEN = 1,

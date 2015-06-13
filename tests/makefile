@@ -1,5 +1,4 @@
 # building tests
-#CC=gcc
 LIB=../llib/libllib.a
 CFLAGS=-std=c99  -O2 -Wall -I..
 LFLAGS=-Wl,-s -L../llib -lllib
