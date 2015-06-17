@@ -30,6 +30,15 @@ See `test-array.c`.
 #define _T_ __typeof__
 #endif
 
+// for-loop over llib array values
+// @param v the variable
+// @param arr the array
+// @macro FORALL
+// @usage FORALL(i,ints) printf("%i ",i);
+#define FORALL(v,arr) for(_T_(*(arr)) v, *p_=(arr),*pe_=p_+array_len(p_); \
+   v=*p_,p_!=pe_; ++p_)
+
+
 /// Iterate over array values.
 // `_` is `A[i]`
 // @param A the array (can be an expression)
