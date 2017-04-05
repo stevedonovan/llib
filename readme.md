@@ -242,7 +242,7 @@ common integer-valued case:
 The implementation in llib is a binary tree - not in general the best, but it works
 reliably and has defined iteration order.
 
-Maps can be initialized from arrays of `MapkeyValue` structs. Afterwards, such an
+Maps can be initialized from arrays of `MapKeyValue` structs. Afterwards, such an
 array can be generated using `map_to_array`:
 
 ```C
