@@ -72,6 +72,8 @@ int main()
 
     assert(str_starts_with(S,"hell"));
     assert(str_ends_with(S,"dolly"));
+    assert(str_case_eq(S,"HELLO DOLLY"));
+    assert(! str_case_eq(S,"HELLO"));
     assert(! str_starts_with(S,"llo"));
     assert(str_ends_with("02","2"));
     assert(str_ends_with("22","2"));

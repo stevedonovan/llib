@@ -49,7 +49,7 @@ count = 0
 count = 0
 ~/c/llib/tests$ ./test-pool
 hello dolly
-(char*)seq_array_ref(ss) = 'onetwo'
+strbuf_tostring(ss) = 'onetwo'
 obj_kount() = 0
 ~/c/llib/tests$ ./test-table
 'Name' (Bonzo),'Age' (12),
@@ -206,8 +206,8 @@ the include paths
 flag a is 0
 ~/c/llib/tests$ ./testa -h
 Commands:
-	test (0)	test command
-	two (float,string)	test cmd_get_values
+	test (i=0)	test command
+	two (x,name)	test cmd_get_values
 Flags:
 	--help,-h	help on commands and flags
 	--kount,-k	referenced object count flag
