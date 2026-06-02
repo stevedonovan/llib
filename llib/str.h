@@ -1,43 +1,50 @@
 /*
-* llib little C library
-* BSD licence
-* Copyright Steve Donovan, 2013
-*/
+ * llib little C library
+ * BSD licence
+ * Copyright Steve Donovan, 2013
+ */
 
 #ifndef __LLIB_STR_H
 #define __LLIB_STR_H
 #include "obj.h"
-#include <string.h>
 #include <stdarg.h>
+#include <string.h>
 
 // easier to type ;)
-typedef const char * str_t;
+typedef const char *str_t;
 
-enum {STR_ALL=1024,STR_ANY=2048,STR_PAT=4096};
+enum { STR_ALL = 1024, STR_ANY = 2048, STR_PAT = 4096 };
 
 #ifndef STRLOOKUP_DEFINED
-typedef char *(*StrLookup) (void *obj, const char *key);
+typedef char *(*StrLookup)(void *obj, const char *key);
 #define STRLOOKUP_DEFINED
 #endif
 
-#define str_eq(s1,s2) (strcmp((s1),(s2))==0)
+static inline bool str_eq(str_t s1, str_t s2) { return strcmp(s1, s2) == 0; }
+bool str_case_eq(str_t s1, str_t s2);
 
 typedef char **SMap;
 
-char*** smap_new(bool ref);
-void smap_add(char*** smap, str_t name, const void *data);
-void smap_put(char*** smap, str_t name, const void *data);
-void *smap_get(char*** smap, str_t name);
-int smap_len(char*** smap);
-char** smap_close(char*** smap);
-#define smap_add_ref(sm,name,data) smap_add(sm,str_ref(name),str_ref(data))
-#define smap_put_ref(sm,name,data) smap_put(sm,str_ref(name),str_ref(data))
+char ***smap_new(bool ref);
+void smap_add(char ***smap, str_t name, const void *data);
+void smap_put(char ***smap, str_t name, const void *data);
+void *smap_get(char ***smap, str_t name);
+int smap_len(char ***smap);
+char **smap_close(char ***smap);
+static inline void smap_add_ref(char ***sm, str_t name, str_t data) {
+    smap_add(sm, str_ref(name), str_ref(data));
+}
 
-#define FOR_SMAP(k,v,sm) for(char **p_=(sm), *k=*p_,*v=*(p_+1); \
- (v=*(p_+1),k=*p_); p_+=2)
+static inline void smap_put_ref(char ***sm, str_t name, str_t data) {
+    smap_put(sm, str_ref(name), str_ref(data));
+}
 
-char *str_vfmt(str_t fmt,va_list ap);
-char *str_fmt(str_t fmt,...);
+#define FOR_SMAP(k, v, sm)                                                     \
+    for (char **p_ = (sm), *k = *p_, *v = *(p_ + 1); (v = *(p_ + 1), k = *p_); \
+         p_ += 2)
+
+char *str_vfmt(str_t fmt, va_list ap);
+char *str_fmt(str_t fmt, ...);
 int str_findstr(str_t s, str_t sub);
 bool str_contains(str_t s, str_t sub, int *after);
 int str_findch(str_t s, char ch);
@@ -50,17 +57,17 @@ bool str_is_blank(str_t s);
 void str_trim(char *s);
 void str_replace_char(char *s, char t, char r);
 char *str_replace_str(str_t s, str_t sub, str_t repl, int how);
-char* str_sub(str_t s, int i1, int i2);
-char ** str_split_n(str_t s, str_t delim, int nsplit);
-char ** str_split(str_t s, str_t delim);
+char *str_sub(str_t s, int i1, int i2);
+char **str_split_n(str_t s, str_t delim, int nsplit);
+char **str_split(str_t s, str_t delim);
 char *str_concat(char **ss, str_t delim);
-char **str_strings(char *p,...);
-int str_eq_any_ (const char *s, ...);
+char **str_strings(char *p, ...);
+int str_eq_any_(const char *s, ...);
 int str_index(const char **strings, const char *s);
 
-#define str_eq_any(s,...) str_eq_any_(s,__VA_ARGS__,NULL)
+#define str_eq_any(s, ...) str_eq_any_(s, __VA_ARGS__, NULL)
 
-void **str_lookup_ptr(char** substs, str_t name);
+void **str_lookup_ptr(char **substs, str_t name);
 void *str_lookup(SMap substs, str_t name);
 char *str_gets(SMap substs, str_t name);
 
@@ -73,6 +80,8 @@ void strbuf_addr(char **sp, str_t s, int i1, int i2);
 char *strbuf_insert_at(char **sp, int pos, str_t src, int sz);
 char *strbuf_erase(char **sp, int pos, int len);
 char *strbuf_replace(char **sp, int pos, int len, str_t s);
-#define strbuf_tostring(sp) (char*)seq_array_ref(sp)
+static inline char *strbuf_tostring(char **sp) {
+    return (char *)seq_array_ref(sp);
+}
 
 #endif

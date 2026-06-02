@@ -8,15 +8,22 @@
 #define __LLIB_FARR_H
 
 // this marlarky forces constants like M_PI to be available
+#ifndef _USE_MATH_DEFINES
 #define _USE_MATH_DEFINES
+#endif
+#ifndef __USE_XOPEN
 #define __USE_XOPEN
+#endif
 #include <math.h>
+#include "obj.h"
 
 typedef double (*FarrMapFun)(double);
 
 typedef double* farr_t;
 
-#define farr_from_seq(s) ((double*)seq_array_ref(s))
+static inline double *farr_from_seq(double **s) {
+    return (double*)seq_array_ref(s);
+}
 #define farr_copy(arr) array_new_copy(double,arr,sizeof(arr)/sizeof(double))
 
 double *farr_range(double x1, double x2, double dx);

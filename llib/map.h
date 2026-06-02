@@ -20,7 +20,9 @@ typedef struct MapEntry_ {
 typedef List Map;
 #endif
 
-#define map_size list_size
+static inline int map_size(Map *m) {
+    return list_size(m);
+}
 
 typedef struct MapIter_{
     void **pkey;
@@ -65,8 +67,13 @@ void map_visit(void *data, PEntry node, MapCallback fun, int order);
 MapIter map_iter_new (Map *m, void *pkey, void *pvalue);
 MapIter map_iter_next (MapIter iter);
 
-#define map_gets(m,key) map_get(m,(void*)key)
-#define map_puts(m,key,val) map_put(m,(void*)key,(void*)val)
+static inline void *map_gets(Map *m, const char *key) {
+    return map_get(m,(void*)key);
+}
+
+static inline PEntry map_puts(Map *m, const char *key, void *val) {
+    return map_put(m,(void*)key,val);
+}
 
 #define FOR_MAP(iter,map) for (MapIter iter = map_iter_new(map,NULL,NULL);\
 iter; iter = map_iter_next(iter))

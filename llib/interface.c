@@ -1,8 +1,8 @@
 /*
-* llib little C library
-* BSD licence
-* Copyright Steve Donovan, 2013
-*/
+ * llib little C library
+ * BSD licence
+ * Copyright Steve Donovan, 2013
+ */
 
 /***
 ### Defining and Using Interfaces.
@@ -26,8 +26,8 @@ that returns an 'Iterator` object.
     unref(it);
 ```
 
-There is an optional function `nextpair` in the `Iterator` struct,  which grabs key/value
-pairs:
+There is an optional function `nextpair` in the `Iterator` struct,  which grabs
+key/value pairs:
 
 ```C
     Map *m = map_new_str_str();
@@ -41,12 +41,12 @@ pairs:
     }
 ```
 
-`Accessible` is simpler; the type provides a single `lookup` function for finding
-the value associated with a key;  `map` implements this.
+`Accessible` is simpler; the type provides a single `lookup` function for
+finding the value associated with a key;  `map` implements this.
 
 This module also defines default iterators and accessors for arrays.
-In this way, the JSON generator and the `template` module may consume arbitrary llib
-data.
+In this way, the JSON generator and the `template` module may consume arbitrary
+llib data.
 
 
 @module interface
@@ -65,28 +65,28 @@ data.
 
 /// make a type `type` support a particular interface `itype`.
 void interface_add(int itype, int type, void *funs) {
-    ObjType* t_inter = obj_type_from_index(itype);
-    ObjType* t_obj = obj_type_from_index(type);
+    ObjType *t_inter = obj_type_from_index(itype);
+    ObjType *t_obj = obj_type_from_index(type);
     int n = 1;
     InterfaceS **iface = &t_obj->interfaces;
     if (*iface == NULL) {
-        *iface = (InterfaceS*)malloc(2*sizeof(InterfaceS));
+        *iface = (InterfaceS *)malloc(2 * sizeof(InterfaceS));
     } else {
         for (InterfaceS *ii = *iface; ii->type; ++ii)
             ++n;
-        *iface = (InterfaceS*)realloc(*iface,(n+1)*sizeof(InterfaceS));
+        *iface = (InterfaceS *)realloc(*iface, (n + 1) * sizeof(InterfaceS));
     }
-    (*iface)[n-1].type = t_inter->idx;
-    (*iface)[n-1].interface = funs;
+    (*iface)[n - 1].type = t_inter->idx;
+    (*iface)[n - 1].interface = funs;
     (*iface)[n].type = 0;
 }
 
 /// find the interface `type` for this object.
-void* interface_get(int itype, const void *obj) {
-    ObjType* t_iter = obj_type_from_index(itype);
+void *interface_get(int itype, const void *obj) {
+    ObjType *t_iter = obj_type_from_index(itype);
     int idx = t_iter->idx;
-    ObjType* t_obj = obj_type_from_index(obj_type_index(obj));
-    if (! t_obj || ! t_obj->interfaces)
+    ObjType *t_obj = obj_type_from_index(obj_type_index(obj));
+    if (!t_obj || !t_obj->interfaces)
         return NULL;
     for (InterfaceS *ii = t_obj->interfaces; ii->type; ++ii) {
         if (ii->type == idx)
@@ -111,7 +111,7 @@ static bool array_next(ArrayIter *ai, void *pval) {
     if (ai->n == 0)
         return false;
     --ai->n;
-    *((void**)pval) = *(ai->P)++;
+    *((void **)pval) = *(ai->P)++;
     return true;
 }
 
@@ -120,24 +120,24 @@ static bool smap_next(ArrayIter *ai, void *pval) {
     if (ai->n == 0)
         return false;
     ai->n -= 2;
-    *((void**)pval) = *(ai->P)++;
+    *((void **)pval) = *(ai->P)++;
     ++ai->P;
     return true;
 }
 
 // over key/value values of simple maps
 static bool smap_nextpair(Iterator *iter, void *pkey, void *pval) {
-    ArrayIter* ai = (ArrayIter*)iter;
+    ArrayIter *ai = (ArrayIter *)iter;
     if (ai->n == 0)
         return false;
     ai->n -= 2;
-    *((void**)pkey) = *(ai->P)++;
-    *((void**)pval) = *(ai->P)++;
+    *((void **)pkey) = *(ai->P)++;
+    *((void **)pval) = *(ai->P)++;
     return true;
 }
 
 static ArrayIter *array_iter(void **A, int n) {
-    ArrayIter *ai = obj_new(ArrayIter,NULL);
+    ArrayIter *ai = obj_new(ArrayIter, NULL);
     ai->nextpair = NULL;
     ai->len = n;
     ai->n = n;
@@ -145,17 +145,15 @@ static ArrayIter *array_iter(void **A, int n) {
     return ai;
 }
 
-static Iterator* smap_init (const void *o) {
-    ArrayIter *ai = array_iter((void**)o,array_len(o));
+static Iterator *smap_init(const void *o) {
+    ArrayIter *ai = array_iter((void **)o, array_len(o));
     ai->next = smap_next;
     ai->nextpair = smap_nextpair;
-    ai->len = array_len(o)/2;
-    return (Iterator*)ai;
+    ai->len = array_len(o) / 2;
+    return (Iterator *)ai;
 }
 
-static Iterable smap_i = {
-    smap_init
-};
+static Iterable smap_i = {smap_init};
 
 static Accessor smap_a = {
     (ObjLookup)str_lookup,
@@ -166,12 +164,13 @@ static int t_accessor, t_iterable;
 int obj_typeof_(const char *name);
 
 static void initialize() {
-    if (initialized) return;
+    if (initialized)
+        return;
     initialized = true;
-    t_accessor = obj_new_type(Accessor,NULL);
-    t_iterable = obj_new_type(Iterable,NULL);
-    interface_add(t_accessor,OBJ_KEYVALUE_T,&smap_a);
-    interface_add(t_iterable,OBJ_KEYVALUE_T,&smap_i);
+    t_accessor = obj_new_type(Accessor, NULL);
+    t_iterable = obj_new_type(Iterable, NULL);
+    interface_add(t_accessor, OBJ_KEYVALUE_T, &smap_a);
+    interface_add(t_iterable, OBJ_KEYVALUE_T, &smap_i);
 }
 
 /// type of an interface
@@ -184,14 +183,14 @@ int interface_typeof_(const char *tname) {
 }
 
 static bool is_pointer_array(const void *obj) {
-    return obj_is_array(obj) && obj_elem_size(obj) == sizeof(void*);
+    return obj_is_array(obj) && obj_elem_size(obj) == sizeof(void *);
 }
 
 /// get a lookup function for this object.
 // Will look for 'Accessor', otherwise returns 'str_lookup'
 ObjLookup interface_get_lookup(const void *P) {
     initialize();
-    Accessor* a = (Accessor*)interface_get(t_accessor,P);
+    Accessor *a = (Accessor *)interface_get(t_accessor, P);
     if (a) {
         return a->lookup;
     } else {
@@ -201,29 +200,28 @@ ObjLookup interface_get_lookup(const void *P) {
 
 /// get an iterator for this object.
 // Will look for 'Iterable', otherwise returns an array iterator
-Iterator* interface_get_iterator(const void *obj) {
+Iterator *interface_get_iterator(const void *obj) {
     initialize();
-    Iterable* ii = NULL;
+    Iterable *ii = NULL;
     bool ours = obj_refcount(obj) != -1;
     if (ours) {
-        ii = (Iterable*)interface_get(t_iterable,obj);
+        ii = (Iterable *)interface_get(t_iterable, obj);
     }
-    if (! ii && is_pointer_array(obj)) {
-        void **A = (void**)obj;
+    if (!ii && (!ours || is_pointer_array(obj))) {
+        void **A = (void **)obj;
         int n = 0;
-        if (! ours) { // assume it's a NULL-terminated array
-            for (void** a = A; *a; ++a)
+        if (!ours) { // assume it's a NULL-terminated array
+            for (void **a = A; *a; ++a)
                 ++n;
         } else {
             n = array_len(obj);
         }
-        ArrayIter *ai = array_iter(A,n);
+        ArrayIter *ai = array_iter(A, n);
         ai->next = array_next;
         ai->len = n;
-        return (Iterator*)ai;
+        return (Iterator *)ai;
     }
-    if (! ii)
+    if (!ii)
         return NULL;
     return ii->init(obj);
 }
-

@@ -65,16 +65,28 @@ PValue flot_gradient(str_t start, str_t finish);
 
 #define flot_markings(...) "grid.markings",VA(__VA_ARGS__)
 
-#define flot_line(axis,x,colour,line_width) VMS("color",colour,"lineWidth",VF(line_width), axis,VMS("from",VF(x),"to",VF(x)))
-#define flot_vert_line(x,c,w) flot_line("xaxis",x,c,w)
-#define flot_horz_line(x,c,w) flot_line("xaxis",x,c,w)
+static inline PValue flot_line(str_t axis, double x, str_t colour, double line_width) {
+    return VMS("color",colour,"lineWidth",VF(line_width),axis,VMS("from",VF(x),"to",VF(x)));
+}
+
+static inline PValue flot_vert_line(double x, str_t colour, double line_width) {
+    return flot_line("xaxis",x,colour,line_width);
+}
+
+static inline PValue flot_horz_line(double x, str_t colour, double line_width) {
+    return flot_line("xaxis",x,colour,line_width);
+}
 
 PValue flot_region(str_t axis, double x1, double x2, str_t colour);
 
-#define flot_vert_region(x1,x2,c) flot_region("xaxis",x1,x2,c)
-#define flot_horz_region(x1,x2,c) flot_region("yaxis",x1,x2,c)
+static inline PValue flot_vert_region(double x1, double x2, str_t colour) {
+    return flot_region("xaxis",x1,x2,colour);
+}
+
+static inline PValue flot_horz_region(double x1, double x2, str_t colour) {
+    return flot_region("yaxis",x1,x2,colour);
+}
 
 #define flot_empty list_new_ptr
 
 #endif
-

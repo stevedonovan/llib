@@ -7,7 +7,7 @@
 #ifndef _LLIB_VALUE_H
 #define _LLIB_VALUE_H
 
-#include "obj.h"
+#include "map.h"
 
 typedef enum ValueType_ {
     ValueNull = 0,
@@ -23,16 +23,35 @@ typedef enum ValueType_ {
 
 typedef void *PValue;
 
-#define value_is_list(v) list_object(v)
-#define value_is_array(v) obj_is_array(v)
-#define value_is_map(v) map_object(v)
+static inline bool value_is_list(PValue v) {
+    return list_object(v);
+}
+
+static inline bool value_is_array(PValue v) {
+    return obj_is_array(v);
+}
+
+static inline bool value_is_map(PValue v) {
+    return map_object(v);
+}
 
 #define value_errorf(fmt,...) value_error(str_fmt(fmt,__VA_ARGS__))
 
-#define value_as_int(P) (int)(*(long long*)(P))
-#define value_as_float(P) (*(double*)(P))
-#define value_as_bool(P) (*(bool*)(P))
-#define value_as_string(P) ((char*)P)
+static inline int value_as_int(PValue v) {
+    return (int)(*(long long*)v);
+}
+
+static inline double value_as_float(PValue v) {
+    return *(double*)v;
+}
+
+static inline bool value_as_bool(PValue v) {
+    return *(bool*)v;
+}
+
+static inline char *value_as_string(PValue v) {
+    return (char*)v;
+}
 
 bool value_is_string(PValue v);
 bool value_is_error(PValue v);

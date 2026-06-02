@@ -87,7 +87,9 @@ typedef struct ObjType_ {
 ObjType* obj_type_from_index(int t);
 #endif
 
-#define obj_header_(P) ((ObjHeader*)(P)-1)
+static inline ObjHeader *obj_header_(const void *P) {
+    return (ObjHeader*)P-1;
+}
 #define array_len(P) (obj_header_(P)->_len)
 #define obj_is_array(P) (obj_header_(P)->is_array)
 #define obj_ref_array(P) (obj_header_(P)->is_ref_container)
@@ -126,7 +128,9 @@ ObjType* obj_type_from_index(int t);
 #define scoped_pool obj_scoped_pool
 #endif
 
-#define obj_pool_count(P) (array_len(**((void****)P) ))
+static inline int obj_pool_count(void *P) {
+    return array_len(**((void****)P));
+}
 
 #ifdef LLIB_DEBUG
 void obj_dump_types(bool all);
@@ -201,7 +205,9 @@ typedef struct Seq_ {
 #define seq_add(s,v) {int idx_=seq_next_(s); (*(s)) [idx_] = (v);}
 #define seq_add_items(s,...)   obj_apply_varargs(s,(PFun)seq_add_ptr,__VA_ARGS__,NULL)
 #define seq_add2(s,x1,x2) {seq_add(s,x1); seq_add(s,x2);}
-#define seq_cap(s) (((Seq*)(s))->cap)
+static inline int seq_cap(void *s) {
+    return ((Seq*)s)->cap;
+}
 #define seq_pop(s) (*(s))[seq_decr_len(s)]
 
 void *seq_new_(int nlem, const char *name, int ref);
@@ -217,4 +223,3 @@ void seq_adda(void *sp, void *buff, int sz);
 void *seq_array_ref(void *sp);
 
 #endif
-

@@ -25,7 +25,8 @@ char *str_templ_subst_using(StrTempl *stl, StrLookup lookup, void *data);
 char *str_templ_subst(StrTempl *stl, char **substs);
 char *str_templ_subst_values(StrTempl *st, PValue v);
 
-#define str_templ_subst_map(stl,m) str_templ_subst_using(stl,(StrLookup)map_get,m)
+static inline char *str_templ_subst_map(StrTempl *stl, Map *m) {
+    return str_templ_subst_using(stl,(StrLookup)map_get,m);
+}
 
 #endif
-

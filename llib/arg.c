@@ -446,6 +446,14 @@ static void print_type(FlagEntry *fe) {
     }    
 }
 
+static void print_arg_name(FlagEntry *fe) {
+    printf("%s",fe->name ? fe->name : fe->tname);
+    if (fe->defname)
+        printf("=%s",fe->defname);
+    if (fe->flags & FlagIsArray)
+        printf("...");
+}
+
 static void *help(void **args) {
     ArgState *fd = (ArgState*)args[0];
     FlagEntry **cmds = (FlagEntry**)fd->cmds, **pc;
@@ -459,7 +467,7 @@ static void *help(void **args) {
             if (! arg_is_flag(fe)) {
                 printf("\t%s (",fe->name);
                 for (FlagEntry **afe = fe->args; *afe; ++afe) {
-                    print_type(*afe);
+                    print_arg_name(*afe);
                     if (*(afe+1))
                         printf(",");
                 }                

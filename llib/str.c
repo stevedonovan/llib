@@ -31,6 +31,7 @@
 
 #include <stdio.h>
 #include <string.h>
+#include <ctype.h>
 #include "str.h"
 
 #define BUFSZ 256
@@ -218,6 +219,17 @@ str_t str_end(str_t s) {
 // @tparam str_t a
 // @tparam str_t b
 // @function str_eq
+
+/// are these strings equal, ignoring case?
+bool str_case_eq(str_t s1, str_t s2) {
+    while (*s1 && *s2) {
+        if (tolower((unsigned char)*s1) != tolower((unsigned char)*s2))
+            return false;
+        ++s1;
+        ++s2;
+    }
+    return *s1 == '\0' && *s2 == '\0';
+}
 
 /// does the string start with this prefix?
 bool str_starts_with(str_t s, str_t prefix) {
@@ -483,4 +495,3 @@ int str_eq_any_ (const char *s, ...) {
     va_end(ap);
     return res;
 }
-
