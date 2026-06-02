@@ -9,9 +9,16 @@
 #include <stdio.h>
 #include "obj.h"
 
+typedef struct FileDir_ {
+    void *dir;
+} FileDir;
+
 bool file_exists(const char *path, const char *rw);
 const char *file_exists_any_(const char *rw, ...);
 #define file_exists_any(rw,...) file_exists_any_(rw,__VA_ARGS__)
+FileDir *file_opendir(const char *path);
+char *file_readdir(FileDir *d);
+char **file_dir_entries(const char *path);
 char *file_gets(FILE *f, char *buff, int bufsize);
 char *file_getline(FILE *f);
 char *file_read_all(const char *file, bool text);

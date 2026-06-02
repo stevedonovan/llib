@@ -28,7 +28,7 @@ See `test-file.c`
 */
 
 #ifdef _WIN32
-#define DIR "dir /b"
+#define DIR_CMD "dir /b"
 #define PWD "%cd%\\"
 #define DIR_SEP '\\'
 #ifdef _MSC_VER
@@ -44,11 +44,12 @@ See `test-file.c`
 #define snprintf _snprintf
 #endif
 #else
-#define DIR "ls"
+#define DIR_CMD "ls"
 #define PWD "$PWD/"
 // popen/pclose not part of C99 <stdio.h>
 #define DIR_SEP '/'
 #define _BSD_SOURCE
+#include <dirent.h>
 #include <unistd.h>
 #endif
 
@@ -104,6 +105,59 @@ const char *file_exists_any_(const char *rw, ...) {
     va_end(ap);
     return res;
 }
+
+#ifndef _WIN32
+static void FileDir_dispose(FileDir *d) {
+    if (d->dir)
+        closedir((DIR*)d->dir);
+}
+
+/// open a directory, wrapping `DIR*` in an llib object.
+// Returns `NULL` if the directory cannot be opened.
+FileDir *file_opendir(const char *path) {
+    DIR *dir = opendir(path);
+    if (! dir)
+        return NULL;
+    FileDir *d = obj_new(FileDir,FileDir_dispose);
+    d->dir = dir;
+    return d;
+}
+
+/// read the next directory entry as a refcounted string.
+// Returns `NULL` when there are no more entries.
+char *file_readdir(FileDir *d) {
+    struct dirent *entry = readdir((DIR*)d->dir);
+    if (! entry)
+        return NULL;
+    return str_new(entry->d_name);
+}
+
+/// read all directory entry names into a refcounted string array.
+char **file_dir_entries(const char *path) {
+    FileDir *d = file_opendir(path);
+    if (! d)
+        return NULL;
+    char ***entries = seq_new_ref(char*);
+    obj_apply(entries,seq_add_ptr,d,file_readdir);
+    obj_unref(d);
+    return (char**)seq_array_ref(entries);
+}
+#else
+FileDir *file_opendir(const char *path) {
+    (void)path;
+    return NULL;
+}
+
+char *file_readdir(FileDir *d) {
+    (void)d;
+    return NULL;
+}
+
+char **file_dir_entries(const char *path) {
+    (void)path;
+    return NULL;
+}
+#endif
 
 /// like fgets, except trims (\r)\n.
 char *file_gets(FILE *f, char *buff, int bufsize) {
@@ -218,12 +272,12 @@ char **file_files_in_dir(const char *mask, int recursive) {
     //~ bool abs = (flags & FILE_ABS) != 0;
     if (recursive) {
 #ifdef _WIN32        
-        snprintf(buff,MAX_PATH,"%s /s %s",DIR,mask);
+        snprintf(buff,MAX_PATH,"%s /s %s",DIR_CMD,mask);
 #else
         snprintf(buff,MAX_PATH,"find $PWD -name '%s'",mask);
 #endif
     } else {
-        snprintf(buff,MAX_PATH,"%s %s",DIR,mask);
+        snprintf(buff,MAX_PATH,"%s %s",DIR_CMD,mask);
     }
     Str *lines = file_command_lines(buff); //--->????
     if (array_len(lines) == 1 && strstr(lines[0],"No such file") != NULL) {
