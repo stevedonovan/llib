@@ -1,6 +1,11 @@
 #CC=gcc
 LLIB=..
-CFLAGS=-std=c99  -O2 -Wall -I$(LLIB)
+ifeq ($(DEBUG),)
+    OPT = -O2
+else
+    OPT = -g
+endif
+CFLAGS=-std=c99  $(OPT) -Wall -I$(LLIB)
 LFLAGS=-L$(LLIB)/llib -lllib -lm
 
 $(P): $(P).c
