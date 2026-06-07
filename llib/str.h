@@ -29,6 +29,7 @@ char ***smap_new(bool ref);
 void smap_add(char ***smap, str_t name, const void *data);
 void smap_put(char ***smap, str_t name, const void *data);
 void *smap_get(char ***smap, str_t name);
+void *smap_get_pointer(char **smap, str_t name);
 int smap_len(char ***smap);
 char **smap_close(char ***smap);
 static inline void smap_add_ref(char ***sm, str_t name, str_t data) {

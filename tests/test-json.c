@@ -28,7 +28,10 @@ int main(int argc, char **argv) {
         } else {
             v = json_parse_string(f);
         }
-
+        if (argc > 2) {
+            v = smap_get_pointer(v, argv[2]);
+        }
+        printf("hello %p\n", v);
         s = json_tostring(v);
         puts(s);
         dispose(s, v);
