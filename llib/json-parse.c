@@ -70,7 +70,7 @@ static PValue json_parse(ScanState *ts, bool vs5) {
             obj_type_index(vals) = OBJ_KEYVALUE_T;
         } else {
             int n = array_len(vals);
-            if (n == nfloats) {
+            if (n == nfloats && !vs5) {
                 double *arr = array_new(double, n);
                 FOR(i, n)
                 arr[i] = value_as_float(vals[i]);
