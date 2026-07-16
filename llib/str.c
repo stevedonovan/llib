@@ -238,15 +238,12 @@ bool str_starts_with(str_t s, str_t prefix) {
 
 /// does the string end with this postfix?
 bool str_ends_with(str_t s, str_t postfix) {
-    str_t se = str_end(s);
-    str_t pe = str_end(postfix);
-    while (se != s && pe != postfix) {
-        if (*se != *pe)
-            return false;
-        --se;
-        --pe;
-    }
-    return pe == postfix;
+    size_t slen = strlen(s);
+    size_t plen = strlen(postfix);
+
+    if (plen > slen)
+        return false;
+    return strcmp(s + slen - plen, postfix) == 0;
 }
 
 /// does a string only consist of blank characters?

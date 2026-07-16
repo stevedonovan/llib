@@ -77,6 +77,9 @@ int main()
     assert(! str_starts_with(S,"llo"));
     assert(str_ends_with("02","2"));
     assert(str_ends_with("22","2"));
+    assert(! str_ends_with("llib","/"));
+    assert(! str_ends_with("xb","ab"));
+    assert(str_ends_with("ab","ab"));
     assert(! str_ends_with("12445","44"));
     assert(! str_ends_with("45","345"));
     assert(str_ends_with(S,""));
