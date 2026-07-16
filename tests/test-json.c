@@ -31,8 +31,8 @@ int main(int argc, char **argv) {
         if (argc > 2) {
             v = smap_get_pointer(v, argv[2]);
         }
-        printf("hello %p\n", v);
-        s = json_tostring(v);
+        // printf("hello %s\n", (char *)v);
+        s = json_to_pretty_string(v, 1);
         puts(s);
         dispose(s, v);
         printf("count = %d\n", obj_kount());

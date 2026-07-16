@@ -17,6 +17,7 @@ PValue value_array_values_(intptr_t sm, ...);
 #define value_array_of_str(...) value_array_values_(2, __VA_ARGS__, NULL)
 
 char *json_tostring(PValue v);
+char *json_to_pretty_string(PValue v, int indent);
 PValue json_parse_string(const char *str);
 PValue json_parse_file(const char *file);
 PValue json_parse_string_vs5(const char *str);
