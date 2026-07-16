@@ -315,6 +315,21 @@ char *file_dirname(const char *path) {
     return res;
 }
 
+/// join a directory and file path.
+// If `name` is empty, this returns `dir`.
+char *file_path_join(const char *dir, const char *name) {
+    int dlen = strlen(dir);
+    int nlen = strlen(name);
+    bool needs_sep = dlen > 0 && nlen > 0 && dir[dlen - 1] != DIR_SEP;
+    char *res = str_new_size(dlen + nlen + (needs_sep ? 1 : 0));
+
+    memcpy(res, dir, dlen);
+    if (needs_sep)
+        res[dlen++] = DIR_SEP;
+    memcpy(res + dlen, name, nlen);
+    return res;
+}
+
 /// extension of a path.
 // Note: this will ignore any periods in the path itself.
 char *file_extension(const char *path) {

@@ -47,6 +47,7 @@ Str paths[] = {
     "bonzo.txt",
     "c:\\users\\steve\\myfiles\\",
     ".txt",
+    "c:\\users\\steve\\myfiles\\bonzo.txt",
     "c:\\users\\steve\\myfiles\\bonzo.tmp"
 };
 #else
@@ -55,6 +56,7 @@ Str paths[] = {
     "bonzo.txt",
     "/home/steve/myfiles/",
     ".txt",
+    "/home/steve/myfiles/bonzo.txt",
     "/home/steve/myfiles/bonzo.tmp"
 };
 #endif
@@ -70,7 +72,8 @@ void path_manipulation()
     assert(eq(file_basename(path),paths[1]));
     assert(eq(file_dirname(path),paths[2]));
     assert(eq(file_extension(path),paths[3]));
-    assert(eq(file_replace_extension(path,".tmp"),paths[4]));
+    assert(eq(file_path_join(paths[2], paths[1]), paths[4]));
+    assert(eq(file_replace_extension(path,".tmp"),paths[5]));
     //DUMPS(file_expand_user("~/myfile"));
 }
 

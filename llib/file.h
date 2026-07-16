@@ -35,6 +35,7 @@ char **file_files_in_dir(const char *dirname, int abs);
 
 char *file_basename(const char *path);
 char *file_dirname(const char *path);
+char *file_path_join(const char *dir, const char *name);
 char *file_extension(const char *path);
 char *file_replace_extension(const char *path, const char *ext);
 char *file_expand_user(const char *path);
