@@ -192,15 +192,26 @@ char* str_sub(str_t s, int i1, int i2) {
 
 static str_t whitespace = " \t\r\n";
 
+/// copy and trim a range of characters.
+// `len` is the maximum number of characters to inspect.
+char *str_trim_range(str_t s, int len) {
+    int start = 0;
+
+    if (len < 0)
+        len = strlen(s);
+    while (start < len && strchr(whitespace, s[start]) != NULL)
+        start++;
+    while (len > start && strchr(whitespace, s[len - 1]) != NULL)
+        len--;
+    char *res = str_new_size(len - start);
+    memcpy(res, s + start, len - start);
+    return res;
+}
+
 /// trim a string in-place
 void str_trim(char *s) {
-    int sz = strspn(s,whitespace);
-    if (sz > 0)
-        memmove(s,s+sz,strlen(s)-sz+1);
-    char *p = s + strlen(s) - 1;
-    while (*p && strchr(whitespace,*p) != NULL)
-        --p;
-    *(p+1) = 0;
+    scoped char *trimmed = str_trim_range(s, -1);
+    strcpy(s, trimmed);
 }
 
 /// Finding things in strings.

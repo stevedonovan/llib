@@ -56,6 +56,7 @@ int str_find_first_of(str_t s, str_t ps);
 int str_find_first_not_of(str_t s, str_t ps);
 bool str_is_blank(str_t s);
 void str_trim(char *s);
+char *str_trim_range(str_t s, int len);
 void str_replace_char(char *s, char t, char r);
 char *str_replace_str(str_t s, str_t sub, str_t repl, int how);
 char *str_sub(str_t s, int i1, int i2);

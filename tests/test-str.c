@@ -98,6 +98,10 @@ int main()
     char *sp = str_new("     \t\n");
     str_trim(sp);
     assert(str_eq(sp,""));
+
+    char *trimmed = str_trim_range("  hello dolly \n yy", 15);
+    assert(str_eq(trimmed, "hello dolly"));
+    dispose(trimmed);
     
     // note: the range is [i1,i2)!
     Str s1 = str_sub(s,0,2), s2 = str_sub(s,2,-1);
