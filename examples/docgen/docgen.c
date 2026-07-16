@@ -56,19 +56,6 @@ static void trim_right(char *s) {
         s[--n] = '\0';
 }
 
-static char *trimmed_str(const char *start, size_t len) {
-    while (len > 0 && isspace((unsigned char)*start)) {
-        start++;
-        len--;
-    }
-    while (len > 0 && isspace((unsigned char)start[len - 1]))
-        len--;
-
-    char **s = strbuf_new();
-    strbuf_addr(s, start, 0, len);
-    return strbuf_tostring(s);
-}
-
 static const char *directive_name(const char *directive) {
     return *directive == '@' ? directive + 1 : directive;
 }
@@ -122,7 +109,7 @@ static char *find_directive_value(const char *doc, const char *directive) {
     while (*line) {
         const char *next = strchr(line, '\n');
         size_t len = next ? (size_t)(next - line) : strlen(line);
-        scoped char *copy = trimmed_str(line, len);
+        scoped char *copy = str_trim_range(line, len);
         char *value = directive_value_from_line(copy, directive);
 
         if (value)
@@ -141,7 +128,7 @@ static char *doc_without_directives(const char *doc) {
     while (*line) {
         const char *next = strchr(line, '\n');
         size_t len = next ? (size_t)(next - line) : strlen(line);
-        scoped char *copy = trimmed_str(line, len);
+        scoped char *copy = str_trim_range(line, len);
 
         if (!directive_from_line(copy)) {
             strbuf_addr(clean, line, 0, len);
@@ -192,8 +179,8 @@ static char *trim_signature(const char *sig, const char *args_start) {
     const char *end = args_start ? strstr(args_start, ")") : NULL;
 
     if (end)
-        return trimmed_str(sig, (size_t)(end - sig + 1));
-    return trimmed_str(sig, strlen(sig));
+        return str_trim_range(sig, (int)(end - sig + 1));
+    return str_trim_range(sig, -1);
 }
 
 static bool has_directive(const char *doc, const char *directive) {
@@ -244,7 +231,7 @@ static PValue table_fields(const char *doc) {
     while (*line) {
         const char *next = strchr(line, '\n');
         size_t len = next ? (size_t)(next - line) : strlen(line);
-        scoped char *copy = trimmed_str(line, len);
+        scoped char *copy = str_trim_range(line, len);
         PValue field = directive_field_from_line(copy);
 
         if (field)
@@ -268,7 +255,7 @@ static char *path_basename_no_ext(const char *path) {
     const char *dot = strrchr(base, '.');
 
     if (dot && dot > base)
-        return trimmed_str(base, (size_t)(dot - base));
+        return str_trim_range(base, (int)(dot - base));
     return str_new(base);
 }
 
@@ -276,11 +263,6 @@ static bool source_extension(const char *path) {
     scoped char *ext = file_extension(path);
 
     return str_eq_any(ext, ".c", ".h") != 0;
-}
-
-static char *path_join(const char *dir, const char *name) {
-    return str_fmt("%s%s%s", dir, *dir && !str_ends_with(dir, "/") ? "/" : "",
-                   name);
 }
 
 static bool mkdir_p(const char *path) {
@@ -333,7 +315,7 @@ static bool collect_sources(const char *path, char ***sources) {
 
             if (skip_dir_name(entry))
                 continue;
-            child = path_join(path, entry);
+            child = file_path_join(path, entry);
             if (!collect_sources(child, sources))
                 return false;
         }
@@ -495,7 +477,7 @@ static bool item_is_kind(SMap item, const char *kind) {
 }
 
 static void markdown_add_doc(char **out, const char *doc) {
-    scoped char *clean = trimmed_str(doc, strlen(doc));
+    scoped char *clean = str_trim_range(doc, -1);
 
     if (*clean) {
         strbuf_adds(out, clean);
@@ -807,7 +789,7 @@ static bool write_text_file(const char *path, const char *text) {
 static bool write_module_markdown(const char *outdir, const char *name,
                                   ModuleDoc *doc) {
     scoped char *filename = safe_markdown_name(name);
-    scoped char *path = path_join(outdir, filename);
+    scoped char *path = file_path_join(outdir, filename);
     scoped SMap root = module_root(doc, name);
     scoped char *text = markdown_tostring(root);
 
