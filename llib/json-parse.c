@@ -84,6 +84,10 @@ static PValue json_parse(ScanState *ts, bool vs5) {
         return value_error("unexpected end of stream");
     // scalars......
     case T_STRING:
+    case T_CHAR:
+        if (!vs5) {
+            return value_error("single-quoted strings not allowed");
+        }
         return scan_get_str(ts);
     case T_NUMBER:
         return value_float(scan_get_number(ts));
@@ -108,7 +112,8 @@ PValue parse_json(ScanState *st, bool vs5) {
     scan_next(st);
     res = json_parse(st, vs5);
     if (value_is_error(res)) {
-        PValue err = value_errorf("line %d: %s", st->line, res);
+        PValue err =
+            value_errorf("line %d:%d %s", st->line, scan_position(st), res);
         obj_unref(res);
         res = err;
     }

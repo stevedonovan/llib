@@ -120,7 +120,7 @@ static void dump_value(SStr s, PValue v, int indent) {
             add_indent(s, indent);
             if (ismap) {
                 iter->nextpair(iter, &key, &val);
-                strbuf_addf(s, "\"%s\": ", key);
+                strbuf_addf(s, "\"%s\":", key);
             } else {
                 iter->next(iter, &val);
             }

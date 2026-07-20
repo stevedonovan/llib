@@ -10,13 +10,7 @@
 #include <llib/str.h>
 #include <stdio.h>
 
-// const char *js = "{'one':[10,100], 'two':2, 'three':'hello'}";
-// const char *js = "{'one':1, 'two':2, 'three':'hello'}";
-// const char *js = "[10,20,30]";
-
-// const char *js = "[{'zwei':2.'twee':2},10,{'A':10,'B':[1,2]}]";
-
-const char *js = "[{'zwei':2,'twee':2},10,{'A':10,'B':[2,20]},[]]";
+const char *js = "[{\"zwei\":2,\"twee\":2},10,{\"A\":10,\"B\":[2,20]},[]]";
 
 int main(int argc, char **argv) {
     PValue v;

@@ -77,7 +77,7 @@ void using_json()
     char *s = str_templ_subst_values(st,v);
     puts(s);
     dispose(s,v);
-    v = json_parse_string(js);
+    v = json_parse_string_vs5(js);
     if (value_is_error(v)) {
         fprintf(stderr,"error '%s'\n",(char*)v);
     } else {
