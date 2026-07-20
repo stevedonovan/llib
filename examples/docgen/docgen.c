@@ -93,7 +93,8 @@ fail:
     return NULL;
 }
 
-static char *directive_value_from_line(const char *line, const char *directive) {
+static char *directive_value_from_line(const char *line,
+                                       const char *directive) {
     scoped Directive *dir = directive_from_line(line);
 
     if (!dir || !str_eq(dir->name, directive_name(directive)))
@@ -309,7 +310,7 @@ static bool collect_sources(const char *path, char ***sources) {
             perror(path);
             return false;
         }
-        FOR (i, array_len(entries)) {
+        FOR(i, array_len(entries)) {
             scoped char *child = NULL;
             const char *entry = entries[i];
 
@@ -377,7 +378,7 @@ static ModuleDoc *module_for(ModuleDoc ***modules, const char *name) {
     Seq *seq = (Seq *)modules;
     ModuleDoc **arr = seq->arr;
 
-    FOR (i, array_len(arr)) {
+    FOR(i, array_len(arr)) {
         if (str_eq(arr[i]->name, name))
             return arr[i];
     }
@@ -406,8 +407,8 @@ static PValue module_value(const char *doc) {
 static void merge_module_doc(PValue *module, const char *doc) {
     scoped char *name = module_name_from_doc(doc);
     scoped char *clean_doc = doc_without_directives(doc);
-    bool submodule_only = has_directive(doc, "@submodule") &&
-                          !has_directive(doc, "@module");
+    bool submodule_only =
+        has_directive(doc, "@submodule") && !has_directive(doc, "@module");
     SMap m = *module;
 
     if (!m) {
@@ -510,7 +511,7 @@ static void markdown_add_table(char **out, SMap item) {
 
     strbuf_adds(out, "| Type | Name | Description |\n");
     strbuf_adds(out, "| --- | --- | --- |\n");
-    FOR (i, array_len(fields)) {
+    FOR(i, array_len(fields)) {
         SMap field = fields[i];
 
         strbuf_adds(out, "| ");
@@ -573,7 +574,7 @@ static Section *section_for(Section ***sections, const char *key) {
     Seq *seq = (Seq *)sections;
     Section **arr = seq->arr;
 
-    FOR (i, array_len(arr)) {
+    FOR(i, array_len(arr)) {
         if (str_eq(arr[i]->key, key))
             return arr[i];
     }
@@ -589,7 +590,7 @@ static Section ***section_list(PValue *items) {
     if (!items)
         return sections;
 
-    FOR (i, array_len(items)) {
+    FOR(i, array_len(items)) {
         SMap item = items[i];
         const char *key = section_key(item);
 
@@ -609,7 +610,7 @@ static void markdown_add_section(char **out, Section *section) {
         return;
 
     strbuf_addf(out, "## %s\n\n", section_title(section->key));
-    FOR (i, array_len(items)) {
+    FOR(i, array_len(items)) {
         SMap item = items[i];
 
         if (item_is_kind(item, "table"))
@@ -621,7 +622,7 @@ static void markdown_add_section(char **out, Section *section) {
 
 static void markdown_add_section_key(char **out, Section **sections,
                                      const char *key) {
-    FOR (i, array_len(sections)) {
+    FOR(i, array_len(sections)) {
         Section *section = sections[i];
 
         if (str_eq(section->key, key)) {
@@ -636,7 +637,8 @@ static char *markdown_tostring(SMap root) {
     PValue *items = str_lookup(root, "items");
     char **out = strbuf_new();
     const char *module_name = module ? record_string(module, "name") : "";
-    const char *title = *module_name ? module_name : record_string(root, "source");
+    const char *title =
+        *module_name ? module_name : record_string(root, "source");
     scoped Section ***sections = NULL;
 
     strbuf_addf(out, "# %s\n\n", title);
@@ -648,7 +650,7 @@ static char *markdown_tostring(SMap root) {
     sections = section_list(items);
     markdown_add_section_key(out, *sections, "types");
     markdown_add_section_key(out, *sections, "uncategorized");
-    FOR (i, array_len(*sections)) {
+    FOR(i, array_len(*sections)) {
         Section *section = (*sections)[i];
         const char *key = section->key;
 
@@ -800,8 +802,8 @@ static bool generate_all_markdown(const char *outdir, int root_count,
                                   char **roots) {
     scoped char ***sources = seq_new_ref(char *);
     scoped ModuleDoc ***modules = seq_new_ref(ModuleDoc *);
-    const char *default_roots[] = {"llib", "llib-p"};
-    int count = root_count > 0 ? root_count : 2;
+    const char *default_roots[] = {"llib"};
+    int count = root_count > 0 ? root_count : 1;
     int written = 0;
 
     if (!mkdir_p(outdir))
@@ -815,7 +817,7 @@ static bool generate_all_markdown(const char *outdir, int root_count,
     }
     qsort((*sources), array_len(*sources), sizeof(char *), cmp_str_ptr);
 
-    FOR (i, array_len(*sources)) {
+    FOR(i, array_len(*sources)) {
         if (!read_source_modules((*sources)[i], modules))
             return false;
     }
@@ -823,7 +825,7 @@ static bool generate_all_markdown(const char *outdir, int root_count,
     Seq *module_seq = (Seq *)modules;
     ModuleDoc **module_arr = module_seq->arr;
 
-    FOR (i, array_len(module_arr)) {
+    FOR(i, array_len(module_arr)) {
         ModuleDoc *doc = module_arr[i];
 
         if (!write_module_markdown(outdir, doc->name, doc))
