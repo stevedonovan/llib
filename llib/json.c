@@ -55,13 +55,15 @@ Look at `value` for boxing support.  See `test-json.c`.
 
 typedef char *Str, **SStr;
 
-static void add_indent(SStr s, int indent) {
-    FOR(i, indent) { strbuf_adds(s, "  "); }
+static void add_offset(SStr s, int indent) {
+    FOR(i, indent) { strbuf_adds(s, " "); }
 }
 
-static void dump_array(SStr s, PValue vl, int indent);
-static void dump_value(SStr s, PValue v, int indent) {
+static void dump_array(SStr s, PValue v, int offs, int indent);
+
+static void dump_value(SStr s, PValue v, int offs, int indent) {
     bool indenting = indent > 0;
+    int new_offs = indenting ? offs + indent : 0;
     if (v == NULL) {
         strbuf_adds(s, "null");
         return;
@@ -73,6 +75,7 @@ static void dump_value(SStr s, PValue v, int indent) {
 
     int typeslot = obj_type_index(v);
     if (value_is_array(v)) {
+        // could be a string!
         if (typeslot == OBJ_CHAR_T || typeslot == OBJ_ECHAR_T) {
             char *str = (char *)v;
             strbuf_add(s, '"');
@@ -100,7 +103,7 @@ static void dump_value(SStr s, PValue v, int indent) {
             strbuf_add(s, '"');
             return;
         } else if (typeslot != OBJ_KEYVALUE_T) {
-            dump_array(s, v, indent);
+            dump_array(s, v, new_offs, indent);
             return;
         }
     }
@@ -113,29 +116,25 @@ static void dump_value(SStr s, PValue v, int indent) {
         strbuf_add(s, ismap ? '{' : '[');
         if (indenting) {
             strbuf_add(s, '\n');
-            ++indent;
         }
         FOR(i, ni) {
             PValue val, key;
-            add_indent(s, indent);
+            add_offset(s, new_offs);
             if (ismap) {
                 iter->nextpair(iter, &key, &val);
                 strbuf_addf(s, "\"%s\":", key);
             } else {
                 iter->next(iter, &val);
             }
-            dump_value(s, val, indent);
+            dump_value(s, val, new_offs, indent);
             if (i < ni - 1)
                 strbuf_add(s, ',');
             if (indenting)
                 strbuf_add(s, '\n');
         }
         obj_unref(iter);
-        add_indent(s, indent - 1);
+        add_offset(s, offs - indent);
         strbuf_add(s, ismap ? '}' : ']');
-        // if (indenting) {
-        //     strbuf_add(s, '\n');
-        // }
     } else {
         switch (typeslot) {
 #define addf(fmt, T) strbuf_addf(s, fmt, *((T *)v))
@@ -156,13 +155,13 @@ static void dump_value(SStr s, PValue v, int indent) {
     }
 }
 
-static void dump_array(SStr s, PValue vl, int indent) {
+static void dump_array(SStr s, PValue vl, int offs, int indent) {
     bool indenting = indent > 0;
+    int new_offs = indenting ? offs + indent : 0;
     char *aa = (char *)vl;
     strbuf_add(s, '[');
     if (indenting) {
         strbuf_add(s, '\n');
-        ++indent;
     }
 
     int n = array_len(aa), ni = n - 1;
@@ -170,7 +169,7 @@ static void dump_array(SStr s, PValue vl, int indent) {
     int type = obj_type_index(aa);
     char *P = aa;
     FOR(i, n) {
-        add_indent(s, indent);
+        add_offset(s, offs);
         void *data = *(void **)P;
         if (obj_refcount(data) == -1) {
             // must be a number...
@@ -204,7 +203,7 @@ static void dump_array(SStr s, PValue vl, int indent) {
                 strbuf_addf(s, "%d", ival);
             }
         } else {
-            dump_value(s, data, indent);
+            dump_value(s, data, new_offs, indent);
         }
         P += nelem;
         if (i < ni)
@@ -212,9 +211,7 @@ static void dump_array(SStr s, PValue vl, int indent) {
         if (indenting)
             strbuf_add(s, '\n');
     }
-    if (indenting)
-        --indent;
-    add_indent(s, indent);
+    add_offset(s, offs - indent);
     strbuf_add(s, ']');
 }
 
@@ -226,7 +223,7 @@ char *json_tostring(PValue v) { return json_to_pretty_string(v, 0); }
 /// convert value into pretty JSON string
 char *json_to_pretty_string(PValue v, int indent) {
     SStr s = strbuf_new();
-    add_indent(s, indent);
-    dump_value(s, v, indent);
+    // add_indent(s, indent);
+    dump_value(s, v, 0, indent);
     return (char *)seq_array_ref(s);
 }
