@@ -6,7 +6,7 @@ else
     OPT = -g
 endif
 CFLAGS=-std=c99  $(OPT) -Wall -I$(LLIB)
-LFLAGS=-L$(LLIB)/llib -lllib -lm
+LFLAGS=-L$(LLIB)/llib -Wl,-s -lllib -lm
 
 $(P): $(P).c
 	$(CC) $(CFLAGS) $< -o $@ $(LFLAGS)

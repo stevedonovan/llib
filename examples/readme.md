@@ -13,4 +13,9 @@ $ make -f llibp.make P=test-rx
 
 Go into ../llib-p and say 'make' first.
 
+The `cexpr` program is a special snowflake that needs C2x features
+like `auto` and GNU features like statement expressions, so use:
+
+$ make -f cexpr.mak
+
 

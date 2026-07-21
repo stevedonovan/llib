@@ -279,7 +279,7 @@ popularized by Java, and the llib concept is similar.  List and Map support the 
 interface:
 
 ```C
-    #include <llib/interface.h"
+    #include <llib/interface.h>
     ...
     List *ls = list_new_str();
     list_add(ls, "ein");
@@ -422,7 +422,7 @@ The array must be 'one of ours' - that is, `array_len(a)` is meaningful.
         FINDA(i,arr,k, _ > 0);
         if (i == -1)
             break;
-        printf("non-zero at %d is %d\n",i,arr[i]);
+        printf("greater than zero at %d is %d\n",i,arr[i]);
         k = i + 1;
     }
 
@@ -595,7 +595,7 @@ llib values have dynamic types since they have their type encoded in their heade
 A value can be an array of ints, a string, or a map of other values, and so forth, and
 its type and structure can be inspected at run-time.
 To represent numbers we have to introduce wrappers for integer, double and boolean
-types, rather as it is done in Java.  This being C, the programmer has to explicitly box floats
+types, rather like it is done in Java.  This being C, the programmer has to explicitly box floats
 (for example) using `value_float` and so forth, and unbox with `value_as_float`.
 
 Ref-counted strings are llib values, although string literals need an explicit `str_new`.
@@ -665,6 +665,26 @@ but if they do result in a value, then `value_tostring` will be used. (The templ
 `$(i var)` will explicitly convert integers to strings, but it's hard to work with
 floating-point numbers this way).
 
+Note: new in this version is `json_parse_vs5`, which started out as orthodox
+`JSON5` notation and then got progressively more relaxed (inspired by `Nushell` object notation):
+
+```sh
+~/llib/examples$ cat test.json
+{
+    // actual comments
+        items: [1 2 3]
+        config: {
+                auto: true
+                persist: 20
+                update: {
+                        time: 345
+                        relax: 10
+                }
+        }
+        names: ["one" "two" "one\ntwo\nthree"]
+}
+```
+
 ## Object Pools
 
 C++ users are fond of RAII - Resource Acquision Is Initialization. The 
@@ -708,6 +728,8 @@ void do_something (const char *file) {
 ```
 However you leave `do_something`, the file will be the closed.  The power of the approach
 comes from llib objects all knowing dynamically how to dispose themselves ("virtual destructors")
+
+However, `scoped` is for simple local ownership only. It automatically calls `obj_unref` on the variable’s final pointer value when leaving scope. Do not use it for values passed to ownership-transfer functions such as `seq_array_ref` or `smap_close`, values stored in owning containers, or locals that are reassigned without manually disposing the old value.
 
 The cool thing about llib reference counting semantics is that if a container is disposed,
 it will unref all the objects it contains.  Complicated dynamic data structures (read from
@@ -763,7 +785,7 @@ This is a large and opinionated subject, so let me state that what most people n
 'pointy-bracket data language' (PBDL) rather than full-blown schemas-and-transforms (XML).
 In particular, it is a common configuration format.  When used in that way, we can simplify life 
 by ignoring empty text elements and comments - since it is the structure of the _data_ that
-is important.  If test.xml is:
+is important.  If `test.xml` is:
 
 ```xml
 <root>
@@ -774,14 +796,14 @@ is important.  If test.xml is:
 
 then `xml_parse_file("test.xml",true)` will return a `root` element with two `item` child elements. 
 The representation is a little unusual but straightforward; an element is an array of objects,
-with the first item being the tag name, the second (optional) item being an array of atributes
-(so-called 'simple map') and the remainder contains the child nodes - these are either strings or
+with the first item being the tag name, the second (optional) item being an array map of attributes
+and the remainder contains the child nodes - these are either strings or
 elements themselves.  So `test.xml` is completely equivalent to this data constructor:
 
 ```C
     v = VAS("root",
-        VAS("item",VMS("name","age","type","int"),"10"),
-        VAS("item",VMS("name","name","type","string"),"Bonzo")
+            VAS("item",VMS("name","age","type","int"),"10"),
+            VAS("item",VMS("name","name","type","string"),"Bonzo")
     );
 ```
 
@@ -799,6 +821,7 @@ of llib table support is that you can ask for _columns_ to be generated and conv
 Assume we have a simple CSV file like so:
 
 ```C
+$ cat test.csv
 Name,Age
 Bonzo,12
 Alice,16
@@ -885,7 +908,7 @@ PValue args[] = {
 
 int main(int argc,  const char **argv)
 {
-    args_command_line(args,argv);
+    arg_command_line(args,argv);
     char buff[512];
     int i = 1;
     while (fgets(buff,sizeof(buff),file)) {
@@ -950,165 +973,44 @@ subcommands. for instance 'git status'.  `testa` shows how a simple but effectiv
 interactive prompt can be produced by spliting the line and parsing it explicitly.
 
 Since llib is linked statically by default, the resulting programs remain small;
-`cmd` is only 22Kb on a 32-bit Linux system.
+`cmd` is only 47Kb on Linux.
 
-## Example: Generating plots with Flot
+## Examples
 
-Cross-platform graphics capabilities are not easily available to simple C programs.
-The 'old-skool' approach is for your program to write out data in a suitable form
-for GnuPlot, or as CSV to be fed into Excel (on Windows).  But modern browsers
-offer very capable graphics, and _client-side_ libraries like [Flot](?) use this to
-produce good-looking plots  - 'client-side' because they take data
-and options in JSON form and render it on the browser.
+One of the great things about C is that the compiler is so fast. `cexpr`
+is a command-line calculator that embeds an expression into a little C
+program that is compiled and linked against `llib`.
 
-llib can generate JSON, and it can expand templates - this is all we need to write
-suitable HTML for Flot to render.  By default, I've chosen to let this HTML grab
-the required JavaScript libraries from the Net, although this isn't a big problem in practice since browsers will cache frequently-downloaded scripts. (You can always
-unzip Flot somewhere and arrange for the HTML to point to that location.)
+With an arbitrary value (such as a primitive or a plain string) one
+can specify the `printf` format to use:
 
-Doing simple plots is straightforward (go to `examples/flot/'):
+```sh
+$ ./cexpr -f %f '10.0*sin(1.2)'
+9.320391
+```
+But any `llib` allocated value is put out in `JSON` format:
 
-```C
-// flot-norm.c
-#include "flot.c"
+```sh
+:~/llib/examples$ ./cexpr 'file_files_in_dir("*.c",false)'
+["cexpr.c","cmd.c","codex-sessions.c","config.c","getdoc.c","make-ex.c","mapset.c","procs.c","subst.c","tempx.c","test-rx.c","testa.c","testing.c","tmp.c","txt2c.c","words.c"]
+```
+Can ask for `JSON` pretty printing:
 
-double sqr(double x) { return x*x; }
-
-double *make_gaussian(double m, double x, double *xv) {
-    double s2 = 2*sqr(x);
-    double norm = 1.0/(M_PI*s2);
-    int n = array_len(xv);
-    double *res = array_new(double,n);
-    FOR (i,n) {
-        res[i] = norm*exp(-sqr(xv[i]-m)/s2);
-    }
-    return res;
-}
-
-int main()
+```sh
+$ ./cexpr -p 'VM("one",VI(10),"two",VA(VI(10),VI(20)))'
 {
-    Flot *P = flot_new("caption", "Gaussians");
-
-    double *xv = farr_range(0,10,0.1);
-
-    flot_series_new(P,xv,make_gaussian(5,1,xv), FlotLines,"label","norm s=1");
-    flot_series_new(P,xv,make_gaussian(4,0.7,xv), FlotLines,"label","norm s=0.7");
-
-    flot_render("norm");
-    return 0;
-
+  "one":10,
+  "two":[
+    10,
+    20
+  ]
 }
 ```
+As a convenience, `JSON` files can be read in (using the extra slack 
+format supported by `json_parse_file_vs5`). Then the special variable
+`JS` becomes available:
 
-Once a `Flot` object is created, then series can be added; these are fed separate
-X and Y data as llib arrays of double values - these know how large they are, so we
-don't need to pass an explicit size.  `farr_range` is useful for generating X values
-sampled with a delta.
-
-The result is indeed good-looking (the meaning of 'flot' in Danish) and by default
-a legend is generated.
-
-This Flot API is designed to correspond as closely as possible with the original
-API.  According to [Customizing the Data Series](https://github.com/flot/flot/blob/v0.8.2/API.md#customizing-the-data-series)
-the option to fill the area between the line and the axis is `series:{lines:{fill:A}}`
-where `A` is the alpha value to apply to the line colour. This can be expressed
-like so:
-
-```C
-Flot *P = flot_new("caption", "Gaussians","series.lines.fill",VF(0.2));
-
+```sh
+~/llib/examples$ ./cexpr -j test.json 'smap_get_pointer(JS,"/config/auto")'
+true
 ```
-
-That is, the arguments passed to `flot_new` pass directly into the `options` of
-the Flot plot object. These options consist of a key followed by its data; the key
-may be dotted to express the nested maps which are natural in JavaScript but
-awkward to express in C. The data needs to be escaped explicitly as a `value_float`.
-
-The result is particularly good-looking:
-
-![llib Flot](http://stevedonovan.github.io/files/llib-flot.png)
-
-When using statically-declared data, you must make a llib array - the `farr_copy` macro is
-useful here. Note that series also have options; when specifying a fill, note
-that it's just "lines.fill", not "series.lines.fill" used for the plot-wide
-option.
-
-```C
-    // apply gradient from top to bottom as background, and move legend
-    Flot *P = flot_new("caption", "First Test",
-        "grid.backgroundColor",flot_gradient("#FFF","#EEE"),
-        // 'nw' is short for North West, i.e. top-left
-        "legend.position","nw"
-    );
-
-    // Series data must be llib arrays of doubles
-    double X[] = {1,2,3,4,5};
-    double Y1[] = {10,15,23,29,31};
-    double Y2[] = {9.0,9.0,25.0,28.0,32.0};
-    double *xv = farr_copy(X);
-    double *yv1 = farr_copy(Y1), *yv2 = farr_copy(Y2);
-
-    // fill underneath this series
-    flot_series_new(P,xv,yv1, FlotLines,"label","cats",
-        "lines.fill",VF(0.2)  // specified as an alpha to be applied to line colour
-    );
-
-    // override point colour
-    flot_series_new(P,xv,yv2, FlotPoints,"label","dogs","color","#F00");
-
-    // will generate test.html
-    flot_render("test");
-
-```
-
-Again, you can look at the [grid options](https://github.com/flot/flot/blob/v0.8.2/API.md#customizing-the-grid)
-when specifying grid options; same for legend options.
-
-If the Y data is NULL, then it's assumed that the X data array has both x and y
-values, as even and odd entries respectively. This is particularly convenient
-when building up data using sequences and is reminiscent of how you would do
-this in JavaScript using `push`:
-
-```C
-    double **vsin = seq_new(double);
-    double **vcos = seq_new(double);
-    for (double x = 0; x < 2*M_PI; x += 0.1)  {
-        seq_add2(vsin,x,sin(x));
-        seq_add2(vcos,x,cos(x));
-    }
-
-    flot_series_new(P,farr_seq(vsin), NULL,FlotLines,"label","sine");
-    flot_series_new(P,farr_seq(vcos), NULL,FlotLines,"label","cosine");
-```
-
-To help displaying data from the table module, `farr_sample_float` and
-`farr_sample_int` can be used to convert the float and int column arrays
-generated by `table`:
-
-```C
-void read_dates_and_values(const char *file, farr_t *dates, farr_t *values) {
-    Table *t = table_new_from_file(file, TableCsv | TableAll);
-    if (t->error) {
-        fprintf(stderr,"%s %s\n",file,t->error);
-        exit(1);
-    }
-    table_convert_cols(t,0,TableInt,1,TableFloat,-1);
-    table_generate_columns(t);
-
-    *dates = farr_sample_int((int*)t->cols[0],0,-1,1);
-    *values = farr_sample_float((float*)t->cols[1],0,-1,1);
-}
-
-```
-
-These helpers create slices-with-steps of arrays (there's also `farr_sample` for
-working with `double*` arrays.) and work like Python slices; -1 means "the last element".
-
-In summary, this example C implementation of a JavaScript API is intended to
-make it easier for C programmers to make decent plots of their data for
-_casual_ consumption. For publication-ready output, you need another solution, but
-this allows you to quickly see what your calculations look like and avoids the tedious
-need for preparing data for another tool. It shows that C is _quite_ capable of operating
-with dynamic data, if certain simple rules are followed.
-
-
