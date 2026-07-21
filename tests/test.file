@@ -178,8 +178,8 @@ file exists
 makefile was 'makefile'
 48 65 6C 6C 6F 2C 20 57 6F 72 6C 64 21
 got 'Hello, World!'
-size was 2041 bytes
-no of lines 90
+size was 2184 bytes
+no of lines 93
 'test-array.c'
 'test-config.c'
 'test-file.c'

@@ -29,7 +29,7 @@ int main(int argc, char **argv)
                 str_trim(*out);
             str_trim(line);
             if (! *out || ! str_eq(line,*out)) {
-                errorf("mismatch line %d\n\t{%s}\n\t{%s}\n",L,line,*out);
+                errorf("mismatch line %d\n\tneed {%s}\n\tgot  {%s}\n",L,line,*out);
                 exit(1);
             }
             ++out;
